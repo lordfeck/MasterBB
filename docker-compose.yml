@@ -1,0 +1,25 @@
+services:
+  phpbb:
+    build:
+      context: .
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: oblakstudio/mysql41:4.1.11
+    platform: linux/386
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: phpbb
+      MYSQL_USER: phpbb
+      MYSQL_PASSWORD: phpbb
+    volumes:
+      - phpbb-db:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  phpbb-db:
