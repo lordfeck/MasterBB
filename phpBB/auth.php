@@ -30,48 +30,6 @@ else
 	include("fix.$phpEx");
 }
 
-// Disable Magic Quotes
-// Function is needed for removing quotes from arrays.
-function stripslashes_array($the_array_element, $the_array_element_key, $data)
-{
-   $the_array_element = stripslashes($the_array_element);
-}
-
-if(get_magic_quotes_gpc() == 1)
-{
-   switch($REQUEST_METHOD)
-   {
-   case "POST":
-      while (list ($key, $val) = each ($HTTP_POST_VARS))
-      {
-         if( is_array($val) )
-         {
-            array_walk($val, 'stripslashes_array', '');
-            $$key = $val;
-         }
-      else
-      {
-         $$key = stripslashes($val);
-      }
-      }
-   break;
-   case "GET":
-      while (list ($key, $val) = each ($HTTP_GET_VARS))
-      {
-         if( is_array($val) )
-         {
-            array_walk($val, 'stripslashes_array', '');
-            $$key = $val;
-         }
-         else
-         {
-            $$key = stripslashes($val);
-         }
-      }
-   break;
-   }
-}
-
 // Check if the config file is writable (shouldn't be!!)
 $config_file_name = "config.$phpEx";
 if(strstr($PHP_SELF, "admin"))
@@ -101,9 +59,9 @@ if(@fopen($config_file_name, "a"))
 }
 
 // Make a database connection.
-if(!$db = @mysql_connect("$dbhost", "$dbuser", "$dbpasswd"))
+if(!$db = @db_connect("$dbhost", "$dbuser", "$dbpasswd"))
 	die('<font size=+1>An Error Occured</font><hr>phpBB was unable to connect to the database. <BR>Please check $dbhost, $dbuser, and $dbpasswd in config.php.');
-if(!@mysql_select_db("$dbname",$db))
+if(!@db_select_db("$dbname",$db))
 	die("<font size=+1>An Error Occured</font><hr>phpBB was unable to find the database <b>$dbname</b> on your MySQL server. <br>Please make sure you ran the phpBB installation script.");
 
 if(is_banned($REMOTE_ADDR, "ip", $db))
@@ -112,8 +70,8 @@ if(is_banned($REMOTE_ADDR, "ip", $db))
 
 // Setup forum Options.
 $sql = "SELECT * FROM config WHERE selected = 1";
-if($result = mysql_query($sql, $db)) {
-   if($myrow = mysql_fetch_array($result)) {
+if($result = db_query($sql, $db)) {
+   if($myrow = db_fetch_array($result)) {
       $sitename = stripslashes($myrow["sitename"]);
       $allow_html = $myrow["allow_html"];
       $allow_bbcode = $myrow["allow_bbcode"];
@@ -228,11 +186,11 @@ if (!$user_logged_in)
 if($override_user_themes == 1 || !$theme)
 {
    $sql = "SELECT * FROM themes WHERE theme_default = 1";
-   if(!$r = mysql_query($sql, $db))
+   if(!$r = db_query($sql, $db))
    {
    	die('<font size=+1>An Error Occured</font><hr>phpBB was unable to connect to the database. <BR>Please check $dbhost, $dbuser, and $dbpasswd in config.php.');
    }
-   if($theme = mysql_fetch_array($r))
+   if($theme = db_fetch_array($r))
    {
       $bgcolor = $theme["bgcolor"];
       $table_bgcolor = $theme["table_bgcolor"];

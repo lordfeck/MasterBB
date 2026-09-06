@@ -88,8 +88,8 @@ if($submit) {
 	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text) ";
 	$sql .= "VALUES ($fromuserdata[user_id], $touserdata[user_id], '$time', '$message')";
 	
-	if(!mysql_query($sql, $db)) {
-		echo $sql . " : " . mysql_error() . "<br>";
+	if(!db_query($sql, $db)) {
+		echo $sql . " : " . db_error() . "<br>";
 		error_die("Could not enter data into the database.");
 	}
 
@@ -130,7 +130,7 @@ if($submit) {
 		</TD>
 		<TD  BGCOLOR="<?php echo $color2?>">
 			<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-<?PHP
+<?php
 	if ($user_logged_in) {
 		echo $userdata[username] . " \n";
 	} else {
@@ -140,7 +140,7 @@ if($submit) {
 			</FONT>
 		</TD>
 	</TR>
-<?PHP
+<?php
 	if (!$user_logged_in) { 
 		// no session, need a password.
 		echo "    <TR ALIGN=\"LEFT\"> \n";

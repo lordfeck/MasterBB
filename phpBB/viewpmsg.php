@@ -53,7 +53,7 @@ if (!$submit && !$user_logged_in) {
 	}
 
 	$sql = "SELECT * FROM priv_msgs WHERE (to_userid = $userdata[user_id]) ORDER BY msg_time DESC";
-	$resultID = mysql_query($sql, $db);
+	$resultID = db_query($sql, $db);
 	if (!$resultID) {
 		error_die("Error getting messages from DB.");
 	}
@@ -67,11 +67,11 @@ if (!$submit && !$user_logged_in) {
 </TR>
 
 <?php
-	if (!mysql_num_rows($resultID)) {
+	if (!db_num_rows($resultID)) {
 		echo "<TD BGCOLOR=\"$color1\" colspan = 2 ALIGN=CENTER>$l_nopmsgs</TD></TR>\n";
 	}
 	
-	while ($myrow = mysql_fetch_array($resultID)) {
+	while ($myrow = db_fetch_array($resultID)) {
 
 		echo "<TR BGCOLOR=\"$color2\" ALIGN=\"LEFT\">\n";
 		$posterdata = get_userdata_from_id($myrow[from_userid], $db);
@@ -110,10 +110,10 @@ if (!$submit && !$user_logged_in) {
 		echo "&nbsp;&nbsp;<a href=\"$url_phpbb/delpmsg.$phpEx?msgid=$myrow[msg_id]\">$l_delete</a>\n";
 	
 		echo "</TD></TR>";
-	} //while ($myrow = mysql_fetch_array($resultID));
+	} //while ($myrow = db_fetch_array($resultID));
 	
 	$sql = "UPDATE priv_msgs SET msg_status='1' WHERE (to_userid = $userdata[user_id])";
-	if (!mysql_query($sql, $db)) {
+	if (!db_query($sql, $db)) {
 		error_die("Error marking the messages as read in the DB.");
 	}
 	

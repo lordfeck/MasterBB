@@ -60,7 +60,7 @@ else if(!$user_logged_in) {
      <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
      <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
      <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
      Please enter your username and password to login.<BR>
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
@@ -185,7 +185,7 @@ else {
      <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
      <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
      <TR BGCOLOR="<?php echo $color1?>" ALIGN="center" VALIGN="TOP">
-     <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+     <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
      <B>You do not have acess to this area!</b><BR>
      Go <a href="<?php echo $url_phpbb_index?>">Back</a>
      </TD></TR></TABLE></TD></TR></TABLE>

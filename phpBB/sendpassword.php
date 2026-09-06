@@ -28,16 +28,16 @@ include('page_header.'.$phpEx);
 
 if($actkey) {
 	$sql = "SELECT user_id FROM users WHERE user_actkey = '$actkey'";
-	if(!$r = mysql_query($sql, $db))
+	if(!$r = db_query($sql, $db))
 		error_die("Error while attempting to query the database");
-   if(mysql_num_rows($r) != 1) {
+   if(db_num_rows($r) != 1) {
 		error_die($l_wrongactiv);
    }
    else {
-      list($update_id) = mysql_fetch_array($r);
+      list($update_id) = db_fetch_array($r);
    }
    $sql = "UPDATE users SET user_password = user_newpasswd WHERE user_id = '$update_id'";
-   if(!$r = mysql_query($sql, $db))                        
+   if(!$r = db_query($sql, $db))                        
      error_die("Error while attempting to query the database");  
 ?>
      <TABLE BORDER="0" WIDTH="<?php echo $TableWidth?>" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP">
@@ -79,7 +79,7 @@ else if($submit) {
    $key = md5(md5(md5($newpw_enc)));
    
    $sql = "UPDATE users SET user_actkey = '$key', user_newpasswd = '$newpw_enc' WHERE user_id = '$checkinfo[user_id]'";
-   if(!$r = mysql_query($sql, $db)) {
+   if(!$r = db_query($sql, $db)) {
 		error_die("An error occured while tring to update the database. Please go back and try again.");
    }
 	

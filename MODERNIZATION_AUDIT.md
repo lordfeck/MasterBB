@@ -1,0 +1,127 @@
+# phpBB 1.4.4 modernisation audit
+
+## Executive summary
+
+Yes: this codebase can run on modern PHP and MariaDB while retaining its
+simple, period presentation and operating model. The first compatibility
+milestone is now implemented and verified on PHP 8.4 and MariaDB 11.4.
+
+Security hardening is also feasible without redesigning the visible product,
+but it is a larger and more delicate body of work than the runtime port. The
+application currently must be treated as local-only and unsafe for exposure to
+untrusted users.
+
+SQLite is no longer in scope. Only fresh MariaDB installations are supported;
+the historical database upgrade scripts have been removed.
+
+## Compatibility milestone: complete
+
+The port now:
+
+- uses the official PHP 8.4 Apache image and MariaDB 11.4;
+- replaces the removed `mysql_*` extension with a small PDO adapter;
+- normalises PHP opening tags so `short_open_tag` can remain disabled;
+- replaces removed PHP APIs including `each()`, `split()`, `ereg()`, and
+  `eregi()`;
+- supplies a contained compatibility boundary for the long request arrays,
+  server globals, and bare array keys expected by PHP 3/4-era code;
+- removes obsolete migration scripts under the agreed fresh-install-only
+  policy; and
+- adjusts fresh-install schema and insert behaviour for MariaDB's modern
+  strict defaults.
+
+This deliberately is not yet a wholesale rewrite. The small database and
+request compatibility layers keep the behavioural change reviewable while the
+smoke suite protects the original workflows.
+
+## Verification baseline
+
+The black-box suite creates an isolated application and database, performs a
+fresh web installation, and verifies:
+
+1. administrator creation and board configuration;
+2. administrator login, logout, and re-login;
+3. category and forum creation;
+4. user registration, login, and logout;
+5. new topic and reply creation;
+6. post editing and deletion;
+7. private-message sending and reading; and
+8. search.
+
+The complete suite passes on PHP 8.4 and MariaDB 11.4. All PHP source files
+also pass PHP 8.4 syntax checks, and the successful run produced no PHP fatal
+errors, parse errors, or deprecation diagnostics.
+
+The logs still contain undefined-variable warnings inherited from the original
+`register_globals` programming model. They do not break the covered workflows,
+but should be removed as the compatibility boundary is retired.
+
+## Security findings
+
+The following are the main classes of risk to address before public use. This
+list is architectural triage, not a claim that every exploitable path has
+already been enumerated.
+
+### Critical
+
+- SQL is assembled by interpolating request and stored values. Moving to PDO
+  removed an obsolete driver; it did not remove SQL injection.
+- Request fields are still promoted into global variables to emulate
+  `register_globals`. This creates variable-confusion and parameter-tampering
+  risk and makes authorization reasoning difficult.
+- Passwords use unsalted MD5 and must move to `password_hash()` and
+  `password_verify()`.
+- State-changing actions lack modern CSRF protection.
+
+### High
+
+- Output encoding is inconsistent, leaving stored and reflected XSS risk in
+  posts, profiles, messages, search results, and administration pages.
+- Session identifiers and session handling predate modern cryptographic and
+  cookie-security requirements.
+- The installer can rewrite configuration and should be made unavailable after
+  installation by construction, not merely by convention.
+- Authorization checks are distributed through page scripts and should be
+  audited operation by operation, especially editing, deletion, private
+  forums, private messages, and administration actions.
+
+### Medium
+
+- Input validation is inconsistent and tied to a historical filtering script.
+- Error paths can disclose query text and internal database details.
+- Email, URL, BBCode, and HTML handling rely on obsolete trust assumptions.
+- Security headers, request-size limits, rate limits, and login throttling are
+  absent.
+
+## Recommended next phase
+
+Preserve the existing HTML, navigation, URLs, and workflows while changing the
+trust boundaries underneath them:
+
+1. Replace request-global emulation with explicit typed access to GET, POST,
+   cookies, and server data, one workflow at a time.
+2. Extend the database adapter with prepared statements, then convert all
+   queries reached by the smoke suite before covering the remaining admin and
+   profile paths.
+3. Introduce output-escaping helpers with explicit exceptions for the narrow
+   legacy markup/BBCode surface.
+4. Replace authentication and session primitives, including password hashing,
+   cryptographically random session tokens, rotation, expiry, and secure cookie
+   attributes.
+5. Add CSRF tokens to every state-changing form and enforce POST-only mutation
+   endpoints.
+6. Centralise authorization checks and add negative tests for cross-user and
+   lower-privilege actions.
+7. Disable the installer after successful setup, reduce error disclosure, and
+   add baseline response headers and abuse controls.
+
+Each step can be made behind the original presentation. The smoke suite should
+remain the behavioural baseline, with focused negative security tests added
+alongside each hardening change.
+
+## Conclusion
+
+The runtime upgrade is reasonably straightforward and is now working for the
+agreed fresh-install workflows. Hardening is practical without sacrificing the
+arcane look and feel, but it should be treated as a systematic second phase,
+not as a handful of search-and-replace patches.

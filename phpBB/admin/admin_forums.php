@@ -67,7 +67,7 @@ else if(!$user_logged_in) {
      <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
      <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
      <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
      Please enter your username and password to login.<BR>
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <UL>
@@ -96,11 +96,11 @@ switch($mode) {
 
 	 $sql = "UPDATE forums SET forum_name = '$name', forum_desc = '$desc', forum_type = '$type', cat_id = '$cat', forum_access = '$forum_access' WHERE forum_id = '$forum'";
 
-	 if(!$r = mysql_query($sql, $db))
+	 if(!$r = db_query($sql, $db))
 	   die("Error - could not update the database, please go back and try again.");
 	 $count = 0;
 	 if(isset($mods)) {
-	    while(list($null, $mod) = each($HTTP_POST_VARS["mods"])) {
+		    foreach($HTTP_POST_VARS["mods"] as $mod) {
 	       $mod_data = get_userdata_from_id($mod, $db);
 	       if($mod_data[user_level] < 2) {
 		  if(!isset($user_query))
@@ -111,24 +111,24 @@ switch($mode) {
 		  $count++;
 	       }
 	       $mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES ('$forum', '$mod')";
-	       if(!mysql_query($mod_query, $db))
-		 die("Mod Query Error!<BR>".mysql_error($db)."<BR>$mod_query");
+	       if(!db_query($mod_query, $db))
+		 die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
 	    }
 	 }
 
 	 if(!isset($mods)) {
 	    $current_mods = "SELECT count(*) AS total FROM forum_mods WHERE forum_id = '$forum'";
-	    $r = @mysql_query($current_mods, $db);
-	    list($total) = mysql_fetch_array($r);
+	    $r = @db_query($current_mods, $db);
+	    list($total) = db_fetch_array($r);
 	 }
 	 else
 	   $total = count($mods) + 1;
 
 	 if(isset($rem_mods) && $total > 1) {
-	    while(list($null, $mod) = each($HTTP_POST_VARS["rem_mods"])) {
+		    foreach($HTTP_POST_VARS["rem_mods"] as $mod) {
 	       $rem_query = "DELETE FROM forum_mods WHERE forum_id = '$forum' AND user_id = '$mod'";
-	       if(!mysql_query($rem_query))
-		 die("Error removing moderators for forum!<BR>".mysql_error($db)."<BR>$rem_query");
+	       if(!db_query($rem_query))
+		 die("Error removing moderators for forum!<BR>".db_error($db)."<BR>$rem_query");
 	    }
 	 }
 	 else {
@@ -136,8 +136,8 @@ switch($mode) {
 	      $mod_not_removed = 1;
 	 }
 	 if(isset($user_query)) {
-	    if(!mysql_query($user_query, $db))
-	      die("User Error!<BR>".mysql_error($db)."<BR>$user_query");
+	    if(!db_query($user_query, $db))
+	      die("User Error!<BR>".db_error($db)."<BR>$user_query");
 	 }
 
 	 echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -151,11 +151,11 @@ switch($mode) {
       }
       else {
       	$sql = "SELECT post_id FROM posts WHERE forum_id = $forum";
-    		if(!$r = mysql_query($sql, $db))
+    		if(!$r = db_query($sql, $db))
 	 		  die("Error could not delete the posts in this forum");
 	 		$sql = "DELETE FROM posts_text WHERE ";
 	 		$looped = FALSE;
-	 		while($ids = mysql_fetch_array($r))
+	 		while($ids = db_fetch_array($r))
 	 		{
 	 			if($looped == TRUE)
 	 			{
@@ -164,23 +164,23 @@ switch($mode) {
 	 			$sql .= "post_id = ".$ids["post_id"]." ";
 	 			$looped = TRUE;
 	 		}
-			if(!$r = mysql_query($sql, $db))
+			if(!$r = db_query($sql, $db))
 	 		  die("Error could not delete the posts in this forum");
 
 	 		$sql = "DELETE FROM posts WHERE forum_id = '$forum'";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	   		die("Error could not delete the posts in this forum");
 
 	 		$sql = "DELETE FROM topics WHERE forum_id = '$forum'";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	   		die("Error could not delete the topics in this forum");
 
 			 $sql = "DELETE FROM forums WHERE forum_id = '$forum'";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	   		die("Error could not delete the forum");
 
 	 		$sql = "DELETE FROM forum_mods WHERE forum_id = '$forum'";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	   		die("Error could not delete the forum");
 
 	 		echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -192,9 +192,9 @@ switch($mode) {
    }
    if($HTTP_POST_VARS['submit'] && !$HTTP_POST_VARS['save']) {
       $sql = "SELECT * FROM forums WHERE forum_id = '$forum'";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 	die("Error connecting to the database.");
-      if(!$myrow = mysql_fetch_array($result)) {
+      if(!$myrow = db_fetch_array($result)) {
 	 echo "No such forum";
 	 include('page_tail.'.$phpEx);
       }
@@ -223,13 +223,13 @@ switch($mode) {
         <TD><b>Current:</b><BR>
 <?php
 	$sql = "SELECT u.username, u.user_id FROM users u, forum_mods f WHERE f.forum_id = '$forum' AND u.user_id = f.user_id";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error connecting to the database.");
-      if($row = mysql_fetch_array($r)) {
+      if($row = db_fetch_array($r)) {
 	 do {
 	    echo "$row[username] (<input type=\"checkbox\" name=\"rem_mods[]\" value=\"$row[user_id]\"> Remove)<BR>";
 	    $current_mods[] = $row[user_id];
-	 } while($row = mysql_fetch_array($r));
+	 } while($row = db_fetch_array($r));
 	 echo "<BR>";
       }
       else {
@@ -240,19 +240,19 @@ switch($mode) {
 	<SELECT NAME="mods[]" size="5" multiple>
 <?php
 	$sql = "SELECT user_id, username FROM users WHERE user_id != -1 AND user_level != -1 ";
-      while(list($null, $currMod) = each($current_mods)) {
+	      foreach($current_mods as $currMod) {
 	 $sql .= "AND user_id != $currMod ";
       }
       $sql .= "ORDER BY username";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
-      if($row = mysql_fetch_array($r)) {
+      if($row = db_fetch_array($r)) {
 	 do {
 	    $s = "";
 	    if($row[user_id] == $myrow[forum_moderator])
 	      $s = "SELECTED";
 	    echo "<OPTION VALUE=\"$row[user_id]\" $s>$row[username]</OPTION>\n";
-	 } while($row = mysql_fetch_array($r));
+	 } while($row = db_fetch_array($r));
       }
       else {
 	 echo "<OPTION VALUE=\"0\">None</OPTION>\n";
@@ -265,15 +265,15 @@ switch($mode) {
         <TD><SELECT NAME="cat">
 <?php
 	$sql = "SELECT * FROM catagories";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
-      if($row = mysql_fetch_array($r)) {
+      if($row = db_fetch_array($r)) {
 	 do {
 	    $s = "";
 	    if($row[cat_id] == $myrow[cat_id])
 						$s = "SELECTED";
 	    echo "<OPTION VALUE=\"$row[cat_id]\" $s>$row[cat_title]</OPTION>\n";
-	 } while($row = mysql_fetch_array($r));
+	 } while($row = db_fetch_array($r));
       }
       else {
 	 echo "<OPTION VALUE=\"0\">None</OPTION>\n";
@@ -343,12 +343,12 @@ if($myrow[forum_access] == 3)
 	<?php
 
 	$sql = "SELECT forum_name, forum_id FROM forums ORDER BY forum_id";
-	if($result = mysql_query($sql, $db)) {
-		if($myrow = mysql_fetch_array($result)) {
+	if($result = db_query($sql, $db)) {
+		if($myrow = db_fetch_array($result)) {
 			do {
 				$name = stripslashes($myrow[forum_name]);
 				echo "<OPTION VALUE=\"$myrow[forum_id]\">$name</OPTION>\n";
-			} while($myrow = mysql_fetch_array($result));
+			} while($myrow = db_fetch_array($result));
 		}
 		else {
 			echo "<OPTION VALUE=\"-1\">No Forums in Database</OPTION>\n";
@@ -384,7 +384,7 @@ if($myrow[forum_access] == 3)
    	{
 			$new_title = addslashes($HTTP_POST_VARS['new_title']);
 			$sql = "UPDATE catagories SET cat_title = '$new_title' WHERE cat_id = $cat_id";
-			if(!$result = mysql_query($sql, $db))
+			if(!$result = db_query($sql, $db))
    		{
    			die("Could not get catagory data!<br>$sql");
    		}
@@ -401,11 +401,11 @@ if($myrow[forum_access] == 3)
    	else if($HTTP_POST_VARS['submit'])
    	{
    		$sql = "SELECT cat_title FROM catagories WHERE cat_id = '$cat'";
-   		if(!$result = mysql_query($sql, $db))
+   		if(!$result = db_query($sql, $db))
    		{
    			die("Could not get catagory data!<br>$sql");
    		}
-   		$cat_data = mysql_fetch_array($result);
+   		$cat_data = db_fetch_array($result);
    		$cat_title = stripslashes($cat_data["cat_title"]);
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
@@ -432,7 +432,7 @@ if($myrow[forum_access] == 3)
    	}
    	else {
    		$sql = "SELECT cat_id, cat_title FROM catagories ORDER BY cat_order";
-   		if(!$result = mysql_query($sql, $db))
+   		if(!$result = db_query($sql, $db))
    		{
    			die("Could not get catagory list!");
    		}
@@ -446,7 +446,7 @@ if($myrow[forum_access] == 3)
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD ALIGN="CENTER" COLSPAN="2"><SELECT NAME="cat" SIZE="0">
 <?php
-			while($cat_data = mysql_fetch_array($result))
+			while($cat_data = db_fetch_array($result))
 			{
 				echo "<option value=\"".$cat_data["cat_id"]."\">".stripslashes($cat_data["cat_title"])."</option>\n";
 			}
@@ -466,8 +466,8 @@ if($myrow[forum_access] == 3)
  case 'remcat':
    if($HTTP_POST_VARS['submit']) {
       $sql = "DELETE FROM catagories WHERE cat_id = '$cat'";
-      if(!$r = mysql_query($sql, $db))
-	die("Error Deleteing Category<BR>".mysql_error($db));
+      if(!$r = db_query($sql, $db))
+	die("Error Deleteing Category<BR>".db_error($db));
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>Category Created.</B></font></td>";
       echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -492,9 +492,9 @@ if($myrow[forum_access] == 3)
 
 <?php
       $sql = "SELECT * FROM catagories ORDER BY cat_title";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error conencting to the database!");
-      while($m = mysql_fetch_array($r)) {
+      while($m = db_fetch_array($r)) {
 	 echo "<OPTION VALUE=\"$m[cat_id]\">".stripslashes($m[cat_title])."</OPTION>\n";
       }
 ?>
@@ -511,13 +511,13 @@ if($myrow[forum_access] == 3)
  case 'addcat':
    if($HTTP_POST_VARS['submit']) {
       $sql = "SELECT max(cat_order) AS highest FROM catagories";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 			die("Error - Could not query the DB");
-      list($highest) = mysql_fetch_array($r);
+      list($highest) = db_fetch_array($r);
       $highest++;
       $title = addslashes($title);
       $sql = "INSERT INTO catagories (cat_title, cat_order) VALUES ('$title', '$highest')";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 			die("Error - Could not insert category into the database, please go back and try again.");
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>Category Created.</B></font></td>";
@@ -546,7 +546,7 @@ if($myrow[forum_access] == 3)
 </TR>
 </TR>
 </TABLE></TD></TR></TABLE>
-<?
+<?php
 		}
    break;
  case 'addforum':
@@ -559,12 +559,12 @@ if($myrow[forum_access] == 3)
 
 		$sql = "INSERT INTO forums (forum_name, forum_desc, forum_access, cat_id, forum_type) VALUES ('$name', '$desc', '$forum_access', '$cat', '$type')";
 
-      if(!$result = mysql_query($sql, $db))
-			die("An Error Occurred<HR>Could not contact the database. Please check your config file.<BR>".mysql_error()."<BR>$sql");
-      $forum = mysql_insert_id($db);
+      if(!$result = db_query($sql, $db))
+			die("An Error Occurred<HR>Could not contact the database. Please check your config file.<BR>".db_error()."<BR>$sql");
+      $forum = db_insert_id($db);
       $count = 0;
 
-      while(list($mod_number, $mod) = each($HTTP_POST_VARS["mods"])) {
+	      foreach($HTTP_POST_VARS["mods"] as $mod_number => $mod) {
 	 		$mod_data = get_userdata_from_id($mod, $db);
 
 	 		if($mod_data[user_level] < 2) {
@@ -576,13 +576,13 @@ if($myrow[forum_access] == 3)
 	    	$count++;
 	 		}
 	 		$mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES ('$forum', '$mod')";
-	 		if(!mysql_query($mod_query, $db))
-	   		die("Mod Query Error!<BR>".mysql_error($db)."<BR>$mod_query");
+	 		if(!db_query($mod_query, $db))
+	   		die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
     	}
 
     if(isset($user_query)) {
-	 	if(!mysql_query($user_query, $db))
-	   	die("User Error!<BR>".mysql_error($db)."<BR>$user_query");
+	 	if(!db_query($user_query, $db))
+	   	die("User Error!<BR>".db_error($db)."<BR>$user_query");
     }
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Forum Created.</B></font></td>";
@@ -592,9 +592,9 @@ if($myrow[forum_access] == 3)
    }
    else {
       $sql = "SELECT count(*) AS total FROM catagories";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error querying the database!");
-      list($total) = mysql_fetch_array($r);
+      list($total) = db_fetch_array($r);
       if($total < 1 || !isset($total))
 	die("Error, you must add a category before you add forums");
       ?>
@@ -617,12 +617,12 @@ if($myrow[forum_access] == 3)
 	<TD><SELECT NAME="mods[]" size="5" multiple>
 <?php
 	$sql = "SELECT user_id, username FROM users WHERE user_id != -1 AND user_level != -1 ORDER BY username";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 	die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
-      if($myrow = mysql_fetch_array($result)) {
+      if($myrow = db_fetch_array($result)) {
 	 do {
 	    echo "<OPTION VALUE=\"$myrow[user_id]\">$myrow[username]</OPTION>\n";
-	 } while($myrow = mysql_fetch_array($result));
+	 } while($myrow = db_fetch_array($result));
       }
       else {
 	 echo "<OPTION VALUE=\"0\">None</OPTION>\n";
@@ -635,12 +635,12 @@ if($myrow[forum_access] == 3)
 	<TD><SELECT NAME="cat">
 <?php
 			$sql = "SELECT * FROM catagories";
-			if(!$result = mysql_query($sql, $db))
+			if(!$result = db_query($sql, $db))
 				die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
-			if($myrow = mysql_fetch_array($result)) {
+			if($myrow = db_fetch_array($result)) {
 				do {
 					echo "<OPTION VALUE=\"$myrow[cat_id]\">$myrow[cat_title]</OPTION>\n";
-				} while($myrow = mysql_fetch_array($result));
+				} while($myrow = db_fetch_array($result));
 			}
 			else {
 				echo "<OPTION VALUE=\"0\">None</OPTION>\n";
@@ -685,11 +685,11 @@ if($myrow[forum_access] == 3)
 	 if($current_order != "1") {
 	    $order = $current_order - 1;
 	    $sql1 = "UPDATE catagories SET cat_order = $order WHERE cat_id = '$cat_id'";
-	    if(!$r = mysql_query($sql1, $db))
-	      die("Error connecting to the database<BR>".mysql_error($db));
+	    if(!$r = db_query($sql1, $db))
+	      die("Error connecting to the database<BR>".db_error($db));
 	    $sql2 = "UPDATE catagories SET cat_order = $current_order WHERE cat_id = '$last_id'";
-	    if(!$r = mysql_query($sql2, $db))
-	      die("Error connecting to the database<BR>".mysql_error($db));
+	    if(!$r = db_query($sql2, $db))
+	      die("Error connecting to the database<BR>".db_error($db));
 	    echo "<div align=\"center\"><font size=\"$FontSize4\" face=\"$FontFace\" color=\"$textcolor\">Category Moved Up</font></div><BR>";
 	 }
 	 else
@@ -698,16 +698,16 @@ if($myrow[forum_access] == 3)
       }
       else if($down) {
 	 $sql = "SELECT cat_order FROM catagories ORDER BY cat_order DESC LIMIT 1";
-	 if(!$r  = mysql_query($sql, $db))
+	 if(!$r  = db_query($sql, $db))
 	   die("Error quering the database");
-	 list($last_number) = mysql_fetch_array($r);
+	 list($last_number) = db_fetch_array($r);
 	 if($last_number != $current_order) {
 	    $order = $current_order + 1;
 	    $sql = "UPDATE catagories SET cat_order = $current_order WHERE cat_order = $order";
-	    if(!$r  = mysql_query($sql, $db))
+	    if(!$r  = db_query($sql, $db))
 	      die("Error quering the database");
 	    $sql = "UPDATE catagories SET cat_order = $order where cat_id = $cat_id";
-	    if(!$r  = mysql_query($sql, $db))
+	    if(!$r  = db_query($sql, $db))
 	      die("Error quering the database");
 	    echo "<div align=\"center\"><font size=\"$FontSize4\" face=\"$FontFace\" color=\"$textcolor\">Category Moved Down</font></div><BR>";
 
@@ -730,11 +730,11 @@ if($myrow[forum_access] == 3)
      </TR>
 <?php
      $sql = "SELECT * FROM catagories ORDER BY cat_order";
-   if(!$r = mysql_query($sql, $db)) {
+   if(!$r = db_query($sql, $db)) {
       echo "<TR><TD colspan=\"3\">Error Connecting to the database!</TD></TR>";
       exit();
    }
-   while($m = mysql_fetch_array($r)) {
+   while($m = db_fetch_array($r)) {
       echo "<!-- New Row -->\n";
       echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
       echo "<tr bgcolor=\"$color2\" align=\"center\">\n";
@@ -763,7 +763,7 @@ else {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="center" VALIGN="TOP">
-          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           <B>You do not have acess to this area!</b><BR>
           Go <a href="<?php echo $url_phpbb_index?>">Back</a>
           </TD></TR></TABLE></TD></TR></TABLE>

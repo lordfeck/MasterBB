@@ -36,20 +36,20 @@ if($next) {
       if(!$done) {
 	 echo "Testing DB Connection...";
 	 flush();
-	 if(!$db = mysql_connect("$dbserver", "$dbuser", "$dbpass"))
+	 if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
 	   die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
 	 echo "<font color=\"#00FF00\">DB Connection Good!</FONT><BR>";
 	 flush();
 	 echo "Selected database $dbname...";
 	 flush();
-	 if(!@mysql_select_db("$dbname", $db)) {
+	 if(!@db_select_db("$dbname", $db)) {
 	    echo "<font color=\"#FF0000\">Database could not be found</font><BR>";
 	    flush();
 	    echo "Attempting to create database $dbname...";
 	    flush();
-	    if(!$r = mysql_query("CREATE DATABASE $dbname", $db))
+	    if(!$r = db_query("CREATE DATABASE $dbname", $db))
 	      die("<font color=\"#FF0000\">Error, count not select or create database $dbname, please create it manually or have your system administrator do it for you and try again.");
-	    mysql_select_db("$dbname", $db);
+	    db_select_db("$dbname", $db);
 	    echo "<font color=\"#00FF00\">Database Created!</font><BR>";
 	    flush();
 	 }
@@ -189,7 +189,7 @@ if($next) {
 							    topic_time varchar(20),
 							    topic_views int(10) DEFAULT '0' NOT NULL,
 							    topic_replies int(10) NOT NULL DEFAULT '0',
-							    topic_last_post_id int(10) NOT NULL,
+							    topic_last_post_id int(10) NOT NULL DEFAULT '0',
 							    forum_id int(10) NOT NULL,
 							    topic_status int(10) DEFAULT '0' NOT NULL,
 							    topic_notify int(2) DEFAULT '0',
@@ -317,27 +317,27 @@ if($next) {
 				"INSERT INTO smiles VALUES (31,';-)','icon_wink.gif','Wink')");
 	 
 	 echo "<TABLE BORDER=\"0\">\n";
-	 while(list($name, $table) = each($tables)) {
+	 foreach($tables as $name => $table) {
 	    echo "<TR><TD>Creating table $name</TD> ";
-	    if(!$r = mysql_query($table, $db))
-	      die("<TD><font color=\"#FF0000\">ERROR! Could not create table. Reason: <b>". mysql_error()."</b></TD></TR></TABLE>");
+	    if(!$r = db_query($table, $db))
+	      die("<TD><font color=\"#FF0000\">ERROR! Could not create table. Reason: <b>". db_error()."</b></TD></TR></TABLE>");
 	    echo "<TD><font color=\"#00FF00\">[OK]</FONT></TD></TR>";
 	    flush();
 	 }
 	 echo "<TR><TD>Inserting default data</TD>";
-	 if(!$r = mysql_query($ta_users_data, $db))
-	   die("<TD>Error could not insert data into the users table. Reason: ". mysql_error() ."</TD></TR></TABLE>");
+	 if(!$r = db_query($ta_users_data, $db))
+	   die("<TD>Error could not insert data into the users table. Reason: ". db_error() ."</TD></TR></TABLE>");
 	 for($x = 0; $x < count($ta_access_data); $x++) {
-	    if(!$r = mysql_query($ta_access_data[$x], $db))
-	      die("<TD>Error, could not insert data into the access table. Reason: ". mysql_error() . "</TD></TR></TABLE>");
+	    if(!$r = db_query($ta_access_data[$x], $db))
+	      die("<TD>Error, could not insert data into the access table. Reason: ". db_error() . "</TD></TR></TABLE>");
 	 }
-	 while(list($name, $theme) = each($ta_themes_data)) {
-	    if(!$r = mysql_query($theme, $db))
-	      die("<TD><font color=\"#FF0000\">ERROR! Could not enter theme data. Reason: <b>". mysql_error()."</b></TD></TR></TABLE>");
+	 foreach($ta_themes_data as $name => $theme) {
+	    if(!$r = db_query($theme, $db))
+	      die("<TD><font color=\"#FF0000\">ERROR! Could not enter theme data. Reason: <b>". db_error()."</b></TD></TR></TABLE>");
 	 }
 	 for($x = 0; $x < count($ta_smile_data); $x++) { 
-	    if(!$r = mysql_query($ta_smile_data[$x], $db))
-	       die("<TD>Error, could not insert data into the access table. Reason: ". mysql_error() . "</TD></TR></TABLE>");
+	    if(!$r = db_query($ta_smile_data[$x], $db))
+	       die("<TD>Error, could not insert data into the access table. Reason: ". db_error() . "</TD></TR></TABLE>");
 	 }
 	 echo "<TD><font color=\"#00FF00\">[OK]</FONT></TD></TR>";
 	 echo "</TABLE>";
@@ -451,9 +451,9 @@ if($next) {
       }
       break;
     case 'user':
-      if(!$db = mysql_connect("$dbserver", "$dbuser", "$dbpass"))
+      if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
 	die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
-      mysql_select_db("$dbname", $db);
+      db_select_db("$dbname", $db);
 	 
       if($password == '' || $username == '' || $email == '')
 	die("Error - you did not fill in all the required fields, please go back and fill them in.");
@@ -483,8 +483,8 @@ if($next) {
 			         user_aim, user_viewemail, user_yim, user_msnm, user_level) 
 	                         VALUES (1 , '$username', '$regdate', '$email', '$icq', '$passwd', '$occ', '$intrest', '$from', '$website', '$sig',
 				 '$aim', '$sqlviewemail', '$yim', '$msnm', 4)";  
-      if(!$result = mysql_query($sql, $db))
-	die("An Error Occurred while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>$mysql_error()");
+      if(!$result = db_query($sql, $db))
+	die("An Error Occurred while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
       $color1 = "#6C706D";
       $color2 = "#2E4460";
 
@@ -558,17 +558,17 @@ The Site Admin</TEXTAREA></TD>
 	
       break;
     case 'options':
-      if(!$db = mysql_connect("$dbserver", "$dbuser", "$dbpass"))
+      if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
 	die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
-      mysql_select_db("$dbname", $db);
+      db_select_db("$dbname", $db);
       
       $name = addslashes($name);
       $email_sig = addslashes($email_sig);
       $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page,  email_from, email_sig, selected, default_lang) ";
       $sql .= "VALUES ('$name', $html, $bb, $sig, $hot, $ppp, $tpp,  '$email_from', '$email_sig', 1, '$language')";
-      $result = mysql_query($sql, $db);
+      $result = db_query($sql, $db);
       if (!$result) {
-	 echo mysql_error() . "<br>";
+	 echo db_error() . "<br>";
 	 die("Error - Cannot update the database.</FONT>");
       }
       $config_file = file("./config.$phpEx");

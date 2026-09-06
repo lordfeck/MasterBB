@@ -67,7 +67,7 @@ if($HTTP_POST_VARS['submit'] || $user_logged_in) {
       // END: patch code
       // 
       
-      if(!$result = mysql_query($sql, $db)) {
+      if(!$result = db_query($sql, $db)) {
 	 error_die("An Error Occured<hr>Could not update the database. Please go back and try again.");
       }
       echo "<br><TABLE BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\" ALIGN=\"CENTER\" VALIGN=\"TOP\" WIDTH=\"$tablewidth\">";
@@ -140,7 +140,7 @@ if($HTTP_POST_VARS['submit'] || $user_logged_in) {
 	<TD><?php echo $l_username?>:</TD>
 	<TD><?php echo $userdata[username]?></TD>
 </TR>
-<?PHP
+<?php
 	if (!$user_logged_in) {
 		// no session, need a password.
 		echo "    <TR BGCOLOR=\"$color2\" ALIGN=\"LEFT\"> \n";
@@ -184,16 +184,16 @@ if($HTTP_POST_VARS['submit'] || $user_logged_in) {
 	</TD>
 <?php
 	$sql = "SELECT theme_id, theme_name FROM themes ORDER BY theme_name";
-	if(!$result = mysql_query($sql, $db))
+	if(!$result = db_query($sql, $db))
 		error_die("Error: Couldn't get themes data");
-	if($myrow = mysql_fetch_array($result)) {
+	if($myrow = db_fetch_array($result)) {
 		echo "<TD><SELECT NAME=\"themes\">\n";
 		do {
 		   unset($s);
 		   if($myrow[theme_id] == $userdata["user_theme"])
 		     $s = "SELECTED";
 		   echo "<OPTION VALUE=\"$myrow[theme_id]\" $s>$myrow[theme_name]</OPTION>\n";
-		} while($myrow = mysql_fetch_array($result));
+		} while($myrow = db_fetch_array($result));
 	}
 	else {
 		echo $l_nothemes;

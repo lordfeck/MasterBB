@@ -26,9 +26,9 @@ $pagetitle = $l_topictitle;
 $pagetype = "viewtopic";
 
 $sql = "SELECT f.forum_type, f.forum_name FROM forums f, topics t WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (t.forum_id = f.forum_id)";
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
-if(!$myrow = mysql_fetch_array($result))
+if(!$myrow = db_fetch_array($result))
 	error_die("Error - The forum/topic you selected does not exist. Please go back and try again.");
 $forum_name = own_stripslashes($myrow[forum_name]);
 
@@ -133,9 +133,9 @@ if($total > $posts_per_page) {
    $pages = $times;
 }
 
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
   error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
-$myrow = mysql_fetch_array($result);
+$myrow = db_fetch_array($result);
 $topic_subject = own_stripslashes($myrow[topic_title]);
 $lock_state = $myrow[topic_status];
 include('page_header.'.$phpEx);
@@ -191,9 +191,9 @@ else {
    AND p.post_id = pt.post_id
    ORDER BY post_id LIMIT $posts_per_page";
 }
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
   error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the Posts database. $sql");
-$myrow = mysql_fetch_array($result);
+$myrow = db_fetch_array($result);
 $row_color = $color2;
 $count = 0;
 do {
@@ -215,9 +215,9 @@ do {
 	$sql = "SELECT rank_title, rank_image FROM ranks WHERE rank_id = '$posterdata[user_rank]'";
       else
 	$sql = "SELECT rank_title, rank_image  FROM ranks WHERE rank_min <= " . $posterdata[user_posts] . " AND rank_max >= " . $posterdata[user_posts] . " AND rank_special = 0";
-      if(!$rank_result = mysql_query($sql, $db))
+      if(!$rank_result = db_query($sql, $db))
 	error_die("Error connecting to the database!");
-      list($rank, $rank_image) = mysql_fetch_array($rank_result);
+      list($rank, $rank_image) = db_fetch_array($rank_result);
       echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\"><B>" . own_stripslashes($rank) . "</B></font>";
       if($rank_image != '')
 	echo "<BR><IMG SRC=\"$url_images/$rank_image\" BORDER=\"0\">";
@@ -244,7 +244,7 @@ do {
 		$sig = preg_replace("#&lt;br&gt;#is", "<BR>", $sig);
    }
 
-   $message = eregi_replace("\[addsig]$", "<BR>_________________<BR>" . own_stripslashes(bbencode($sig, $allow_html)), $message);
+   $message = preg_replace("/\[addsig\]$/i", "<BR>_________________<BR>" . own_stripslashes(bbencode($sig, $allow_html)), $message);
 
    echo "\n<FONT COLOR=\"$textcolor\" face=\"$FontFace\">" . $message . "</FONT><BR>";
    echo "\n<HR>";
@@ -288,9 +288,9 @@ do {
    }
    echo "</TD></TR>";
    $count++;
-} while($myrow = mysql_fetch_array($result));
+} while($myrow = db_fetch_array($result));
 $sql = "UPDATE topics SET topic_views = topic_views + 1 WHERE topic_id = '$topic'";
-@mysql_query($sql, $db);
+@db_query($sql, $db);
 ?>
 
 </TABLE></TD></TR></TABLE>

@@ -28,9 +28,9 @@ if($forum == -1)
   header("Location: $url_phpbb");
 
 $sql = "SELECT f.forum_type, f.forum_name FROM forums f WHERE forum_id = '$forum'";
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
-if(!$myrow = mysql_fetch_array($result))
+if(!$myrow = db_fetch_array($result))
 	error_die("Error - The forum you selected does not exist. Please go back and try again.");
 $forum_name = own_stripslashes($myrow[forum_name]);
 
@@ -143,11 +143,11 @@ $sql = "SELECT t.*, u.username, u2.username as last_poster, p.post_time FROM top
         WHERE t.forum_id = '$forum' 
         ORDER BY topic_time DESC LIMIT $start, $topics_per_page";
         
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("</table></table><font size=+1>An Error Occured</font><hr>phpBB could not query the topics database.<br>$sql");
 $topics_start = $start;
    
-if($myrow = mysql_fetch_array($result)) {
+if($myrow = db_fetch_array($result)) {
    do {
       echo"<TR>\n";
       $replys = $myrow["topic_replies"];
@@ -155,7 +155,7 @@ if($myrow = mysql_fetch_array($result)) {
       $last_post_datetime = $myrow["post_time"];
       
       //list($last_post_datetime, $null) = split("by", $last_post);
-      list($last_post_date, $last_post_time) = split(" ", $last_post_datetime);
+      list($last_post_date, $last_post_time) = explode(" ", $last_post_datetime);
       list($year, $month, $day) = explode("-", $last_post_date);
       list($hour, $min) = explode(":", $last_post_time);
       $last_post_time = mktime($hour, $min, 0, $month, $day, $year);
@@ -231,7 +231,7 @@ if($myrow = mysql_fetch_array($result)) {
       echo "<TD BGCOLOR=\"$color1\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize2\">$myrow[topic_views]</font></TD>\n";
       echo "<TD BGCOLOR=\"$color2\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize1\">$last_post</font></TD></TR>\n";
       
-   } while($myrow = mysql_fetch_array($result));
+   } while($myrow = db_fetch_array($result));
 }
 else {
 	echo "<TD BGCOLOR=\"$color1\" colspan = 6 ALIGN=CENTER>$l_notopics</TD></TR>\n";
@@ -249,9 +249,9 @@ else {
 <TD ALIGN="RIGHT">
 <?php
 $sql = "SELECT count(*) AS total FROM topics WHERE forum_id = '$forum'";
-if(!$r = mysql_query($sql, $db))
+if(!$r = db_query($sql, $db))
      error_die("Error could not contact the database!</TABLE></TABLE>");
-list($all_topics) = mysql_fetch_array($r);   
+list($all_topics) = db_fetch_array($r);   
 $count = 1;
 $next = $topics_start + $topics_per_page;
 if($all_topics > $topics_per_page) {

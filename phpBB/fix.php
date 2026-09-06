@@ -69,8 +69,13 @@ for ($n = 0; $n < sizeof($fix_vars); ++$n)
 {
 	if (is_array($GLOBALS[$fix_vars[$n]]))
 	{
-		while (list($k, $v) = each($GLOBALS[$fix_vars[$n]]))
+		foreach ($GLOBALS[$fix_vars[$n]] as $k => $v)
 		{
+			if (is_array($v))
+			{
+				$GLOBALS[$k] = $v;
+				continue;
+			}
 			if (($k != 'message') && ($k != 'subject') && ($k != 'username') && ($k != 'sig'))
 			{
 				while (preg_match("/(.*)'( *)((NOT)?( *))(((!|<|=|>)+)|IS( *)NOT( *)NULL|IN( *)\(|LIKE|BETWEEN(.*)AND|OR|((\|)+)|,(.*)=)(.*)['|\"]/i", $v, $matches))

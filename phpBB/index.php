@@ -30,9 +30,9 @@ $sql = "SELECT c.* FROM catagories c, forums f
 	 WHERE f.cat_id=c.cat_id
 	 GROUP BY c.cat_id, c.cat_title, c.cat_order
 	 ORDER BY c.cat_order";
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("Unable to get categories from database<br>$sql");
-$total_categories = mysql_num_rows($result);
+$total_categories = db_num_rows($result);
 
 ?>
 
@@ -54,7 +54,7 @@ if($total_categories)
      {
 	$viewcat = -1;
      }
-   while($cat_row = mysql_fetch_array($result))
+   while($cat_row = db_fetch_array($result))
      {
 	$categories[] = $cat_row;
      }
@@ -70,12 +70,12 @@ if($total_categories)
 	    LEFT JOIN users u ON u.user_id = p.poster_id
 	    $limit_forums
 	    ORDER BY f.cat_id, f.forum_id";
-   if(!$f_res = mysql_query($sql, $db))
+   if(!$f_res = db_query($sql, $db))
      {
 	die("Error getting forum data<br>$sql");
      }
 
-   while($forum_data = mysql_fetch_array($f_res))
+   while($forum_data = db_fetch_array($f_res))
      {
 	$forum_row[] = $forum_data;
      }
@@ -102,7 +102,7 @@ for($i = 0; $i < $total_categories; $i++) {
 	 $last_post_datetime = $forum_row[$x]["post_time"];
 
     if (!empty($last_post_datetime)) {
-        list($last_post_date, $last_post_time) = split(" ", $last_post_datetime);
+        list($last_post_date, $last_post_time) = explode(" ", $last_post_datetime);
         list($year, $month, $day) = explode("-", $last_post_date);
         list($hour, $min) = explode(":", $last_post_time);
 
@@ -118,11 +118,6 @@ for($i = 0; $i < $total_categories; $i++) {
         $last_post_time = 0;
         $last_post = "No Posts";
     }
-	 //list($last_post_datetime, $null) = split($l_by, $last_post);
-	 list($last_post_date, $last_post_time) = split(" ", $last_post_datetime);
-	 list($year, $month, $day) = explode("-", $last_post_date);
-	 list($hour, $min) = explode(":", $last_post_time);
-	 $last_post_time = mktime($hour, $min, 0, $month, $day, $year);
 	 if(empty($last_post))
 	 {
 	 	$last_post = "No Posts";
@@ -149,8 +144,8 @@ for($i = 0; $i < $total_categories; $i++) {
 	 	echo "<TD BGCOLOR=\"$color2\" WIDTH=5% ALIGN=\"CENTER\" VALIGN=\"MIDDLE\" NOWRAP><FONT FACE=\"$FontFace\" SIZE=\"-2\" COLOR=\"$textcolor\">";
 	 	$count = 0;
 
-	 while(list($null, $mods) = each($forum_moderators)) {
-	    while(list($mod_id, $mod_name) = each($mods)) {
+	 foreach($forum_moderators as $mods) {
+	    foreach($mods as $mod_id => $mod_name) {
 	       if($count > 0)
 		 echo ", ";
 	       if(!($count % 2) && $count != 0)

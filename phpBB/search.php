@@ -65,11 +65,11 @@ if(!$submit)
 		<option value="all"><?php echo $l_searchallfrm?></option>
 		<?php
 			$query = "SELECT forum_name,forum_id FROM forums WHERE forum_type != 1";
-			if(!$result = mysql_query($query,$db))
+			if(!$result = db_query($query,$db))
 			{
 				die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database");
 			}
-			while($row = @mysql_fetch_array($result))
+			while($row = @db_fetch_array($result))
 			{
 				echo "<option value=$row[forum_id]>$row[forum_name]</option>";
 			}
@@ -151,7 +151,7 @@ $query = "SELECT u.user_id,f.forum_id, p.topic_id, u.username, p.post_time,t.top
 			 FROM posts p, posts_text pt, users u, forums f,topics t";
 if(isset($term) && $term != "")
 {
-	$terms = split(" ",addslashes($term));				// Get all the words into an array
+	$terms = explode(" ",addslashes($term));				// Get all the words into an array
 	$addquery .= "(pt.post_text LIKE '%$terms[0]%'";		
 	$subquery .= "(t.topic_title LIKE '%$terms[0]%'"; 
 	
@@ -180,11 +180,11 @@ if(isset($forum) && $forum!="all")
 if(isset($search_username)&&$search_username!="")
 {
 	$search_username = addslashes($search_username);
-   if(!$result = mysql_query("SELECT user_id FROM users WHERE username='$search_username'",$db))
+   if(!$result = db_query("SELECT user_id FROM users WHERE username='$search_username'",$db))
 	{
 		error_die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database");
 	}
-   $row = @mysql_fetch_array($result);
+   $row = @db_fetch_array($result);
    if(!$row)
 	{
 		error_die("That user does not exist.  Please go back and search again.");
@@ -227,12 +227,12 @@ else
    $query .= " ORDER BY $sortby";
    $query .= " LIMIT 200";
 
-	if(!$result = mysql_query($query,$db))
+	if(!$result = db_query($query,$db))
 	{
-		die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database<BR>".mysql_error($db)."<BR>$query");
+		die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database<BR>".db_error($db)."<BR>$query");
 	}
 
-	if(!$row = @mysql_fetch_array($result))
+	if(!$row = @db_fetch_array($result))
 	{
 		die($l_nomatches);
 	}
@@ -254,7 +254,7 @@ else
 		echo "<TD ALIGN=\"CENTER\" WIDTH=\"25%\"><a href=\"bb_profile.$phpEx?mode=view&user=$row[user_id]\">$row[username]</a></TD>";
 		echo "<TD ALIGN=\"CENTER\" WIDTH=\"15%\">$row[post_time]</TD>";
 		echo "</TR>";
-	}while($row=@mysql_fetch_array($result));
+	}while($row=@db_fetch_array($result));
 ?>	
 
 </TABLE>

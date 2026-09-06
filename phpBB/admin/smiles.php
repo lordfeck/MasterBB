@@ -63,7 +63,7 @@ else if(!$user_logged_in) {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-          <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           Please enter your username and password to login.<BR>
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
           <UL>
@@ -95,12 +95,12 @@ if ($mode == '') {
 
 switch ($mode) {
  case 'view':
-   if ($getsmiles = mysql_query("SELECT * FROM smiles")) {
-      if (($numsmiles = mysql_num_rows($getsmiles)) == "0") {
+   if ($getsmiles = db_query("SELECT * FROM smiles")) {
+      if (($numsmiles = db_num_rows($getsmiles)) == "0") {
 	 echo "<font face=\"$FontFace\" size=2>No smiles currently. <a href='$PHP_SELF?mode=add'>Click here</a> to add some.</font>";
       } else {
 	 echo "<table border=0 cellspacing=1 cellpadding=3><tr><td bgcolor=\"$color1\"><font face=\"$FontFace\" size=2>Code</font></td><td bgcolor='$color2'><font face=\"$FontFace\" size=2>Smile</font></td><td bgcolor='$color1'>&nbsp;</td><td bgcolor='$color2'>&nbsp;</td></tr>";
-	 while ($smiles = mysql_fetch_array($getsmiles)) {
+	 while ($smiles = db_fetch_array($getsmiles)) {
 	    echo "<tr><td bgcolor='$color1'><font face=\"$FontFace\" size=2>$smiles[code]</font></td><td bgcolor='$color2'><img src=\"$url_smiles/$smiles[smile_url]\"></td><td bgcolor='$color1'><a href=\"$PHP_SELF?mode=edit&id=$smiles[id]\">Edit</a></td><td bgcolor='$color2'><a href=\"$PHP_SELF?mode=delete&id=$smiles[id]\">Delete</a></td></tr>";
 	 }
 	 echo "</table>";
@@ -137,7 +137,7 @@ echo "</TR></table></TD></TR></TABLE>";
       $smile_url = addslashes($smile_url);
       $emotion = addslashes($emotion);
       
-      if (!$insertsmile = mysql_query("INSERT INTO smiles (id, code, smile_url, emotion) VALUES ('', '$code', '$smile_url', '$emotion')")) {
+      if (!$insertsmile = db_query("INSERT INTO smiles (id, code, smile_url, emotion) VALUES ('', '$code', '$smile_url', '$emotion')")) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Add Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -166,8 +166,8 @@ echo "</TR></table></TD></TR></TABLE>";
    
    if ($submit == "Let's Edit the Smile!") {
       
-      if ($getsmiles = mysql_query("SELECT * FROM smiles WHERE id = '$smile'")) {
-	 $smiles = mysql_fetch_array($getsmiles);
+      if ($getsmiles = db_query("SELECT * FROM smiles WHERE id = '$smile'")) {
+	 $smiles = db_fetch_array($getsmiles);
 
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Edit Smilie.</B></font></td>";
@@ -198,7 +198,7 @@ echo "</TR></table></TD></TR></TABLE>";
       $code = addslashes($code);
       $smile_url = addslashes($smile_url);
       $emotion = addslashes($emotion);
-      if ($updatesmile = mysql_query("UPDATE smiles SET code = '$code', emotion = '$emotion', smile_url = '$smile_url' WHERE id = '$smile_id'")) {
+      if ($updatesmile = db_query("UPDATE smiles SET code = '$code', emotion = '$emotion', smile_url = '$smile_url' WHERE id = '$smile_id'")) {
 
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Edit Smilie.</B></font></td>";
@@ -217,13 +217,13 @@ echo "</TR></table></TD></TR></TABLE>";
    } else {
       $count = 1;
       
-      if ($getsmiles = mysql_query("SELECT * FROM smiles")) {
+      if ($getsmiles = db_query("SELECT * FROM smiles")) {
 	 echo "Please select a smile from the pile below.";
-	 if (($numsmiles = mysql_num_rows($getsmiles)) == "0") {
+	 if (($numsmiles = db_num_rows($getsmiles)) == "0") {
 	    echo "<font face=\"$FontFace\" size=2>No smiles currently. <a href='$PHP_SELF?mode=add'>Click here</a> to add some.</font>";
 	 } else {
 	    echo "<form method=post action=\"$PHP_SELF\"><input type='hidden' name='mode' value='edit'>";
-	    while ($smiles = mysql_fetch_array($getsmiles)) {
+	    while ($smiles = db_fetch_array($getsmiles)) {
 	       
 	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"$url_smiles/$smiles[smile_url]\">&nbsp;&nbsp;$smiles[code]&nbsp;&nbsp;&nbsp;&nbsp;\n"; 
 	       
@@ -249,15 +249,15 @@ echo "</TR></table></TD></TR></TABLE>";
    }
    
    if (!isset($submit)) {
-      if ($getsmiles = mysql_query("SELECT * FROM smiles")) {
+      if ($getsmiles = db_query("SELECT * FROM smiles")) {
 	 echo "Please select a smile from the pile below.";
 	 
-	 if (($numsmiles = mysql_num_rows($getsmiles)) == "0") {
+	 if (($numsmiles = db_num_rows($getsmiles)) == "0") {
 	    echo "<font face=\"$FontFace\" size=2>No smiles currently. <a href='$PHP_SELF?mode=add'>Click here</a> to add some.</font>";
 	 } else {
 	    echo "<form method=post action=\"$PHP_SELF\"><input type='hidden' name='mode' value='delete'>";
 	    $count = 1;
-	    while ($smiles = mysql_fetch_array($getsmiles)) {
+	    while ($smiles = db_fetch_array($getsmiles)) {
 	       
 	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"$url_smiles/$smiles[smile_url]\">&nbsp;&nbsp;$smiles[code]&nbsp;&nbsp;&nbsp;&nbsp;\n"; 
 	       echo "<input type='hidden' name='smile_id' value='$smiles[id]'>";
@@ -272,7 +272,7 @@ echo "</TR></table></TD></TR></TABLE>";
       }
    } elseif ($submit == "Delete Smile") {
       
-      if (!$delsmile = mysql_query("DELETE FROM smiles WHERE id = '$smile_id'")) {
+      if (!$delsmile = db_query("DELETE FROM smiles WHERE id = '$smile_id'")) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Delete Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -304,7 +304,7 @@ else {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="center" VALIGN="TOP">
-          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           <B>You do not have acess to this area!</b><BR>
           Go <a href="<?php echo $url_phpbb_index?>">Back</a>
           </TD></TR></TABLE></TD></TR></TABLE>

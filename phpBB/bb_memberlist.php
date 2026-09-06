@@ -69,7 +69,7 @@ switch ($sortby) {
 if(!$start) $start = 0;
 
 $sql = "SELECT * FROM users WHERE user_id != -1 AND user_level != -1 ORDER BY $sortby LIMIT $start, $topics_per_page";
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("Couldn't get userlist from database");
 
 ?>
@@ -78,9 +78,9 @@ if(!$result = mysql_query($sql, $db))
       <td align=right>
 <?php
   $sql = "SELECT count(*) AS total FROM users WHERE user_level != -1";
-if(!$r = mysql_query($sql, $db))
+if(!$r = db_query($sql, $db))
   die("Error could not contact the database!</TABLE></TABLE>");
-list($all_topics) = mysql_fetch_array($r);
+list($all_topics) = db_fetch_array($r);
 
 // subtract one from user count because of the anonymous entry..
 --$all_topics;
@@ -119,9 +119,9 @@ $ranking = $start;
           <tr nowrap> 
             <td>
 
-<?PHP
+<?php
 
-$row = mysql_fetch_array($result);
+$row = db_fetch_array($result);
 
 if (!$row) {
 	// No administrator??
@@ -194,7 +194,7 @@ if (!$row) {
 		<td bgcolor="<?php echo $color1?>" width="6%" height="30" nowrap align="center"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"> <?php echo $msnm?> </font></TD>
 	</TR>
 <?php
-	} while ($row = mysql_fetch_array($result));
+	} while ($row = db_fetch_array($result));
 	echo "</table></table> \n";
 }
 ?>

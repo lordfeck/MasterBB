@@ -120,8 +120,8 @@ registrazione o nel proprio profilo. Puoi registrarti cliccando
 		</td></tr>
  <?php
 
-	  if ($getsmiles = mysql_query("SELECT * FROM smiles")) {
-	     while ($smile = mysql_fetch_array($getsmiles)) {
+	  if ($getsmiles = db_query("SELECT * FROM smiles")) {
+	     while ($smile = db_fetch_array($getsmiles)) {
 ?>
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
@@ -595,7 +595,7 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
 
 	<?php
 	$sql = "SELECT * FROM ranks WHERE rank_special = 0";
-	if(!$r = mysql_query($sql, $db)) {
+	if(!$r = db_query($sql, $db)) {
 	echo "Error connecting to the database";
 	include('page_tail.'.$phpEx);
 	exit();
@@ -610,7 +610,7 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
         <TD><font face="<?php echo $FontFace?>" size="<?php echo $FontSize2?>" color="<?php echo $textcolor?>">&nbsp;Immagine Associata&nbsp;</font></TD>
 	</TR>
 	<?php
-	if($m = mysql_fetch_array($r)) {
+	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
 	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
@@ -621,7 +621,7 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";
-	} while($m = mysql_fetch_array($r));
+	} while($m = db_fetch_array($r));
 	}
 	else {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";

@@ -31,9 +31,9 @@ require('auth.'.$phpEx);
 $pagetitle = "New Topic";
 $pagetype = "newtopic";
 $sql = "SELECT forum_name, forum_access, forum_type FROM forums WHERE (forum_id = '$forum')";
-if(!$result = mysql_query($sql, $db))
+if(!$result = db_query($sql, $db))
 	error_die("Can't get forum data.");
-$myrow = mysql_fetch_array($result);
+$myrow = db_fetch_array($result);
 $forum_name = $myrow[forum_name];
 $forum_access = $myrow[forum_access];
 $forum_type = $myrow[forum_type];
@@ -143,26 +143,26 @@ if($HTTP_POST_VARS['submit']) {
    else
      $sql .= ", '0'";
    $sql .= ")";
-   if(!$result = mysql_query($sql, $db)) {
+   if(!$result = db_query($sql, $db)) {
 		error_die("Couldn't enter topic in database.");
    }
-   $topic_id = mysql_insert_id();
+   $topic_id = db_insert_id();
    $sql = "INSERT INTO posts (topic_id, forum_id, poster_id, post_time, poster_ip) VALUES ('$topic_id', '$forum', '$userdata[user_id]', '$time', '$poster_ip')";
-   if(!$result = mysql_query($sql, $db)) {
+   if(!$result = db_query($sql, $db)) {
 		error_die("Couldn't enter post in datbase.");
    }
    else
    {
-   	$post_id = mysql_insert_id();
+   	$post_id = db_insert_id();
    	if($post_id)
    	{
    		$sql = "INSERT INTO posts_text (post_id, post_text) values ($post_id, '$message')";
-   		if(!$result = mysql_query($sql, $db))
+   		if(!$result = db_query($sql, $db))
    		{
    			error_die("Could not enter post text!");
    		}
    		$sql = "UPDATE topics SET topic_last_post_id = $post_id WHERE topic_id = '$topic_id'";
-   		if(!$result = mysql_query($sql, $db))
+   		if(!$result = db_query($sql, $db))
    		{
    			error_die("Could not update topics table!");
    		}
@@ -171,13 +171,13 @@ if($HTTP_POST_VARS['submit']) {
 
    if($userdata[user_id] != -1) {
       $sql = "UPDATE users SET user_posts=user_posts+1 WHERE (user_id = $userdata[user_id])";
-      $result = mysql_query($sql, $db);
+      $result = db_query($sql, $db);
       if (!$result) {
 			error_die("Couldn't update users post count.");
       }
    }
    $sql = "UPDATE forums SET forum_posts = forum_posts+1, forum_topics = forum_topics+1, forum_last_post_id = $post_id WHERE forum_id = '$forum'";
-   $result = mysql_query($sql, $db);
+   $result = db_query($sql, $db);
    if (!$result) {
       error_die("Couldn't update forums post count.");
    }
@@ -228,7 +228,7 @@ if($HTTP_POST_VARS['submit']) {
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>"  width=25%><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><b><?php echo $l_username?>:<b></font></TD>
 		<TD  BGCOLOR="<?php echo $color2?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-<?PHP
+<?php
 	if ($user_logged_in) {
 		echo $userdata[username] . " \n";
 	} else {
@@ -239,7 +239,7 @@ if($HTTP_POST_VARS['submit']) {
 		</TD>
 	</TR>
 
-<?PHP
+<?php
 	if (!$user_logged_in) {
 		// no session, need a password.
 		echo "    <TR ALIGN=\"LEFT\"> \n";

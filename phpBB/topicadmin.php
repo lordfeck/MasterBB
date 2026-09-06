@@ -51,29 +51,29 @@ if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
       // Update the users's post count, this might be slow on big topics but it makes other parts of the
       // forum faster so we win out in the long run.
       $sql = "SELECT poster_id, post_id FROM posts WHERE topic_id = '$topic'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 			die("Error - Could not query the posts database!");
-      while($row = mysql_fetch_array($r)) {
+      while($row = db_fetch_array($r)) {
 	 		if($row[poster_id] != -1) {
 	    		$sql = "UPDATE users SET user_posts = user_posts - 1 WHERE user_id = '$row[poster_id]'";
-	    		@mysql_query($sql, $db);
+	    		@db_query($sql, $db);
 	 		}
       }
 
 		// Get the post ID's we have to remove.
 		$sql = "SELECT post_id FROM posts WHERE topic_id = '$topic'";
-		if(!$r = mysql_query($sql, $db))
+		if(!$r = db_query($sql, $db))
 			die("Error - Could not query the posts database!");
-      while($row = mysql_fetch_array($r))
+      while($row = db_fetch_array($r))
       {
 			$posts_to_remove[] = $row["post_id"];
 		}
 
       $sql = "DELETE FROM posts WHERE topic_id = '$topic'";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 			die("Error - Could not remove posts from the database!");
       $sql = "DELETE FROM topics WHERE topic_id = '$topic'";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 			die("Error - Could not remove posts from the database!");
 		$sql = "DELETE FROM posts_text WHERE ";
 		for($x = 0; $x < count($posts_to_remove); $x++)
@@ -86,7 +86,7 @@ if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
 			$set = TRUE;
 		}
 
-		if(!mysql_query($sql, $db))
+		if(!db_query($sql, $db))
 		{
 			die("Error - Could not remove post texts!");
 		}
@@ -96,10 +96,10 @@ if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
       break;
     case 'move':
       $sql = "UPDATE topics SET forum_id = '$newforum' WHERE topic_id = '$topic'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 			die("Error - Could not move selected topic to selected forum. Please go back and try again.");
       $sql = "UPDATE posts SET forum_id = '$newforum' WHERE topic_id = '$topic'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 			die("Error - Could not move selected topic to selected forum. Please go back and try again.");
 		sync($db, $newforum, 'forum');
 		sync($db, $forum, 'forum');
@@ -108,21 +108,21 @@ if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
       break;
     case 'lock':
       $sql = "UPDATE topics SET topic_status = 1 WHERE topic_id = '$topic'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 			die("Error - Could not lock the selected topic. Please go back and try again.");
       echo "The topic has been locked. Click <a href=\"viewtopic.$phpEx?topic=$topic&forum=$forum\">here</a> to view, or <a href=\"index.$phpEx\">here</a> to return to the forum index.";
       break;
     case 'unlock':
       $sql = "UPDATE topics SET topic_status = '0' WHERE topic_id = '$topic'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error - Could not unlock the selected topic. Please go back and try again.");
       echo "The topic has been unlocked. Click <a href=\"viewtopic.$phpEx?topic=$topic&forum=$forum\">here</a> to view, or <a href=\"index.$phpEx\">here</a> to return to the forum index.";
       break;
     case 'viewip':
       $sql = "SELECT u.username, p.poster_ip FROM users u, posts p WHERE p.post_id = '$post' AND u.user_id = p.poster_id";
-      if(!$r = mysql_query($sql, $db))
-	die("Error - Could not query the database. <BR>Error: mysql_error()");
-      if(!$m = mysql_fetch_array($r))
+      if(!$r = db_query($sql, $db))
+	die("Error - Could not query the database. <BR>Error: db_error()");
+      if(!$m = db_fetch_array($r))
 	die("Error - No such user or post in the database.");
       $poster_host = gethostbyaddr($m[poster_ip]);
 ?>
@@ -140,13 +140,13 @@ if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
 </TR>
 <?php
 	$sql = "SELECT user_id, username, count(*) as postcount FROM posts p, users u WHERE poster_ip='".$m[poster_ip]."' && p.poster_id = u.user_id GROUP BY user_id";
-	if(!$r = mysql_query($sql, $db))
+	if(!$r = db_query($sql, $db))
 	{
-		echo "<TR><TD COLSPAN=\"2\">Error - Could not query the database. <BR>Error: mysql_error()</TD></TR></TABLE>";
+		echo "<TR><TD COLSPAN=\"2\">Error - Could not query the database. <BR>Error: db_error()</TD></TR></TABLE>";
 		exit();
 	}
 
-	while ($row = mysql_fetch_array($r)){
+	while ($row = db_fetch_array($r)){
 		print "<TR BGCOLOR=\"$color2\" ALIGN=\"LEFT\">\n";
 		print "	<TD><A HREF=\"bb_profile.php?mode=view&user=".$row[user_id]."\">".$row[username]."</A></TD>\n";
 		print "	<TD>".$row[postcount]." posts</TD>\n";
@@ -217,11 +217,11 @@ else {  // No submit
 	<TD BGCOLOR="<?php echo $color2?>"><SELECT NAME="newforum" SIZE="0">
 <?php
 	$sql = "SELECT forum_id, forum_name FROM forums WHERE forum_id != '$forum' ORDER BY forum_id";
-	if($result = mysql_query($sql, $db)) {
-		if($myrow = mysql_fetch_array($result)) {
+	if($result = db_query($sql, $db)) {
+		if($myrow = db_fetch_array($result)) {
 			do {
 				echo "<OPTION VALUE=\"$myrow[forum_id]\">$myrow[forum_name]</OPTION>\n";
-			} while($myrow = mysql_fetch_array($result));
+			} while($myrow = db_fetch_array($result));
 		}
 		else {
 			echo "<OPTION VALUE=\"-1\">No Forums in DB</OPTION>\n";

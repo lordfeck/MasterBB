@@ -60,7 +60,7 @@ else if(!$user_logged_in) {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-          <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           Please enter your username and password to login.<BR>
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
           <UL>
@@ -91,7 +91,7 @@ switch($mode) {
 
 		if($HTTP_POST_VARS['submit'] && $HTTP_POST_VARS['edit_user_id']) {
 			$sql = "UPDATE users SET username = '$edit_username', user_email = '$email', user_rank = '$rank', user_level = '$level' WHERE user_id = $edit_user_id";
-			if(!$r = mysql_query($sql, $db))
+			if(!$r = db_query($sql, $db))
 				die("Error could not update the database.");
 		echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 		echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>User Information Updated.</B></font></td>";
@@ -102,9 +102,9 @@ switch($mode) {
 		else {
 			if(!$edit_user_id) {
 				$sql = "SELECT username, user_id FROM users ORDER BY username";
-				if(!$r = mysql_query($sql, $db))
+				if(!$r = db_query($sql, $db))
 					die("Error connecting to the database. Please check your config.$phpEx file.");
-				if(!$m = mysql_fetch_array($r))
+				if(!$m = db_fetch_array($r))
 					die("No users in the database.");
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
@@ -119,7 +119,7 @@ switch($mode) {
 <?php
 				do {
 					echo "<OPTION VALUE=\"$m[user_id]\">$m[username]</OPTION>\n";
-				} while($m = mysql_fetch_array($r));
+				} while($m = db_fetch_array($r));
 ?>
 	</SELECT>
 	</TD>
@@ -139,15 +139,15 @@ switch($mode) {
 				$moduserdata = get_userdata_from_id($edit_user_id, $db);
 				if($moduserdata[user_rank] != 0) {
 					$sql = "SELECT rank_id, rank_title FROM ranks WHERE rank_min < " . $moduserdata[user_posts] . " AND rank_max > " . $moduserdata[user_posts] . " AND rank_special = 0";
-					if(!$r = mysql_query($sql, $db))
+					if(!$r = db_query($sql, $db))
 						die("Error connecting to the database. Please check your config.$phpEx file.");
-					list($rank_id, $rank) = @mysql_fetch_array($r);
+					list($rank_id, $rank) = @db_fetch_array($r);
 				}
 				else {
 					$sql = "SELECT rank_title FROM ranks WHERE rank_id = '$moduserdata[user_rank]'";
-					if(!$r = mysql_query($sql, $db))
+					if(!$r = db_query($sql, $db))
                                                 die("Error connecting to the database. Please check your config.$phpEx file.");
-                                        list($rank) = @mysql_fetch_array($r);
+                                        list($rank) = @db_fetch_array($r);
 				}
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
@@ -169,8 +169,8 @@ switch($mode) {
 	<TD BGCOLOR="<?php echo $color2?>"><SELECT NAME="rank">
 <?php
 				$sql = "SELECT rank_id, rank_title FROM ranks WHERE rank_special = 1";
-				$r = mysql_query($sql, $db);
-				if($m = mysql_fetch_array($r)) {
+				$r = db_query($sql, $db);
+				if($m = db_fetch_array($r)) {
 					echo "<OPTION VALUE=\"0\">No Special Rank Assigned</OPTION>";
 					echo "<OPTION VALUE=\"0\">------------------------</OPTION>";
 					do {
@@ -178,7 +178,7 @@ switch($mode) {
 						if($moduserdata[user_rank] == $m[rank_id])
 							$selected = "SELECTED";
 						echo "<OPTION VALUE=\"$m[rank_id]\" $selected>$m[rank_title]</OPTION>\n";
-					} while($m = mysql_fetch_array($r));
+					} while($m = db_fetch_array($r));
 				echo "</SELECT>\n";
 				}
 				else {
@@ -193,14 +193,14 @@ switch($mode) {
 	<TD BGCOLOR="<?php echo $color2?>"><SELECT NAME="level">
 <?php
 				$sql = "SELECT access_id, access_title FROM access ORDER BY access_id";
-				 $r = mysql_query($sql, $db);
-                                if($m = mysql_fetch_array($r)) {
+				 $r = db_query($sql, $db);
+                                if($m = db_fetch_array($r)) {
                                         do {
                                                 unset($selected);
                                                 if($moduserdata[user_level] == $m[access_id])
                                                         $selected = "SELECTED";
                                                 echo "<OPTION VALUE=\"$m[access_id]\" $selected>$m[access_title]</OPTION>\n";
-                                        } while($m = mysql_fetch_array($r));
+                                        } while($m = db_fetch_array($r));
 				}
 ?>
 		</SELECT>
@@ -230,7 +230,7 @@ switch($mode) {
 	    $bad_word = addslashes($bad_word);
 	    $replacement = addslashes($replacement);
 	    $sql = "INSERT INTO words (word, replacement) VALUES ('$bad_word', '$replacement')";
-	    if(!$r = mysql_query($sql, $db)) {
+	    if(!$r = db_query($sql, $db)) {
 	       echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not insert into the DB</FONT></CENTER><BR>";
 	       break;
 	    }
@@ -244,7 +244,7 @@ switch($mode) {
 	 break;
        case 'Delete':
 	 $sql = "DELETE FROM words WHERE word_id = '$word_id'";
-	 if(!$r = mysql_query($sql, $db)) {
+	 if(!$r = db_query($sql, $db)) {
 	    echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not delete from the DB</FONT></CENTER><BR>";
 	    break;
 	 }
@@ -256,7 +256,7 @@ switch($mode) {
 	 $bad_word = addslashes($bad_word);
 	 $replacement = addslashes($replacement);
 	 $sql = "UPDATE words SET word = '$bad_word', replacement = '$replacement' WHERE word_id = '$word_id'";
-	 if(!$r = mysql_query($sql, $db)) {
+	 if(!$r = db_query($sql, $db)) {
 	    echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not update the DB</FONT></CENTER><BR>";
 	    break;
 	 }
@@ -281,12 +281,12 @@ switch($mode) {
      </TR>
 <?php
      $sql = "SELECT * FROM words";
-   if(!$r = mysql_query($sql, $db)) {
+   if(!$r = db_query($sql, $db)) {
       echo "<TD ALIGN=\"CENTER\" COLSPAN=\"6\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Error connecting to the database.</FONT></TD></TR></TABLE></TABLE>";
       include('../page_tail.'.$phpEx);
       exit();
    }
-   if($m = mysql_fetch_array($r)) {
+   if($m = db_fetch_array($r)) {
       do {
 	 echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
 	 echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
@@ -297,7 +297,7 @@ switch($mode) {
 	 echo "<INPUT TYPE=\"SUBMIT\" NAME=\"action\" VALUE=\"Edit\"></TD>\n";
 	 echo "<TD><BR><INPUT TYPE=\"SUBMIT\" NAME=\"action\" VALUE=\"Delete\"></FORM></TD>\n";
 	 echo "</TR>";
-      } while($m = mysql_fetch_array($r));
+      } while($m = db_fetch_array($r));
    }
    else {
       echo "<TR BGCOLOR=\"$color1\" ALIGN=\"CENTER\"><TD COLSPAN=\"4\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">No censored words in the database. You can enter one using the form below</FONT></TD></TR>";
@@ -327,14 +327,14 @@ switch($mode) {
 			if($add) {
 				$dis_username = addslashes($dis_username);
 				$sql = "INSERT INTO disallow (disallow_username) VALUES ('$dis_username')";
-				if(!$r = mysql_query($sql, $db))
+				if(!$r = db_query($sql, $db))
 					echo "<CENTER><font size=+1>Error - Could not add username. Please try again.</font></center>";
 				else
 					echo "<CENTER><font size=+1>Username Added</font></center>";
 			}
 			else if($delete) {
 				$sql = "DELETE FROM disallow WHERE disallow_id = '$id'";
-				if(!$$r = mysql_query($sql, $db))
+				if(!$$r = db_query($sql, $db))
                                         echo "<CENTER><font size=+1>Error - Could not remove username. Please try again.</font></center>";
                                 else
                                         echo "<CENTER><font size=+1>Username Removed</font></center>";
@@ -342,7 +342,7 @@ switch($mode) {
 			else if($edit) {
 				$dis_username = addslashes($dis_username);
 				$sql = "UPDATE disallow SET disallow_username = '$dis_username' WHERE disallow_id = '$id'";
-				if(!$r = mysql_query($sql, $db))
+				if(!$r = db_query($sql, $db))
                                         echo "<CENTER><font size=+1>Error - Could not update the database. Please try again.</font></center>";
                                 else
                                         echo "<CENTER><font size=+1>Username Updated</font></center>";
@@ -362,19 +362,19 @@ switch($mode) {
 </TR>
 <?php
 	$sql = "SELECT disallow_id, disallow_username FROM disallow";
-	if(!$r = mysql_query($sql, $db)) {
+	if(!$r = db_query($sql, $db)) {
 		echo "<TR BGCOLOR=\"$color1\" ALIGN=\"LEFT\"><TD COLSPAN=\"3\">Error - Could not query the database. Please check your config.$phpEx file.</TD></TR></TABLE></TABLE>";
 		include('../page_tail.'.$phpEx);
 		exit();
 	}
-	if($m = mysql_fetch_array($r)) {
+	if($m = db_fetch_array($r)) {
 		do {
 			echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
 			echo "<TD><FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\"><INPUT TYPE=\"TEXT\" NAME=\"dis_username\" VALUE=\"" . stripslashes($m[disallow_username]) . "\" MAXLENGTH=\"40\" SIZE=\"25\"></TD>\n";
 			echo "<TD><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"$mode\"><INPUT TYPE=\"HIDDEN\" NAME=\"id\" VALUE=\"$m[disallow_id]\">";
 			echo "<INPUT TYPE=\"SUBMIT\" NAME=\"edit\" VALUE=\"Edit\"></TD>\n";
                         echo "<TD><INPUT TYPE=\"SUBMIT\" NAME=\"delete\" VALUE=\"Delete\"></FORM></TD></TR>\n";
-		} while($m = mysql_fetch_array($r));
+		} while($m = db_fetch_array($r));
 	}
 	else
 		echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\"><TD COLSPAN=\"3\">No Disallowed usernames in the database, use the form below to add one.</TD></TR>";
@@ -409,13 +409,13 @@ switch($mode) {
 		   }
 		   else
 		     $sql = "UPDATE users SET user_level = -1 WHERE user_id = '$user_id'";
-		   if(!$r = mysql_query($sql, $db)) {
+		   if(!$r = db_query($sql, $db)) {
 		      echo "Error - Could not remove user from the database.";
 		      include('../page_tail.'.$phpEx);
 		      exit();
 		   }
 		   $sql = "DELETE FROM forum_mods WHERE user_id = '$user_id'";
-		   if(!$r = mysql_query($sql, $db)) {
+		   if(!$r = db_query($sql, $db)) {
 		      echo "Error - Could not remove user from the database.";
 		      include('../page_tail.'.$phpEx);
 		      exit();
@@ -429,9 +429,9 @@ switch($mode) {
                 else {
 
 			$sql = "SELECT username, user_id FROM users WHERE user_id != -1 ORDER BY username";
-                        if(!$r = mysql_query($sql, $db))
+                        if(!$r = db_query($sql, $db))
                         	die("Error connecting to the database. Please check your config.$phpEx file.");
-                       	if(!$m = mysql_fetch_array($r))
+                       	if(!$m = db_fetch_array($r))
                                 die("No users in the database.");
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
@@ -446,7 +446,7 @@ switch($mode) {
 <?php
                                 do {
                                         echo "<OPTION VALUE=\"$m[user_id]\">$m[username]</OPTION>\n";
-                                } while($m = mysql_fetch_array($r));
+                                } while($m = db_fetch_array($r));
 ?>
         </SELECT>
         </TD>
@@ -499,7 +499,7 @@ switch($mode) {
 
       if($banby == 1) {
 	$sql = "INSERT INTO banlist (ban_ip, ban_start, ban_end, ban_time_type) VALUES ('$ipuser', '$starttime', '$endtime', '$durtype')";
-	 if(!$r = mysql_query($sql, $db))
+	 if(!$r = db_query($sql, $db))
 	   echo "<font size=\"$FontSize4\"><center>Error. Could not add ban!</center></font><br>";
 	 echo "<font size=\"$FontSize4\"><center>Ban Added</center></font><br>";
       }
@@ -508,7 +508,7 @@ switch($mode) {
 	 if($banuserdata[user_id]) {
 	    $sql = "INSERT INTO banlist (ban_userid, ban_start, ban_end, ban_time_type) VALUES ('$banuserdata[user_id]', '$starttime', '$endtime', '$durtype')";
 
-	    if(!$r = mysql_query($sql, $db))
+	    if(!$r = db_query($sql, $db))
 	      echo "<font size=\"$FontSize4\"><center>Error. Could not add ban!</center></font><br>";
 	    echo "<font size=\"$FontSize4\"><center>Ban Added</center></font><br>";
 	 }
@@ -518,7 +518,7 @@ switch($mode) {
    }
    else if($del) {
       $sql = "DELETE FROM banlist WHERE ban_id = '$ban_id'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	echo "<font size=\"$FontSize4\"><center>Error. Could not remove ban!</center></font><br>";
       echo "<font size=\"$FontSize4\"><center>Ban Removed</center></font><br>";
 
@@ -556,7 +556,7 @@ switch($mode) {
 	$sql = "UPDATE banlist SET ban_userid = '$banneduserdata[user_id]', ban_start = '$starttime', ban_end = '$endtime', ban_time_type = '$unit' WHERE ban_id = '$ban_id'";
       }
 
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	echo "<font size=\"$FontSize4\"><center>Error. Ban could not be updated</center></font>";
       echo "<center><font size=\"$FontSize4\">Ban Modified</font></center>";
    }
@@ -577,9 +577,9 @@ switch($mode) {
 </TR>
 <?php
      $sql = "SELECT * FROM banlist WHERE ban_ip";
-   if(!$r = mysql_query($sql, $db))
+   if(!$r = db_query($sql, $db))
      echo "<tr bgcolor=\"$color2\" align=\"center\"><td colspan=\"4\"><b>Error quering the database!</b></td></tr>";
-   while($banlist = mysql_fetch_array($r)) {
+   while($banlist = db_fetch_array($r)) {
       unset($dur);
       unset($unit);
       echo "<tr bgcolor=\"$color2\" align=\"center\"><td><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"ipaddy\" value=\"$banlist[ban_ip]\" size=\"32\"></td>\n";
@@ -651,9 +651,9 @@ switch($mode) {
    unset($dur);
    unset($unit);
      $sql = "SELECT * FROM banlist WHERE ban_userid";
-   if(!$r = mysql_query($sql, $db))
+   if(!$r = db_query($sql, $db))
      echo "<tr bgcolor=\"$color2\"><td colspan=\"4\"><b>Error quering the database!</b></td></tr>";
-   while($banlist = mysql_fetch_array($r)) {
+   while($banlist = db_fetch_array($r)) {
       $banuserdata = get_userdata_from_id($banlist[ban_userid], $db);
       echo "<tr bgcolor=\"$color2\" align=\"center\"><td align=\"center\"><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"user_name\" value=\"$banuserdata[username]\" maxlenght=\"35\" size=\"25\"></td>\n";
       $type = $banlist[ban_time_type];
@@ -756,7 +756,7 @@ else {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="center" VALIGN="TOP">
-          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           <B>You do not have acess to this area!</b><BR>
           Go <a href="<?php echo $url_phpbb_index?>">Back</a>
           </TD></TR></TABLE></TD></TR></TABLE>

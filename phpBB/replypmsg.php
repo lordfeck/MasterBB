@@ -32,11 +32,11 @@ if($submit) {
 	}
 
 	$sql = "SELECT u.* FROM users u, priv_msgs p WHERE (u.user_id = p.to_userid) AND (p.msg_id = $msgid)";
-	$result = mysql_query($sql, $db);
+	$result = db_query($sql, $db);
 	if (!$result) {
 		die("Error getting userinfo from database");
 	}
-	$fromuserdata = mysql_fetch_array($result);
+	$fromuserdata = db_fetch_array($result);
 	
 
 	if (!$user_logged_in) { // don't check this stuff if we have a valid session..
@@ -91,18 +91,18 @@ if($submit) {
 	$message = addslashes($message);
 	$time = date("Y-m-d H:i");
 	$sql = "SELECT from_userid FROM priv_msgs WHERE (msg_id = $msgid)";
-	$result = mysql_query($sql);
+	$result = db_query($sql);
 	if (!$result) {
-		echo $sql . mysql_error();
+		echo $sql . db_error();
 		error_die("Error getting userid from message");
 	}
-	$row = mysql_fetch_array($result);
+	$row = db_fetch_array($result);
 	$touserid = $row[from_userid];
 
 	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text, poster_ip) ";
 	$sql .= "VALUES ($fromuserdata[user_id], $touserid, '$time', '$message', '$poster_ip')";
 	
-	if(!$result = mysql_query($sql, $db)) {
+	if(!$result = db_query($sql, $db)) {
 		error_die("Error - Could not enter data into the database. Please go back and try again");
 	}
    echo "<br><TABLE BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\" ALIGN=\"CENTER\" VALIGN=\"TOP\" WIDTH=\"$tablewidth\">";
@@ -113,11 +113,11 @@ if($submit) {
 		
 } else {
 	$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE (msg_id = $msgid)";
-	$result = mysql_query($sql, $db);
+	$result = db_query($sql, $db);
 	if (!$result) {
 		error_die("Error doing DB query to get userid's from message.");
 	}
-	$row = mysql_fetch_array($result);
+	$row = db_fetch_array($result);
 	if (!$row) {
 		error_die("Message not found");
 	}
@@ -150,7 +150,7 @@ if($submit) {
 		</TD>
 		<TD  BGCOLOR="<?php echo $color2?>">
 			<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-<?PHP
+<?php
 	if ($user_logged_in) {
 		echo "$userdata[username] \n";
 	} else {
@@ -160,7 +160,7 @@ if($submit) {
 			</FONT>
 		</TD>
 	</TR>
-<?PHP
+<?php
 	if (!$user_logged_in) { 
 		// no session, need a password.
 		echo "    <TR ALIGN=\"LEFT\"> \n";
@@ -203,8 +203,8 @@ if($submit) {
 		if($quote) {
 			$sql = "SELECT p.msg_text, p.msg_time, u.username FROM priv_msgs p, users u ";
 			$sql .= "WHERE (p.msg_id = $msgid) AND (p.from_userid = u.user_id)";
-			if($result = mysql_query($sql, $db)) {
-				$m = mysql_fetch_array($result);
+			if($result = db_query($sql, $db)) {
+				$m = db_fetch_array($result);
 				$m[post_time] = $m[msg_time];
 				$text = desmile($m[msg_text]);
 				$text = str_replace("<BR>", "\n", $text);
@@ -257,7 +257,7 @@ if($submit) {
 	</FORM>
 	<BR>
 
-<?PHP
+<?php
 }
 require('page_tail.'.$phpEx);
 ?>

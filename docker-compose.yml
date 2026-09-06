@@ -2,23 +2,27 @@ services:
   phpbb:
     build:
       context: .
-    platform: linux/amd64
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:${PHPBB_HTTP_PORT:-8080}:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
-    image: oblakstudio/mysql41:4.1.11
-    platform: linux/386
+    image: mariadb:11.4
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: phpbb
-      MYSQL_USER: phpbb
-      MYSQL_PASSWORD: phpbb
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: phpbb
+      MARIADB_USER: phpbb
+      MARIADB_PASSWORD: phpbb
     volumes:
       - phpbb-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped
 
 volumes:

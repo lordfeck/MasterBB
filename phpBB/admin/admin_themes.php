@@ -60,7 +60,7 @@ else if(!$user_logged_in) {
      <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
      <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
      <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+     <TD><P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
      Please enter your username and password to login.<BR>
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <UL>
@@ -85,7 +85,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
    switch($mode) {
     case 'add':
       if($HTTP_POST_VARS['submit']) {
-	 		while(list($field, $value) = each($HTTP_POST_VARS)) {
+	 		foreach($HTTP_POST_VARS as $field => $value) {
 	    		if($value == '') {
 	       		$field_list[] = $field;
 	       		$die = 1;
@@ -105,8 +105,8 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 
 	 $sql = "INSERT INTO themes (theme_name, bgcolor, textcolor, color1, color2, table_bgcolor, header_image, newtopic_image, reply_image, linkcolor, vlinkcolor, theme_default, fontface, fontsize1, fontsize2, fontsize3, fontsize4, tablewidth, replylocked_image)
 	         VALUES ('$theme_name', '$theme_bgcolor', '$theme_textcolor', '$theme_color1', '$theme_color2', '$theme_tablebg', '$image_header', '$image_newtopic', '$image_reply', '$theme_linkcolor', '$theme_vlinkcolor', '0', '$theme_fontface', '$theme_fontsize1', '$theme_fontsize2', '$theme_fontsize3', '$theme_fontsize4', '$theme_tablewidth', '$image_replylocked')";
-	 if(!$r = mysql_query($sql, $db)) {
-	    echo "Error inserting theme into the database.<BR>".mysql_error($db)."\n";
+	 if(!$r = db_query($sql, $db)) {
+	    echo "Error inserting theme into the database.<BR>".db_error($db)."\n";
 	    include('../page_tail.'.$phpEx);
 	    exit();
 	 }
@@ -239,7 +239,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       break;
     case 'remove':
       $sql = "DELETE FROM themes WHERE theme_id = 'theme_id'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error updateing the databse. Go back and try again");
 ?>
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -255,7 +255,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       break;
     case 'edit':
       if($HTTP_POST_VARS['submit']) {
-         while(list($field, $value) = each($HTTP_POST_VARS)) {
+         foreach($HTTP_POST_VARS as $field => $value) {
 	    if($value == '') {
 	       $field_list[] = $field;
 	       $die = 1;
@@ -294,7 +294,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 		  tablewidth        = '$theme_tablewidth',
 		  replylocked_image = '$image_replylocked'
 		  WHERE theme_id = '$theme_id'";
-	 if(!$r = mysql_query($sql, $db))
+	 if(!$r = db_query($sql, $db))
 	   die("Error updateing the database!");
 ?>
 	   <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -309,12 +309,12 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       }
       else {
 	 $sql = "SELECT * FROM themes WHERE theme_id = '$theme_id'";
-	 if(!$r = mysql_query($sql, $db)) {
+	 if(!$r = db_query($sql, $db)) {
 	    echo "Error selecting theme from the database. Please go back and try again.<BR>";
 	    include('page_tail.'.$phpEx);
 	    exit();
 	 }
-	 $m = mysql_fetch_array($r);
+	 $m = db_fetch_array($r);
 ?>
            <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
 	   <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -433,10 +433,10 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       break;
     case 'setdefault':
       $sql = "UPDATE themes SET theme_default = 0";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	die("Error updateing the databse. Go back and try again");
       $sql = "UPDATE themes SET theme_default = 1 WHERE theme_id = '$theme_id'";
-      if(!$r = mysql_query($sql, $db))
+      if(!$r = db_query($sql, $db))
 	        die("Error updateing the databse. Go back and try again");
       ?>
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -469,13 +469,13 @@ else {
      </TR>
 <?php
      $sql = "SELECT theme_name, theme_id, theme_default FROM themes ORDER BY theme_name";
-   if(!$r = mysql_query($sql, $db)) {
-      echo "<TR BGCOLOR=$color2 ALIGN=CENTER><TD COLSPAN=3>Error: Could not query the database!<BR>".mysql_error($db)."</TD></TR></TABLE></TABLE>";
+   if(!$r = db_query($sql, $db)) {
+      echo "<TR BGCOLOR=$color2 ALIGN=CENTER><TD COLSPAN=3>Error: Could not query the database!<BR>".db_error($db)."</TD></TR></TABLE></TABLE>";
       include('../page_tail.'.$phpEx);
       exit();
    }
    echo "<TR BGCOLOR=\"$color1\" ALIGN=\"CENTER\"><TD>Name</TD><TD>Default Theme?</TD><TD>Action</TD>";
-   if($row = mysql_fetch_array($r)) {
+   if($row = db_fetch_array($r)) {
       do {
 	 echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
 	 echo "<TD>".stripslashes($row[theme_name])."</TD>\n";
@@ -485,7 +485,7 @@ else {
 	   echo "<TD>No (<a href=\"$PHP_SELF?mode=setdefault&theme_id=$row[theme_id]\">Make Default</a>)</TD>";
 	 echo "<TD><a href=\"$PHP_SELF?mode=edit&theme_id=$row[theme_id]\">Edit</a>&nbsp;&nbsp;<a href=\"$PHP_SELF?mode=remove&theme_id=$row[theme_id]\">Delete</a></TD>";
 	 echo "</TR>";
-      } while($row = mysql_fetch_array($r));
+      } while($row = db_fetch_array($r));
    }
    else
      echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\"><TD COLSPAN=\"3\">No Themes in the database. Click <a href=\"$PHP_SELF?mode=add\">here</a> to add one.</TD></TR>";
@@ -509,7 +509,7 @@ else {
           <TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
           <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
           <TR BGCOLOR="<?php echo $color1?>" ALIGN="center" VALIGN="TOP">
-          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+          <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
           <B>You do not have acess to this area!</b><BR>
           Go <a href="<?php echo $url_phpbb_index?>">Back</a>
           </TD></TR></TABLE></TD></TR></TABLE>
@@ -518,4 +518,3 @@ else {
 
 include('../page_tail.'.$phpEx);
 ?>
-

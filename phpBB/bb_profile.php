@@ -83,7 +83,7 @@ if($mode) {
 		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $userdata[user_icq]?>
 		<?php if ($userdata[user_icq]!=""){ ?>
 		</FONT>&nbsp;&nbsp;<font size=-2>(<a href="http://wwp.icq.com/scripts/search.dll?to=<?php echo $userdata[user_icq]?>"><?php echo $l_icqadd?></a>)</font>&nbsp;&nbsp;<font size=-2>(<a href="http://wwp.mirabilis.com/<?php echo $userdata[user_icq]?>" TARGET="_blank"><?php echo $l_icqpager?></a>)</font>
-		<? }
+		<?php }
 		else
 		{
 			echo "&nbsp";
@@ -193,7 +193,7 @@ if($mode) {
 		 }
 
 		 // Check if the ICQ number only contains digits
-		 $icq = (ereg("^[0-9]+$", $icq)) ? $icq : '';
+		 $icq = (preg_match("/^[0-9]+$/", $icq)) ? $icq : '';
 
        $aim = addslashes($aim);
        $yim = addslashes($yim);
@@ -206,7 +206,7 @@ if($mode) {
 		 else {
 		    $sql = "UPDATE users SET user_password = '$md_pass', user_icq = '$icq', user_occ = '$occ', user_intrest = '$intrest', user_from = '$from', user_website = '$website', user_sig = '$sig', user_email = '$email', user_viewemail = '$viewemail', user_aim = '$aim', user_yim = '$yim', user_msnm = '$msnm' WHERE (user_id = '$user_id')";
 		 }
-		 if(!$result = mysql_query($sql, $db)) {
+		 if(!$result = db_query($sql, $db)) {
 		    error_die("Could not update userinfo in database.<br>$sql");
 		 }
 		 // They have authed, log them in.
@@ -328,7 +328,7 @@ if($mode) {
 		</TD>
 	</TR>
 	</TABLE></TD></TR></TABLE></FORM>
-<?PHP
+<?php
 
 			}
 		} else {

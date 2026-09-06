@@ -69,7 +69,7 @@ else if(!$user_logged_in)
 				<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 					<TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
 						<TD>
-							<P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<? echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
+							<P><BR><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
 							Please enter your username and password to login.<BR>
 							<i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
 						
@@ -118,19 +118,19 @@ else if($user_logged_in && $userdata[user_level] == 4)
 	<?php
 
 		$sql = "SELECT forum_name, forum_id FROM forums WHERE (forum_type = 1) ORDER BY forum_id";
-		if(!$result = mysql_query($sql, $db))
+		if(!$result = db_query($sql, $db))
 		{
 			die ("Error getting forum list from database. \n");
 		}
 		
-		if($myrow = mysql_fetch_array($result)) 
+		if($myrow = db_fetch_array($result)) 
 		{
 			do 
 			{
 				$name = stripslashes($myrow[forum_name]);
 				echo "<OPTION VALUE=\"$myrow[forum_id]\">$name</OPTION>\n";
 			} 
-			while($myrow = mysql_fetch_array($result));
+			while($myrow = db_fetch_array($result));
 		}
 		else 
 		{
@@ -166,10 +166,10 @@ else if($user_logged_in && $userdata[user_level] == 4)
 			// Add user(s) to the list for this forum.
 			if ($userids)
 			{
-				while(list($null, $curr_userid) = each($HTTP_POST_VARS["userids"]))
+					foreach($HTTP_POST_VARS["userids"] as $curr_userid)
 				{
 					$sql = "INSERT INTO forum_access (forum_id, user_id, can_post) VALUES ($forum, $curr_userid, 0)";
-					if (!$result = mysql_query($sql, $db))
+					if (!$result = db_query($sql, $db))
 					{
 						die("Error inserting to DB.\n");
 					}
@@ -182,7 +182,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		{
 			// Remove a user from the list for this forum.
 			$sql = "DELETE FROM forum_access WHERE (forum_id = $forum) AND (user_id = $op_userid)";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die("Error deleting from database.\n");
 			}
@@ -194,7 +194,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		{
 			// Remove all users from the list for this forum.
 			$sql = "DELETE FROM forum_access WHERE (forum_id = $forum)";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die("Error deleting from database.\n");
 			}
@@ -205,7 +205,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		{
 			// Add posting rights for this user in this forum.
 			$sql = "UPDATE forum_access SET can_post=1 WHERE (forum_id = $forum) AND (user_id = $op_userid)";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die("Error updating database.\n");
 			}
@@ -217,7 +217,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		{
 			// Revoke posting rights for this user in this forum.
 			$sql = "UPDATE forum_access SET can_post=0 WHERE (forum_id = $forum) AND (user_id = $op_userid)";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die("Error updating database.\n");
 			}
@@ -234,12 +234,12 @@ else if($user_logged_in && $userdata[user_level] == 4)
 			// Show the form for the given forum.
 
 			$sql = "SELECT forum_name FROM forums WHERE (forum_id = $forum)";
-			if ((!$result = mysql_query($sql, $db)) || ($forum == -1))
+			if ((!$result = db_query($sql, $db)) || ($forum == -1))
 			{
 				die("Couldn't find forum.\n");
 			}
 			$forum_name = "";
-			if ($row = mysql_fetch_array($result))
+			if ($row = db_fetch_array($result))
 			{
 				$forum_name = $row[forum_name];
 			}
@@ -274,30 +274,30 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		     <SELECT NAME="userids[]" SIZE="10" MULTIPLE>
 <?php
 			$sql = "SELECT u.user_id FROM users u, forum_access f WHERE (u.user_id = f.user_id) AND (f.forum_id = $forum)";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die("Error getting current user list.\n");
 			}
 			
 			$current_users = Array();
 			
-			while ($row = mysql_fetch_array($result))
+			while ($row = db_fetch_array($result))
 			{
 				$current_users[] = $row[user_id];
 			}
 			
 			$sql = "SELECT user_id, username FROM users WHERE (user_id != -1) AND (user_level != -1) ";
-			while(list($null, $curr_userid) = each($current_users))
+			foreach($current_users as $curr_userid)
 			{
 	 			$sql .= "AND (user_id != $curr_userid) ";
       	}
       	$sql .= "ORDER BY username ASC";
  
-      	if (!$result = mysql_query($sql, $db))
+      	if (!$result = db_query($sql, $db))
       	{
       		die("Error getting user list from db.\n");
       	}
-      	while ($row = mysql_fetch_array($result))
+      	while ($row = db_fetch_array($result))
       	{
 ?>      	
 	     <OPTION VALUE="<?php echo $row[user_id] ?>"> <?php echo $row[username] ?> </OPTION>
@@ -318,7 +318,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 						<TD VALIGN="TOP" bgcolor="<?php echo $color1?>" align="center">
 <?php
 			$sql = "SELECT u.username, u.user_id, f.can_post FROM users u, forum_access f WHERE (u.user_id = f.user_id) AND (f.forum_id = $forum) ORDER BY u.user_id ASC";
-			if (!$result = mysql_query($sql, $db))
+			if (!$result = db_query($sql, $db))
 			{
 				die ("Error getting userlist from DB.\n");
 			}
@@ -326,7 +326,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 							<TABLE BORDER="0" CELLPADDING="10" CELLSPACING="0">
 								
 <?php									
-			while ($row = mysql_fetch_array($result))
+			while ($row = db_fetch_array($result))
 			{
 				$post_text = ($row[can_post]) ? "can" : "can't";
 				$post_text .= " post";

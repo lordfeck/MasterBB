@@ -1,12 +1,17 @@
-MasterBB 1.5
-============
-This is a fork of the phpBB 1.4.4 code, tidied up and ported to run on modern PHP 8 and MariaDB environments.
+# MasterBB 1.5
 
-# Current environment
-This setup deliberately uses legacy software to approximate phpBB 1.4.4's original environment:
+This is a compatibility port of phpBB 1.4.4. The application retains its
+original phpBB name and presentation for now while the runtime beneath it is
+being modernised.
 
-- Apache + PHP 4.4.9 (`remiq/apache-php4:4.4.9`)
-- MySQL 4.1.11 (`oblakstudio/mysql41:4.1.11`)
+The current compatibility milestone runs on:
+
+- Apache 2.4 and PHP 8.4
+- MariaDB 11.4
+- PDO MySQL for database access
+
+Only fresh installations are supported. The historical upgrade scripts have
+been removed.
 
 ## Start
 
@@ -14,9 +19,9 @@ This setup deliberately uses legacy software to approximate phpBB 1.4.4's origin
 docker compose up --build
 ```
 
-Then open:
+Then open <http://localhost:8080/phpBB/install.php>.
 
-    http://localhost:8080/phpBB/install.php
+The web service is deliberately published on `127.0.0.1` only.
 
 ## Installer database settings
 
@@ -27,37 +32,67 @@ Use:
 - Database username: `phpbb`
 - Database password: `phpbb`
 
-The hostname is `db`, not `localhost`, because MySQL is running in the other Compose service.
+The hostname is `db`, not `localhost`, because MariaDB runs in the other
+Compose service.
 
 ## After installation
 
-phpBB 1.4.4 requires `config.php` to be writable during installation. The Dockerfile sets it to mode 666 for this reason.
-
-After the installer has completed, lock it back down:
+The historical installer needs `config.php` to be writable while it records
+the selected database settings. The image initially sets mode 666 for that
+reason. Once installation is complete, lock it down and remove the installer:
 
 ```sh
-docker compose exec phpbb chmod 444 /www/phpBB/config.php
+docker compose exec phpbb chmod 444 /var/www/html/phpBB/config.php
+docker compose exec phpbb rm -f /var/www/html/phpBB/install.php
 ```
 
-The original phpBB documentation also recommends removing or renaming the installer and upgrade scripts. For this local retro setup you can do:
+The generated configuration lives in the application container. Rebuilding or
+recreating that container requires a fresh installation, which matches the
+current fresh-install-only scope.
+
+## Smoke tests
+
+The black-box smoke suite installs a fresh board and exercises:
+
+- administrator creation, login, logout, and re-login
+- category and forum creation
+- user registration, login, and logout
+- new topics and replies
+- post editing and deletion
+- private-message sending and reading
+- search
+
+Docker and Python 3.10 or newer are required. Run:
 
 ```sh
-docker compose exec phpbb rm -f \
-  /www/phpBB/install.php \
-  /www/phpBB/upgrade_12.php \
-  /www/phpBB/upgrade_14.php
+./tests/run-smoke.sh
+```
+
+The script creates a uniquely named Compose project and database volume, uses
+port `18080` by default, and removes only those isolated resources afterward.
+It does not use or reset the ordinary development database. To choose another
+port or retain the stack for inspection:
+
+```sh
+MASTERBB_SMOKE_PORT=18081 KEEP_SMOKE_STACK=1 ./tests/run-smoke.sh
 ```
 
 ## Reset everything
 
-To throw away the database and start again:
+To discard the development database and start with a fresh installation:
 
 ```sh
 docker compose down -v
 docker compose up --build
 ```
 
-## Important
+## Security status
 
-This is obsolete, vulnerable software running obsolete PHP and MySQL. The Compose file intentionally publishes Apache only on `127.0.0.1`. Do not expose this stack directly to the public Internet.
+The runtime compatibility work is intentionally separate from security
+hardening. The historical request-global behaviour, interpolated SQL, MD5
+passwords, session design, output handling, and other legacy assumptions have
+not yet been made safe for an untrusted network.
 
+Do not expose this stack directly to the public Internet. See
+[MODERNIZATION_AUDIT.md](MODERNIZATION_AUDIT.md) for the current status and the
+recommended hardening sequence.

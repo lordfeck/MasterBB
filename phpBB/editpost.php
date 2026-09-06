@@ -27,15 +27,15 @@ $pagetype = "index";
 
 if($submit) {
    $sql = "SELECT * FROM posts WHERE post_id = '$post_id'";
-   if (!$result = mysql_query($sql, $db)) die($err_db_retrieve_data);
-   if (mysql_num_rows($result) <= 0) die($err_db_retrieve_data);
-   $myrow = mysql_fetch_array($result);
+   if (!$result = db_query($sql, $db)) die($err_db_retrieve_data);
+   if (db_num_rows($result) <= 0) die($err_db_retrieve_data);
+   $myrow = db_fetch_array($result);
 
    $poster_id = $myrow[poster_id];
    $forum_id = $myrow[forum_id];
    $topic_id = $myrow[topic_id];
    $this_post_time = $myrow['post_time'];
-   list($day, $time) = split(" ", $myrow[post_time]);
+   list($day, $time) = explode(" ", $myrow[post_time]);
 
    $posterdata = get_userdata_from_id($poster_id, $db);
    $date = date("Y-m-d H:i");
@@ -118,7 +118,7 @@ if($submit) {
       $forum = $forum_id;
       include('page_header.' . $phpEx);
       $sql = "UPDATE posts_text SET post_text = '$message' WHERE (post_id = '$post_id')";
-      if(!$result = mysql_query($sql, $db))
+      if(!$result = db_query($sql, $db))
 			error_die("Unable to update the posting in the database");
 		$subject = strip_tags($subject);
       if(isset($subject) && (trim($subject) != '')) {
@@ -129,7 +129,7 @@ if($submit) {
 			 $subject = censor_string($subject, $db);
 			 $subject = addslashes($subject);
 			 $sql = "UPDATE topics SET topic_title = '$subject', topic_notify = '$notify' WHERE topic_id = '$topic_id'";
-			 if(!$result = mysql_query($sql, $db)) {
+			 if(!$result = db_query($sql, $db)) {
 			 	error_die("Unable to update the topic subject in the database");
 			 }
       }
@@ -143,7 +143,7 @@ if($submit) {
    else {
       $now_hour = date("H");
       $now_min = date("i");
-      list($hour, $min) = split(":", $time);
+      list($hour, $min) = explode(":", $time);
       
       // NOT ((time is good) OR (user is supermod/admin) OR (user is moderator of this forum))
 		if (!( (($now_hour == $hour && $min_now - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) 
@@ -158,19 +158,19 @@ if($submit) {
       $last_post_in_thread = get_last_post($topic_id, $db, "time_fix");
 
       $sql = "DELETE FROM posts WHERE post_id = '$post_id'";
-      if(!$r = mysql_query($sql, $db)){
+      if(!$r = db_query($sql, $db)){
 			error_die("Couldn't delete post from database");
 		}
 		
 		$sql = "DELETE FROM posts_text WHERE post_id = '$post_id'";
-      if(!$r = mysql_query($sql, $db)){
+      if(!$r = db_query($sql, $db)){
 			error_die("Couldn't delete post from database");
 		}
 		
 		else if($last_post_in_thread == $this_post_time) {
 	     $topic_time_fixed = get_last_post($topic_id, $db, "time_fix");
    	  $sql = "UPDATE topics SET topic_time = '$topic_time_fixed' WHERE topic_id = '$topic_id'";
-        if(!$r = mysql_query($sql, $db)) {
+        if(!$r = db_query($sql, $db)) {
 			 	error_die("Couldn't update to previous post time - last post has been removed");
 		  }
 	 	}
@@ -178,14 +178,14 @@ if($submit) {
       if(get_total_posts($topic_id, $db, "topic") == 0) 
       {
 	 		$sql = "DELETE FROM topics WHERE topic_id = '$topic_id'";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	 			error_die("Couldn't delete topic from database");
 	 		$topic_removed = TRUE;
       }
       
       if($posterdata[user_id] != -1) {
 	 		$sql = "UPDATE users SET user_posts = user_posts - 1 WHERE user_id = $posterdata[user_id]";
-	 		if(!$r = mysql_query($sql, $db))
+	 		if(!$r = db_query($sql, $db))
 	 		{
 	 			error_die("Couldn't change user post count.");
 	 		}
@@ -206,11 +206,11 @@ if($submit) {
 else {
 	// Gotta handle private forums right here. They're naturally covered on submit, but not in this part.
 	$sql = "SELECT f.forum_type, f.forum_name, t.topic_title FROM forums f, topics t WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (t.forum_id = f.forum_id)";
-	if(!$result = mysql_query($sql, $db))
+	if(!$result = db_query($sql, $db))
 	{
 		error_die("Couldn't get forum and topic information from the database.");
 	}
-	if(!$myrow = mysql_fetch_array($result))
+	if(!$myrow = db_fetch_array($result))
 	{
 		error_die("Error - The forum/topic you selected does not exist. Please go back and try again.");
 	}
@@ -313,9 +313,9 @@ else {
    			AND (p.topic_id = t.topic_id) 
    			AND (p.poster_id = u.user_id)";
    			
-   if(!$result = mysql_query($sql, $db))
+   if(!$result = db_query($sql, $db))
 		error_die("Couldn't get user and topic information from the database.<br>$sql");
-   $myrow = mysql_fetch_array($result);
+   $myrow = db_fetch_array($result);
    // Freekin' ugly but I couldn't get it to work right as 1 big if 
    //          - James
    if ($user_logged_in) {
@@ -328,11 +328,11 @@ else {
    }
 
    $message = $myrow[post_text];
-   if(eregi("\[addsig]$", $message))
+   if(preg_match("/\[addsig\]$/i", $message))
      $addsig = 1;
    else
      $addsig = 0;
-   $message = eregi_replace("\[addsig]$", "\n_________________\n" . $myrow[user_sig], $message);   
+   $message = preg_replace("/\[addsig\]$/i", "\n_________________\n" . $myrow[user_sig], $message);   
    $message = str_replace("<BR>", "\n", $message);
    $message = stripslashes($message);
    $message = desmile($message);
@@ -343,7 +343,7 @@ else {
    // Special handling for </textarea> tags in the message, which can break the editing form..
    $message = preg_replace('#</textarea>#si', '&lt;/TEXTAREA&gt;', $message);
    
-   list($day, $time) = split(" ", $myrow[post_time]);
+   list($day, $time) = explode(" ", $myrow[post_time]);
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="<?php echo $tablewidth?>"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -358,7 +358,7 @@ else {
 	<TD BGCOLOR="<?php echo $color1?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><?php echo $l_username?>:</TD>
 	<TD BGCOLOR="<?php echo $color2?>"><input type="text" name="username" value="<?php echo $userdata[username]?>"></TD>
 </TR>	  
-<?PHP
+<?php
      }
    else {
 ?>
@@ -407,7 +407,7 @@ else {
 		<?php
 			$now_hour = date("H");
 			$now_min = date("i");
-			list($hour, $min) = split(":", $time);
+			list($hour, $min) = explode(":", $time);
 			if((($now_hour == $hour && $min_now - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) || ($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))) {
 		?>
 				<INPUT TYPE="CHECKBOX" NAME="delete"><?php echo $l_delete?><BR>

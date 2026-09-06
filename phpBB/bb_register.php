@@ -78,7 +78,7 @@ if($submit) {
 	$website = addslashes($website);
    
    // Check if the ICQ number only contains digits
-   $icq = (ereg("^[0-9]+$", $icq)) ? $icq : '';
+   $icq = (preg_match("/^[0-9]+$/", $icq)) ? $icq : '';
 
 	$aim = addslashes($aim);
 	$yim = addslashes($yim);
@@ -91,16 +91,16 @@ if($submit) {
       $sqlviewemail = "0";
    }
    $sql = "SELECT max(user_id) AS total FROM users";
-   if(!$r = mysql_query($sql, $db))
+   if(!$r = db_query($sql, $db))
      die("Error connecting to the database.");
-   list($total) = mysql_fetch_array($r);
+   list($total) = db_fetch_array($r);
    $total += 1;
    $sql = "INSERT INTO users (user_id, username, user_regdate, user_email, user_icq, user_password, user_occ, user_intrest, user_from, user_website, user_sig, user_aim, user_viewemail, user_yim, user_msnm) 
 				VALUES ('$total', '$username', '$regdate', '$email', '$icq', '$passwd', '$occ', '$intrest', '$from', '$website', '$sig', '$aim', '$sqlviewemail', '$yim', '$msnm')";
 
-   if(!$result = mysql_query($sql, $db)) {
+   if(!$result = db_query($sql, $db)) {
       include('page_header.'.$phpEx);
-      die("An Error Occured while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>$mysql_error()");
+      die("An Error Occured while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
    }
 
    if($cookie_username) {
