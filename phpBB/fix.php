@@ -73,7 +73,6 @@ for ($n = 0; $n < sizeof($fix_vars); ++$n)
 		{
 			if (is_array($v))
 			{
-				$GLOBALS[$k] = $v;
 				continue;
 			}
 			if (($k != 'message') && ($k != 'subject') && ($k != 'username') && ($k != 'sig'))
@@ -83,19 +82,21 @@ for ($n = 0; $n < sizeof($fix_vars); ++$n)
 					$v = $matches[1];
 				}
 				$GLOBALS[$fix_vars[$n]][$k] = $v;
-				$GLOBALS[$k] = $v;
 			}
 		}
 		@reset($GLOBALS[$fix_vars[$n]]);
 	}
 }
 
-/***
- * Bah, let's correct these stupid typos :]
- ***/
-$fviewemail = $viewemail;
-$tsig = $sig;
-$user_id = $HTTP_COOKIE_VARS['user_id'] = $HTTP_GET_VARS['user_id'] = $HTTP_POST_VARS['user_id'] = intval($user_id);
-$post_id = $HTTP_COOKIE_VARS['post_id'] = $HTTP_GET_VARS['post_id'] = $HTTP_POST_VARS['post_id'] = intval($post_id);
-$topic_id = $HTTP_COOKIE_VARS['topic_id'] = $HTTP_GET_VARS['topic_id'] = $HTTP_POST_VARS['topic_id'] = intval($topic_id);
+foreach (array('user_id', 'post_id', 'topic_id') as $fix_id)
+{
+	foreach (array(&$HTTP_GET_VARS, &$HTTP_POST_VARS, &$HTTP_COOKIE_VARS) as &$fix_source)
+	{
+		if (isset($fix_source[$fix_id]) && !is_array($fix_source[$fix_id]))
+		{
+			$fix_source[$fix_id] = intval($fix_source[$fix_id]);
+		}
+	}
+}
+unset($fix_id, $fix_source);
 ?>

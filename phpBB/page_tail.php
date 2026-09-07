@@ -44,6 +44,7 @@ Copyright &copy; 2000 - 2001 <a href="http://www.phpbb.com/credits.php" target="
 
 <?php
 showfooter($db);
+$starttime = $starttime ?? microtime(true);
 $mtime = microtime();
 $mtime = explode(" ",$mtime);
 $mtime = $mtime[1] + $mtime[0];

@@ -22,6 +22,16 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$message = request_string('message', '', 'post');
+$msgid = request_int('msgid');
+$quote = request_present('quote');
+$password = request_string('password', '', 'post');
+$html = request_present('html', 'post');
+$bbcode = request_present('bbcode', 'post');
+$sig = request_present('sig', 'post');
+$smile = request_present('smile', 'post');
+$reply = '';
 $pagetitle = "Post PM Reply";
 $pagetype = "pmreply";
 include('page_header.'.$phpEx);
@@ -61,10 +71,10 @@ if($submit) {
 	/* correct password or logged-in user, continuing with message send. */
 
 	$is_html_disabled = false;
-	if($allow_pmsg_html == 0 && !isset($html)) {
+	if($allow_pmsg_html == 0 || $html) {
 		$message = htmlspecialchars($message);
 		$is_html_disabled = true;
-		if (isset($quote) && $quote)
+		if ($quote)
       {
       	$edit_by = get_syslang_string($sys_lang, "l_editedby");
    
@@ -77,7 +87,7 @@ if($submit) {
 	if($sig) {
 		$message .= "<BR>_________________<BR>" . $fromuserdata[user_sig];
 	}
-	if($allow_pmsg_bbcode == 1 && !isset($bbcode)) {
+	if($allow_pmsg_bbcode == 1 && !$bbcode) {
 		$message = bbencode($message, $is_html_disabled);
 	}
 	
@@ -90,6 +100,7 @@ if($submit) {
 	$message = str_replace("\n", "<BR>", $message);
 	$message = addslashes($message);
 	$time = date("Y-m-d H:i");
+	$poster_ip = $REMOTE_ADDR;
 	$sql = "SELECT from_userid FROM priv_msgs WHERE (msg_id = $msgid)";
 	$result = db_query($sql);
 	if (!$result) {

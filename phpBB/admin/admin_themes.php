@@ -23,6 +23,39 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode');
+$submit = request_string('submit', '', 'post');
+$theme_id = request_int('theme_id');
+$theme_default = request_int('theme_default', 0, 'post');
+$theme_name = request_string('theme_name', '', 'post');
+$theme_bgcolor = request_string('theme_bgcolor', '', 'post');
+$theme_textcolor = request_string('theme_textcolor', '', 'post');
+$theme_color1 = request_string('theme_color1', '', 'post');
+$theme_color2 = request_string('theme_color2', '', 'post');
+$theme_tablebg = request_string('theme_tablebg', '', 'post');
+$theme_linkcolor = request_string('theme_linkcolor', '', 'post');
+$theme_vlinkcolor = request_string('theme_vlinkcolor', '', 'post');
+$theme_fontface = request_string('theme_fontface', '', 'post');
+$theme_fontsize1 = request_string('theme_fontsize1', '', 'post');
+$theme_fontsize2 = request_string('theme_fontsize2', '', 'post');
+$theme_fontsize3 = request_string('theme_fontsize3', '', 'post');
+$theme_fontsize4 = request_string('theme_fontsize4', '', 'post');
+$theme_tablewidth = request_string('theme_tablewidth', '', 'post');
+$image_header = request_string('image_header', '', 'post');
+$image_newtopic = request_string('image_newtopic', '', 'post');
+$image_reply = request_string('image_reply', '', 'post');
+$image_replylocked = request_string('image_replylocked', '', 'post');
+$theme_required = array(
+	$theme_name, $theme_bgcolor, $theme_textcolor, $theme_color1, $theme_color2,
+	$theme_tablebg, $theme_linkcolor, $theme_vlinkcolor, $theme_fontface,
+	$theme_fontsize1, $theme_fontsize2, $theme_fontsize3, $theme_fontsize4,
+	$theme_tablewidth, $image_header, $image_newtopic, $image_reply, $image_replylocked
+);
+$die = 0;
+
 if($login) {
    if ($username == '') {
       die("You have to enter your username. Go back and do so.");
@@ -84,10 +117,9 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       include('../page_header.'.$phpEx);
    switch($mode) {
     case 'add':
-      if($HTTP_POST_VARS['submit']) {
-	 		foreach($HTTP_POST_VARS as $field => $value) {
+      if($submit) {
+		foreach($theme_required as $value) {
 	    		if($value == '') {
-	       		$field_list[] = $field;
 	       		$die = 1;
 	    		}
 	 		}
@@ -254,10 +286,9 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 
       break;
     case 'edit':
-      if($HTTP_POST_VARS['submit']) {
-         foreach($HTTP_POST_VARS as $field => $value) {
+      if($submit) {
+         foreach($theme_required as $value) {
 	    if($value == '') {
-	       $field_list[] = $field;
 	       $die = 1;
 	    }
 	 }

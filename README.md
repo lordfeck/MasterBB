@@ -77,6 +77,29 @@ port or retain the stack for inspection:
 MASTERBB_SMOKE_PORT=18081 KEEP_SMOKE_STACK=1 ./tests/run-smoke.sh
 ```
 
+## Security characterization
+
+The companion negative suite starts another isolated fresh installation and
+checks the current boundaries around:
+
+- SQL-injection-shaped login input;
+- cross-user post editing and deletion;
+- unauthorized private-message access;
+- forged private-message HTML options and stored script markup; and
+- arbitrary SQL sort expressions in search.
+
+It also deliberately verifies and reports the known open CSRF finding, so a
+passing run does not imply that the application is ready for an untrusted
+network. Run it with:
+
+```sh
+./tests/run-security.sh
+```
+
+The script uses port `18081` by default and removes its isolated Compose
+project and database volume afterward. `MASTERBB_SECURITY_PORT` and
+`KEEP_SECURITY_STACK=1` provide the same overrides as the smoke runner.
+
 ## Reset everything
 
 To discard the development database and start with a fresh installation:
@@ -88,10 +111,12 @@ docker compose up --build
 
 ## Security status
 
-The runtime compatibility work is intentionally separate from security
-hardening. The historical request-global behaviour, interpolated SQL, MD5
-passwords, session design, output handling, and other legacy assumptions have
-not yet been made safe for an untrusted network.
+The runtime compatibility work is intentionally separate from comprehensive
+security hardening. Request values are no longer promoted into arbitrary
+globals, and focused checks now cover several authorization and input-boundary
+regressions. Interpolated SQL, MD5 passwords, session design, CSRF, output
+handling, and other legacy assumptions have not yet been made safe for an
+untrusted network.
 
 Do not expose this stack directly to the public Internet. See
 [MODERNIZATION_AUDIT.md](MODERNIZATION_AUDIT.md) for the current status and the

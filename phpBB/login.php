@@ -27,6 +27,9 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$user = request_string('user', '', 'post');
+$passwd = request_string('passwd', '', 'post');
 $pagetitle = "Login";
 $pagetype = "other";
 

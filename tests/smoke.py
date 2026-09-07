@@ -259,6 +259,10 @@ def exercise(base_url: str) -> None:
     reject(page, "Original smoke body", "edited post body")
     report("post edit")
 
+    page = user.request("reply.php?topic=1&forum=1&post=1&quote=1")
+    require(page, "Edited smoke body", "quoted-reply GET parameters")
+    report("quoted reply form")
+
     page = user.request(
         "sendpmsg.php",
         {
@@ -286,7 +290,12 @@ def exercise(base_url: str) -> None:
     )
     require(page, "Smoke Topic Needle Edited", "search result")
     require(page, "Smoke Forum", "search forum")
-    report("search")
+    page = user.request(
+        "search.php?submit=Search&term=Needle&addterms=any&forum=all"
+        "&sortby=p.post_time%20desc&searchboth=both"
+    )
+    require(page, "Smoke Topic Needle Edited", "GET search result")
+    report("POST and GET search")
 
     page = admin.request(
         "editpost.php",
@@ -305,6 +314,16 @@ def exercise(base_url: str) -> None:
     require(page, "Edited smoke body", "remaining topic post")
     report("post deletion")
 
+    page = user.request("bb_profile.php?mode=edit")
+    require(page, 'NAME="user_id"', "profile request boundary")
+    page = user.request("prefs.php")
+    require(page, "Edit Your Preferences", "preferences request boundary")
+    page = user.request("bb_memberlist.php?sortby=user&start=0")
+    require(page, "Memberslist", "member-list request boundary")
+    page = user.request("faq.php?mode=bbcode")
+    require(page, "BBCode", "FAQ request boundary")
+    report("profile, preferences, member-list, and FAQ pages")
+
     page = user.request("logout.php")
     require(page, "Not logged in", "user logout")
     reject(page, f"Logged in as {USER_NAME}", "user logout")
@@ -316,6 +335,18 @@ def exercise(base_url: str) -> None:
     page = login(admin, ADMIN_NAME, ADMIN_PASSWORD, admin=True)
     require(page, "phpBB Forum Administration", "administrator re-login")
     report("administrator logout and re-login")
+
+    admin_pages = (
+        ("admin/admin_board.php?mode=setoptions", "Set Forum Wide Options"),
+        ("admin/admin_themes.php", "Theme Administration"),
+        ("admin/admin_users.php?mode=moduser", "Select a User to Modify"),
+        ("admin/admin_priv_forums.php", "Select a Forum to Edit"),
+        ("admin/smiles.php", "Smilies Utility"),
+    )
+    for path, marker in admin_pages:
+        page = admin.request(path)
+        require(page, marker, f"administrator page {path}")
+    report("secondary administration pages")
 
     print("All smoke tests passed.", flush=True)
 

@@ -69,6 +69,24 @@ if(is_banned($REMOTE_ADDR, "ip", $db))
 
 
 // Setup forum Options.
+$sitename = '';
+$allow_html = 0;
+$allow_bbcode = 0;
+$allow_sig = 0;
+$allow_namechange = 0;
+$posts_per_page = 20;
+$hot_threshold = 0;
+$topics_per_page = 20;
+$override_user_themes = 0;
+$email_sig = '';
+$email_from = '';
+$default_lang = 'english';
+$sys_lang = $default_lang;
+$theme = false;
+$username = isset($username) ? $username : request_string('username', '', 'post');
+$password = isset($password) ? $password : request_string('password', '', 'post');
+$l_banned = 'You have been banned from this forum.';
+
 $sql = "SELECT * FROM config WHERE selected = 1";
 if($result = db_query($sql, $db)) {
    if($myrow = db_fetch_array($result)) {
@@ -91,7 +109,13 @@ if($result = db_query($sql, $db)) {
 // We MUST do this up here, so it's set even if the cookie's not present.
 $user_logged_in = 0;
 $logged_in = 0;
-$userdata = Array();
+$userdata = Array(
+	"username" => '',
+	"user_id" => 0,
+	"user_level" => 0,
+	"user_theme" => 0,
+	"user_lang" => ''
+);
 
 // Check for a cookie on the users's machine.
 // If the cookie exists, build an array of the users info and setup the theme.
@@ -225,7 +249,7 @@ setcookie("LastVisit", time(), $expiredate1,  $cookiepath, $cookiedomain, $cooki
 // cookie if it does not exist yet
 // otherwise, it gets the time from the LastVisitTemp cookie
 if (!isset($HTTP_COOKIE_VARS["LastVisitTemp"])) {
-	$temptime = $HTTP_COOKIE_VARS["LastVisit"];
+	$temptime = $HTTP_COOKIE_VARS["LastVisit"] ?? time();
 }
 else {
 	$temptime = $HTTP_COOKIE_VARS["LastVisitTemp"];

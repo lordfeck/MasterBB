@@ -22,6 +22,11 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode', '');
+
 if($login) {
    if ($username == '') {
       die("You have to enter your username. Go back and do so.");

@@ -22,6 +22,29 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$mode = request_string('mode');
+$user = request_int('user', 0, 'get');
+$user_id = request_int('user_id');
+$submit = request_string('submit', '', 'post');
+$save = request_present('save', 'post');
+$user_name = request_string('user_name', '', 'post');
+$user = request_string('user', $user ? (string) $user : '', 'post');
+$passwd = request_string('passwd', '', 'post');
+$password = request_string('password', '', 'post');
+$new_password = request_string('new_password', '', 'post');
+$password2 = request_string('password2', '', 'post');
+$email = request_string('email', '', 'post');
+$icq = request_string('icq', '', 'post');
+$aim = request_string('aim', '', 'post');
+$yim = request_string('yim', '', 'post');
+$msnm = request_string('msnm', '', 'post');
+$website = request_string('website', '', 'post');
+$from = request_string('from', '', 'post');
+$occ = request_string('occ', '', 'post');
+$intrest = request_string('intrest', '', 'post');
+$sig = request_string('sig', '', 'post');
+$viewemail = request_int('viewemail', 0, 'post');
+$new_name = false;
 $pagetitle = $l_profile;
 $pagetype = "Edit Profile";
 
@@ -129,9 +152,9 @@ if($mode) {
 
 	break;
 	case 'edit':
-	   if ($HTTP_POST_VARS['submit'] || $user_logged_in) {
+	   if ($submit || $user_logged_in) {
 	      // ok.. either the user's entered their username and password, or they have a valid session.
-	      if ($HTTP_POST_VARS['save']) {
+	      if ($save) {
 		 // trying to save their profile information..
 		 $userdata = get_userdata_from_id($user_id, $db);
 		 if(is_banned($userdata[user_id], "username", $db))

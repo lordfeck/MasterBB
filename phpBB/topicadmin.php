@@ -22,11 +22,22 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$user_supplied = request_present('user');
+$user = request_string('user');
+$passwd = request_string('passwd', '', 'post');
+$submit = request_string('submit', '', 'post');
+$mode = request_string('mode');
+$forum = request_int('forum');
+$topic = request_int('topic');
+$post = request_int('post');
+$newforum = request_int('newforum', 0, 'post');
+$posts_to_remove = array();
+$set = false;
 $pagetitle = "Topic Administration";
 $pagetype = "bbcode_ref";
 include('page_header.'.$phpEx);
 
-if (isset($user))
+if ($user_supplied)
 {
 	error_die("Error - You did not enter the correct password, please go back and try again.");
 }
@@ -42,7 +53,7 @@ else
 if(!is_moderator($forum, $mod_data[user_id], $db) && $mod_data[user_level] <= 2)
 	error_die("You are not the moderator of this forum therefore you cannot perform this function.");
 
-if($HTTP_POST_VARS['submit'] || ($user_logged_in==1 && $mode=='viewip')) {
+if($submit || ($user_logged_in==1 && $mode=='viewip')) {
    if( $user_logged_in != 1 && ($mod_data[user_password] != md5($passwd)) )
      error_die("Error - You did not enter the correct password, please go back and try again.");
 
@@ -289,7 +300,6 @@ else {  // No submit
 }
 include('page_tail.'.$phpEx);
 ?>
-
 
 
 

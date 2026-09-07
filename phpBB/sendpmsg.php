@@ -27,6 +27,15 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$message = request_string('message', '', 'post');
+$tousername = request_string('tousername');
+$fromusername = request_string('fromusername', '', 'post');
+$password = request_string('password', '', 'post');
+$html = request_present('html', 'post');
+$bbcode = request_present('bbcode', 'post');
+$sig = request_present('sig', 'post');
+$smile = request_present('smile', 'post');
 $pagetitle = "Send Private Message";
 $pagetype = "sendprivmsg";
 include('page_header.'.$phpEx);
@@ -62,7 +71,7 @@ if($submit) {
 	/* correct password or logged-in user, continuing with message send. */
 
 	$is_html_disabled = false;
-	if($allow_pmsg_html == 0 && !isset($html)) {
+	if($allow_pmsg_html == 0 || $html) {
 		$message = htmlspecialchars($message);
 		$is_html_disabled = true;
 	}
@@ -70,7 +79,7 @@ if($submit) {
 	if($sig) {
    	$message .= "<BR>__________________<BR>" . $fromuserdata[user_sig];
    }
-   if($allow_pmsg_bbcode == 1 && !isset($bbcode)) {
+   if($allow_pmsg_bbcode == 1 && !$bbcode) {
 		$message = bbencode($message, $is_html_disabled);
 	}
 	

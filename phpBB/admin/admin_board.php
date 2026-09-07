@@ -23,6 +23,37 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode');
+$submit = request_string('submit', '', 'post');
+$name = request_string('name', '', 'post');
+$from = request_string('from', '', 'post');
+$esig = request_string('esig', '', 'post');
+$html = request_int('html', 0, 'post');
+$bb = request_int('bb', 0, 'post');
+$sig = request_int('sig', 0, 'post');
+$hot = request_int('hot', 0, 'post');
+$ppp = request_int('ppp', 0, 'post');
+$tpp = request_int('tpp', 0, 'post');
+$override_themes = request_int('override_themes', 0, 'post');
+$allow_name_change = request_int('allow_name_change', 0, 'post');
+$selected_lang = request_string('selected_lang', 'english', 'post');
+$header = request_string('header', '', 'post');
+$metacode = request_string('metacode', '', 'post');
+$footer = request_string('footer', '', 'post');
+$add = request_string('add', '', 'post');
+$edit = request_string('edit', '', 'post');
+$delete = request_string('delete', '', 'post');
+$title = request_string('title', '', 'post');
+$min_posts = request_int('min_posts', 0, 'post');
+$max_posts = request_int('max_posts', 0, 'post');
+$image = request_string('image', '', 'post');
+$special = request_present('special', 'post');
+$selected = request_present('selected', 'post');
+$id = request_int('id', 0, 'post');
+
 if($login) {
       if ($username == '') {
 	       die("You have to enter your username. Go back and do so.");
@@ -82,7 +113,7 @@ include('../page_header.'.$phpEx);
 
 switch($mode) {
 	case 'setoptions':
-		if($HTTP_POST_VARS['submit']) {
+		if($submit) {
 		   $name = addslashes($name);
 		   $esig = addslashes($esig);
 		   $sql = "SELECT count(*) AS total FROM config WHERE (selected = 1)";
@@ -218,7 +249,7 @@ switch($mode) {
 	break;
 	case 'headermetafooter':
 
-		if($HTTP_POST_VARS['submit']) {
+		if($submit) {
 			$header = addslashes($header);
 			$metacode = addslashes($metacode);
 			$footer = addslashes($footer);
@@ -286,10 +317,7 @@ switch($mode) {
 		}
 	break;
 	case 'rankadmin':
-		if($HTTP_POST_VARS['edit'] || $HTTP_POST_VARS['delete'] || $HTTP_POST_VARS['add']) {
-			$add = $HTTP_POST_VARS['add'];
-			$edit = $HTTP_POST_VARS['edit'];
-			$delete = $HTTP_POST_VARS['delete'];
+		if($edit || $delete || $add) {
 
 			if($add) {
 				$title = addslashes($title);

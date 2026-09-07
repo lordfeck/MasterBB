@@ -22,6 +22,7 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require("auth.$phpEx");
+$viewcat = request_int('viewcat', 0, 'get');
 $pagetitle = $l_indextitle;
 $pagetype = "index";
 include('page_header.'.$phpEx);

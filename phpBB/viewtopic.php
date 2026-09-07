@@ -22,6 +22,12 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$forum = request_int('forum');
+$topic = request_int('topic');
+$start = request_int('start');
+$logging_in = request_string('logging_in', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
 $pagetitle = $l_topictitle;
 $pagetype = "viewtopic";
 

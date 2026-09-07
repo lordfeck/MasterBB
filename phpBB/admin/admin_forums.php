@@ -30,6 +30,29 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode');
+$submit = request_string('submit', '', 'post');
+$save = request_present('save', 'post');
+$delete = request_present('delete', 'post');
+$forum = request_int('forum');
+$cat = request_int('cat');
+$cat_id = request_int('cat_id');
+$name = request_string('name', '', 'post');
+$desc = request_string('desc', '', 'post');
+$title = request_string('title', '', 'post');
+$new_title = request_string('new_title', '', 'post');
+$forum_access = request_int('forum_access', 1, 'post');
+$type = request_int('type', 0, 'post');
+$mods = request_array('mods');
+$rem_mods = request_array('rem_mods');
+$up = request_present('up', 'post');
+$down = request_present('down', 'post');
+$current_order = request_int('current_order', 0, 'post');
+$last_id = request_int('last_id', 0, 'post');
+
 if($login) {
       if ($username == '') {
 	       die("You have to enter your username. Go back and do so.");
@@ -89,18 +112,18 @@ include('../page_header.'.$phpEx);
 
 switch($mode) {
  case 'editforum':
-   if($HTTP_POST_VARS['save']) {
-      if(!$HTTP_POST_VARS['delete']) {
-	 		$name = addslashes($HTTP_POST_VARS['name']);
-	 		$desc = addslashes($HTTP_POST_VARS['desc']);
+   if($save) {
+      if(!$delete) {
+			$name = addslashes($name);
+			$desc = addslashes($desc);
 
 	 $sql = "UPDATE forums SET forum_name = '$name', forum_desc = '$desc', forum_type = '$type', cat_id = '$cat', forum_access = '$forum_access' WHERE forum_id = '$forum'";
 
 	 if(!$r = db_query($sql, $db))
 	   die("Error - could not update the database, please go back and try again.");
 	 $count = 0;
-	 if(isset($mods)) {
-		    foreach($HTTP_POST_VARS["mods"] as $mod) {
+	 if(count($mods) > 0) {
+		    foreach($mods as $mod) {
 	       $mod_data = get_userdata_from_id($mod, $db);
 	       if($mod_data[user_level] < 2) {
 		  if(!isset($user_query))
@@ -116,7 +139,7 @@ switch($mode) {
 	    }
 	 }
 
-	 if(!isset($mods)) {
+	 if(count($mods) === 0) {
 	    $current_mods = "SELECT count(*) AS total FROM forum_mods WHERE forum_id = '$forum'";
 	    $r = @db_query($current_mods, $db);
 	    list($total) = db_fetch_array($r);
@@ -124,15 +147,15 @@ switch($mode) {
 	 else
 	   $total = count($mods) + 1;
 
-	 if(isset($rem_mods) && $total > 1) {
-		    foreach($HTTP_POST_VARS["rem_mods"] as $mod) {
+	 if(count($rem_mods) > 0 && $total > 1) {
+		    foreach($rem_mods as $mod) {
 	       $rem_query = "DELETE FROM forum_mods WHERE forum_id = '$forum' AND user_id = '$mod'";
 	       if(!db_query($rem_query))
 		 die("Error removing moderators for forum!<BR>".db_error($db)."<BR>$rem_query");
 	    }
 	 }
 	 else {
-	    if(isset($rem_mods))
+	    if(count($rem_mods) > 0)
 	      $mod_not_removed = 1;
 	 }
 	 if(isset($user_query)) {
@@ -190,7 +213,7 @@ switch($mode) {
 	 		echo "</TR></table></TD></TR></TABLE>";
       }
    }
-   if($HTTP_POST_VARS['submit'] && !$HTTP_POST_VARS['save']) {
+   if($submit && !$save) {
       $sql = "SELECT * FROM forums WHERE forum_id = '$forum'";
       if(!$result = db_query($sql, $db))
 	die("Error connecting to the database.");
@@ -380,9 +403,9 @@ if($myrow[forum_access] == 3)
 		}
    break;
    case 'editcat':
-   	if($HTTP_POST_VARS['submit'] && $HTTP_POST_VARS['save'])
+	if($submit && $save)
    	{
-			$new_title = addslashes($HTTP_POST_VARS['new_title']);
+			$new_title = addslashes($new_title);
 			$sql = "UPDATE catagories SET cat_title = '$new_title' WHERE cat_id = $cat_id";
 			if(!$result = db_query($sql, $db))
    		{
@@ -398,7 +421,7 @@ if($myrow[forum_access] == 3)
 	 		}
 
    	}
-   	else if($HTTP_POST_VARS['submit'])
+	else if($submit)
    	{
    		$sql = "SELECT cat_title FROM catagories WHERE cat_id = '$cat'";
    		if(!$result = db_query($sql, $db))
@@ -464,7 +487,7 @@ if($myrow[forum_access] == 3)
    	}
    break;
  case 'remcat':
-   if($HTTP_POST_VARS['submit']) {
+   if($submit) {
       $sql = "DELETE FROM catagories WHERE cat_id = '$cat'";
       if(!$r = db_query($sql, $db))
 	die("Error Deleteing Category<BR>".db_error($db));
@@ -509,7 +532,7 @@ if($myrow[forum_access] == 3)
    }
    break;
  case 'addcat':
-   if($HTTP_POST_VARS['submit']) {
+   if($submit) {
       $sql = "SELECT max(cat_order) AS highest FROM catagories";
       if(!$r = db_query($sql, $db))
 			die("Error - Could not query the DB");
@@ -550,12 +573,12 @@ if($myrow[forum_access] == 3)
 		}
    break;
  case 'addforum':
-   if($HTTP_POST_VARS['submit']) {
-      if($name == '' || $desc == '' || !is_array($mods))
+   if($submit) {
+      if($name == '' || $desc == '' || count($mods) === 0)
 			die("You did not fill out all the parts of the form.<br>Did you assign at least one moderator? Please go back and correct the form.");
       $desc = str_replace("\n", "<BR>", $desc);
-      $desc = addslashes($HTTP_POST_VARS['desc']);
-      $name = addslashes($HTTP_POST_VARS['name']);
+      $desc = addslashes($desc);
+      $name = addslashes($name);
 
 		$sql = "INSERT INTO forums (forum_name, forum_desc, forum_access, cat_id, forum_type) VALUES ('$name', '$desc', '$forum_access', '$cat', '$type')";
 
@@ -564,7 +587,7 @@ if($myrow[forum_access] == 3)
       $forum = db_insert_id($db);
       $count = 0;
 
-	      foreach($HTTP_POST_VARS["mods"] as $mod_number => $mod) {
+	      foreach($mods as $mod_number => $mod) {
 	 		$mod_data = get_userdata_from_id($mod, $db);
 
 	 		if($mod_data[user_level] < 2) {

@@ -22,6 +22,23 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$post_id = request_int('post_id');
+$forum = request_int('forum');
+$topic = request_int('topic');
+$username = request_string('username', '', 'post');
+$passwd = request_string('passwd', '', 'post');
+$password = request_string('password', '', 'post');
+$message = request_string('message', '', 'post');
+$subject = request_string('subject', '', 'post');
+$logging_in = request_string('logging_in', '', 'post');
+$delete = request_present('delete', 'post');
+$html = request_present('html', 'post');
+$bbcode = request_present('bbcode', 'post');
+$smile = request_present('smile', 'post');
+$notify = request_present('notify', 'post');
+$die = 0;
+$topic_removed = false;
 $pagetitle = "Edit Post";
 $pagetype = "index";
 
@@ -88,12 +105,12 @@ if($submit) {
    // IF we made it this far we are allowed to edit this message, yay!
     
    $is_html_disabled = false;
-   if($allow_html == 0 || isset($html) )
+   if($allow_html == 0 || $html)
    {
      $message = htmlspecialchars($message);
      $is_html_disabled = true;
    }
-   if($allow_bbcode == 1 && !isset($bbcode))
+   if($allow_bbcode == 1 && !$bbcode)
      $message = bbencode($message, $is_html_disabled);
    if(!$smile) 
      $message = smile($message);
@@ -122,7 +139,7 @@ if($submit) {
 			error_die("Unable to update the posting in the database");
 		$subject = strip_tags($subject);
       if(isset($subject) && (trim($subject) != '')) {
-			 if(!isset($notify))
+			 if(!$notify)
 			   $notify = 0;
 			 else
 			   $notify = 1;
@@ -146,7 +163,7 @@ if($submit) {
       list($hour, $min) = explode(":", $time);
       
       // NOT ((time is good) OR (user is supermod/admin) OR (user is moderator of this forum))
-		if (!( (($now_hour == $hour && $min_now - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) 
+		if (!( (($now_hour == $hour && $now_min - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0))
 					|| 
 					($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))  )) 
 		{
@@ -408,7 +425,7 @@ else {
 			$now_hour = date("H");
 			$now_min = date("i");
 			list($hour, $min) = explode(":", $time);
-			if((($now_hour == $hour && $min_now - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) || ($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))) {
+			if((($now_hour == $hour && $now_min - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) || ($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))) {
 		?>
 				<INPUT TYPE="CHECKBOX" NAME="delete"><?php echo $l_delete?><BR>
 		<?php

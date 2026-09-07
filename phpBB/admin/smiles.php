@@ -26,6 +26,19 @@ include('../extention.inc');
 include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
+
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode');
+$submit = request_string('submit', '', 'post');
+$id_present = request_present('id', 'get');
+$id = request_int('id', 0, 'get');
+$smile = request_int('smile', 0, 'post');
+$smile_id = request_int('smile_id', 0, 'post');
+$code = request_string('code', '', 'post');
+$smile_url = request_string('smile_url', '', 'post');
+$emotion = request_string('emotion', '', 'post');
 if($login) {
       if ($username == '') {
 	       die("You have to enter your username. Go back and do so.");
@@ -111,7 +124,7 @@ switch ($mode) {
    break;
    
  case 'add':
-   if (!isset($submit)) {
+   if (!$submit) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Add Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -137,7 +150,7 @@ echo "</TR></table></TD></TR></TABLE>";
       $smile_url = addslashes($smile_url);
       $emotion = addslashes($emotion);
       
-      if (!$insertsmile = db_query("INSERT INTO smiles (id, code, smile_url, emotion) VALUES ('', '$code', '$smile_url', '$emotion')")) {
+      if (!$insertsmile = db_query("INSERT INTO smiles (code, smile_url, emotion) VALUES ('$code', '$smile_url', '$emotion')")) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Add Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -157,7 +170,7 @@ echo "</TR></table></TD></TR></TABLE>";
    
  case 'edit':
    
-   if (isset($id)) {
+   if ($id_present) {
       
       $submit = "Let's Edit the Smile!";
       $smile = $id;
@@ -241,14 +254,14 @@ echo "</TR></table></TD></TR></TABLE>";
    
  case 'delete':
    
-   if (isset($id)) {
+   if ($id_present) {
       
       $submit = "Delete Smile";
       $smile_id = $id;
       
    }
    
-   if (!isset($submit)) {
+   if (!$submit) {
       if ($getsmiles = db_query("SELECT * FROM smiles")) {
 	 echo "Please select a smile from the pile below.";
 	 

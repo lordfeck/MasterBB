@@ -19,6 +19,8 @@
  *
  ***************************************************************************/
 include('extention.inc');
+$cancel = request_present('cancel', 'post');
+$forum = request_int('forum');
 // Set the error reporting to a sane value, 'cause we haven't included auth.php yet..
 error_reporting  (E_ERROR | E_WARNING | E_PARSE); // This will NOT report uninitialized variables
 if($cancel) {
@@ -28,6 +30,16 @@ if($cancel) {
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$subject = request_string('subject', '', 'post');
+$message = request_string('message', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$html = request_present('html', 'post');
+$bbcode = request_present('bbcode', 'post');
+$smile = request_present('smile', 'post');
+$sig = request_present('sig', 'post');
+$notify = request_present('notify', 'post');
 $pagetitle = "New Topic";
 $pagetype = "newtopic";
 $sql = "SELECT forum_name, forum_access, forum_type FROM forums WHERE (forum_id = '$forum')";
@@ -43,14 +55,14 @@ if(!does_exists($forum, $db, "forum")) {
 	error_die("The forum you are attempting to post to does not exist. Please try again.");
 }
 
-if($HTTP_POST_VARS['submit']) {
-	$subject = strip_tags($HTTP_POST_VARS['subject']);
-   if(trim($HTTP_POST_VARS['message']) == '' || trim($subject) == '') {
+if($submit) {
+	$subject = strip_tags($subject);
+   if(trim($message) == '' || trim($subject) == '') {
 		error_die($l_emptymsg);
 	}
 
    if (!$user_logged_in) {
-      if($HTTP_POST_VARS['username'] == '' && $HTTP_POST_VARS['password'] == '' && $forum_access == 2)
+      if($username == '' && $password == '' && $forum_access == 2)
 	{
 	   // Not logged in, and username and password are empty and forum_access is 2 (anon posting allowed)
 	   $userdata = array("user_id" => -1);
@@ -108,14 +120,14 @@ if($HTTP_POST_VARS['submit']) {
 	}
 
 	$is_html_disabled = false;
-   if($allow_html == 0 || isset($html))
+   if($allow_html == 0 || $html)
    {
      $message = htmlspecialchars($message);
      $is_html_disabled = true;
    }
 
 
-   if($allow_bbcode == 1 && !($HTTP_POST_VARS[bbcode]))
+   if($allow_bbcode == 1 && !$bbcode)
      $message = bbencode($message, $is_html_disabled);
 
    // MUST do make_clickable() and smile() before changing \n into <br>.
@@ -138,7 +150,7 @@ if($HTTP_POST_VARS['submit']) {
       $message .= "\n[addsig]";
    }
    $sql = "INSERT INTO topics (topic_title, topic_poster, forum_id, topic_time, topic_notify) VALUES ('$subject', '$userdata[user_id]', '$forum', '$time'";
-   if(isset($notify) && $userdata[user_id] != -1)
+   if($notify && $userdata[user_id] != -1)
      $sql .= ", '1'";
    else
      $sql .= ", '0'";

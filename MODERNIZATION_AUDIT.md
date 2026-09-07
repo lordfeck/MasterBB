@@ -25,6 +25,8 @@ The port now:
   `eregi()`;
 - supplies a contained compatibility boundary for the long request arrays,
   server globals, and bare array keys expected by PHP 3/4-era code;
+- replaces `register_globals` emulation with named, typed GET/POST access in
+  each application entry point;
 - removes obsolete migration scripts under the agreed fresh-install-only
   policy; and
 - adjusts fresh-install schema and insert behaviour for MariaDB's modern
@@ -52,9 +54,15 @@ The complete suite passes on PHP 8.4 and MariaDB 11.4. All PHP source files
 also pass PHP 8.4 syntax checks, and the successful run produced no PHP fatal
 errors, parse errors, or deprecation diagnostics.
 
-The logs still contain undefined-variable warnings inherited from the original
-`register_globals` programming model. They do not break the covered workflows,
-but should be removed as the compatibility boundary is retired.
+The covered run produces no PHP warnings, deprecations, fatal errors, or parse
+errors. The long-array aliases remain temporarily for the legacy filter and
+cookie code, but request keys are no longer copied into arbitrary globals.
+
+The negative characterization suite also passes for SQL-injection-shaped login
+input, arbitrary search sort expressions, cross-user post edit/delete attempts,
+unauthorized private-message access, and forged private-message HTML options.
+It explicitly reports the still-open CSRF finding rather than treating the
+application as hardened.
 
 ## Security findings
 
@@ -66,9 +74,6 @@ already been enumerated.
 
 - SQL is assembled by interpolating request and stored values. Moving to PDO
   removed an obsolete driver; it did not remove SQL injection.
-- Request fields are still promoted into global variables to emulate
-  `register_globals`. This creates variable-confusion and parameter-tampering
-  risk and makes authorization reasoning difficult.
 - Passwords use unsalted MD5 and must move to `password_hash()` and
   `password_verify()`.
 - State-changing actions lack modern CSRF protection.
@@ -98,21 +103,19 @@ already been enumerated.
 Preserve the existing HTML, navigation, URLs, and workflows while changing the
 trust boundaries underneath them:
 
-1. Replace request-global emulation with explicit typed access to GET, POST,
-   cookies, and server data, one workflow at a time.
-2. Extend the database adapter with prepared statements, then convert all
+1. Extend the database adapter with prepared statements, then convert all
    queries reached by the smoke suite before covering the remaining admin and
    profile paths.
-3. Introduce output-escaping helpers with explicit exceptions for the narrow
+2. Introduce output-escaping helpers with explicit exceptions for the narrow
    legacy markup/BBCode surface.
-4. Replace authentication and session primitives, including password hashing,
+3. Replace authentication and session primitives, including password hashing,
    cryptographically random session tokens, rotation, expiry, and secure cookie
    attributes.
-5. Add CSRF tokens to every state-changing form and enforce POST-only mutation
+4. Add CSRF tokens to every state-changing form and enforce POST-only mutation
    endpoints.
-6. Centralise authorization checks and add negative tests for cross-user and
-   lower-privilege actions.
-7. Disable the installer after successful setup, reduce error disclosure, and
+5. Continue centralising authorization checks and expand the negative tests to
+   every cross-user and lower-privilege operation.
+6. Disable the installer after successful setup, reduce error disclosure, and
    add baseline response headers and abuse controls.
 
 Each step can be made behind the original presentation. The smoke suite should

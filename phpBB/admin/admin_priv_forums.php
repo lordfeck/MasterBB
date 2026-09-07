@@ -23,6 +23,15 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$op = request_string('op');
+$forum = request_int('forum', -1);
+$submit = request_string('submit', '', 'post');
+$op_userid = request_int('op_userid');
+$userids = request_array('userids');
+
 if($login) 
 {
 	// Try to log the user in with the given username and password.
@@ -164,9 +173,9 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		if ($op == "adduser")
 		{
 			// Add user(s) to the list for this forum.
-			if ($userids)
+			if (count($userids) > 0)
 			{
-					foreach($HTTP_POST_VARS["userids"] as $curr_userid)
+					foreach($userids as $curr_userid)
 				{
 					$sql = "INSERT INTO forum_access (forum_id, user_id, can_post) VALUES ($forum, $curr_userid, 0)";
 					if (!$result = db_query($sql, $db))

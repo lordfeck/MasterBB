@@ -22,11 +22,25 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$save = request_present('save', 'post');
+$user = request_string('user', '', 'post');
+$passwd = request_string('passwd', '', 'post');
+$savecookie = request_int('savecookie', 0, 'post');
+$viewemail = request_int('viewemail', 0, 'post');
+$themes = request_int('themes', 0, 'post');
+$sig = request_int('sig', 0, 'post');
+$smile = request_int('smile', 0, 'post');
+$dishtml = request_int('dishtml', 0, 'post');
+$disbbcode = request_int('disbbcode', 0, 'post');
+$lang = request_string('lang', 'english', 'post');
+$fviewemail = $viewemail;
+$tsig = $sig;
 $pagetitle = $l_preferences;
 $pagetype = "index";
 
-if($HTTP_POST_VARS['submit'] || $user_logged_in) {
-   if($HTTP_POST_VARS['save']) {
+if($submit || $user_logged_in) {
+   if($save) {
       if (!$user_logged_in) {
 	 // no valid session, need to check user/pass.
 	 if($user == '' || $passwd == '') {

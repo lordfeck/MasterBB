@@ -19,6 +19,11 @@
  *
  ***************************************************************************/
 include('extention.inc');
+$cancel = request_present('cancel', 'post');
+$forum = request_int('forum');
+$topic = request_int('topic');
+$post = request_int('post');
+$post_id = request_int('post_id', $post);
 if(isset($cancel) && $cancel) {
 	header("Location: viewtopic.$phpEx?topic=$topic&forum=$forum");
 }
@@ -26,6 +31,16 @@ if(isset($cancel) && $cancel) {
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit', '', 'post');
+$message = request_string('message', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$html = request_present('html', 'post');
+$bbcode = request_present('bbcode', 'post');
+$smile = request_present('smile', 'post');
+$sig = request_present('sig', 'post');
+$quote = request_present('quote');
+$logging_in = request_string('logging_in', '', 'post');
 $pagetitle = "Post Reply";
 $pagetype = "reply";
 
@@ -66,7 +81,7 @@ if(!does_exists($forum, $db, "forum") || !does_exists($topic, $db, "topic")) {
 	error_die("The forum or topic you are attempting to post to does not exist. Please try again.");
 }
 
-if($HTTP_POST_VARS['submit']) {
+if($submit) {
    if(trim($message) == '') {
       error_die($l_emptymsg);
    }
@@ -129,11 +144,11 @@ if($HTTP_POST_VARS['submit']) {
    $poster_ip = $REMOTE_ADDR;
 
    $is_html_disabled = false;
-   if($allow_html == 0 || isset($html)) {
+   if($allow_html == 0 || $html) {
       $message = htmlspecialchars($message);
       $is_html_disabled = true;
 
-      if (isset($quote) && $quote)
+      if ($quote)
       {
       	$edit_by = get_syslang_string($sys_lang, "l_editedby");
 
@@ -142,7 +157,7 @@ if($HTTP_POST_VARS['submit']) {
 		   $message = preg_replace("#&lt;font\ size\=-1&gt;\[\ $edit_by(.*?)\ \]&lt;/font&gt;#si", '<font size=-1>[ ' . $edit_by . '\1 ]</font>', $message);
       }
    }
-   if($allow_bbcode == 1 && !isset($bbcode)) {
+   if($allow_bbcode == 1 && !$bbcode) {
       $message = bbencode($message, $is_html_disabled);
    }
 

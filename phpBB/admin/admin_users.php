@@ -23,6 +23,39 @@ include('../functions.'.$phpEx);
 include('../config.'.$phpEx);
 require('../auth.'.$phpEx);
 
+$login = request_string('login', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$mode = request_string('mode');
+$submit = request_string('submit', '', 'post');
+$edit_user_id = request_int('edit_user_id', 0, 'post');
+$edit_username = request_string('edit_username', '', 'post');
+$email = request_string('email', '', 'post');
+$rank = request_int('rank', 0, 'post');
+$level = request_int('level', 0, 'post');
+$action = request_string('action', '', 'post');
+$bad_word = request_string('bad_word', '', 'post');
+$replacement = request_string('replacement', '', 'post');
+$word_id = request_int('word_id', 0, 'post');
+$add = request_string('add', '', 'post');
+$edit = request_string('edit', '', 'post');
+$delete = request_string('delete', '', 'post');
+$dis_username = request_string('dis_username', '', 'post');
+$id = request_int('id', 0, 'post');
+$user_id = request_int('user_id', 0, 'post');
+$type = request_string('type', 'soft', 'post');
+$duration = request_int('duration', 0, 'post');
+$durtype = request_int('durtype', 1, 'post');
+$banby = request_int('banby', 1, 'post');
+$ipuser = request_string('ipuser', '', 'post');
+$del = request_string('del', '', 'post');
+$ban_id = request_int('ban_id', 0, 'post');
+$unit = request_int('unit', 1, 'post');
+$dur = request_int('dur', 0, 'post');
+$ipaddy_present = request_present('ipaddy', 'post');
+$ipaddy = request_string('ipaddy', '', 'post');
+$user_name = request_string('user_name', '', 'post');
+
 if($login) {
       if ($username == '') {
 	       die("You have to enter your username. Go back and do so.");
@@ -82,14 +115,7 @@ include('../page_header.'.$phpEx);
 
 switch($mode) {
 	case 'moduser':
-		$submit = $HTTP_POST_VARS['submit'];
-		$edit_user_id = $HTTP_POST_VARS['edit_user_id'];
-		$edit_username = $HTTP_POST_VARS['edit_username'];
-		$email = $HTTP_POST_VARS['email'];
-		$rank = $HTTP_POST_VARS['rank'];
-		$level = $HTTP_POST_VARS['level'];
-
-		if($HTTP_POST_VARS['submit'] && $HTTP_POST_VARS['edit_user_id']) {
+		if($submit && $edit_user_id) {
 			$sql = "UPDATE users SET username = '$edit_username', user_email = '$email', user_rank = '$rank', user_level = '$level' WHERE user_id = $edit_user_id";
 			if(!$r = db_query($sql, $db))
 				die("Error could not update the database.");
@@ -323,7 +349,7 @@ switch($mode) {
      echo "</TABLE></TABLE>\n";
    break;
  case 'badusernames':
-   if($HTTP_POST_VARS['edit'] || $HTTP_POST_VARS['add'] || $HTTP_POST_VARS['delete']) {
+   if($edit || $add || $delete) {
 			if($add) {
 				$dis_username = addslashes($dis_username);
 				$sql = "INSERT INTO disallow (disallow_username) VALUES ('$dis_username')";
@@ -334,7 +360,7 @@ switch($mode) {
 			}
 			else if($delete) {
 				$sql = "DELETE FROM disallow WHERE disallow_id = '$id'";
-				if(!$$r = db_query($sql, $db))
+				if(!$r = db_query($sql, $db))
                                         echo "<CENTER><font size=+1>Error - Could not remove username. Please try again.</font></center>";
                                 else
                                         echo "<CENTER><font size=+1>Username Removed</font></center>";
@@ -395,8 +421,8 @@ switch($mode) {
 <?php
 	break;
 	case 'remuser':
-		if($HTTP_POST_VARS['submit']) {
-			$user_id = ($HTTP_POST_VARS['user_id']) ? $HTTP_POST_VARS['user_id'] : die("No user ID supplied");
+		if($submit) {
+			$user_id = $user_id ? $user_id : die("No user ID supplied");
 
 		   if($type == "hard") {
 		      $deluserdata = get_userdata_from_id($user_id, $db);
@@ -470,7 +496,7 @@ switch($mode) {
 		}
    break;
  case 'banuser':
-   if($HTTP_POST_VARS['add']) {
+   if($add) {
       $starttime = mktime (date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"));
       switch($durtype) {
        case 1:
@@ -489,9 +515,6 @@ switch($mode) {
 	 $type = 31536000;
 	 break;
       }
-      if(!isset($duration))
-	$duration = 0;
-
       if($duration != 0)
 	$endtime = $starttime + ($duration * $type);
       else
@@ -523,7 +546,7 @@ switch($mode) {
       echo "<font size=\"$FontSize4\"><center>Ban Removed</center></font><br>";
 
    }
-   else if($HTTP_POST_VARS['edit']) {
+   else if($edit) {
       $starttime = mktime (date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"));
       switch($unit) {
        case 1:
@@ -542,14 +565,11 @@ switch($mode) {
 	 $type = 31536000;
 	 break;
       }
-      if(!isset($dur))
-	$dur = 0;
-
       if($dur != 0)
 	$endtime = $starttime + ($dur * $type);
       else
 	$endtime = 0;
-      if(isset($ipaddy))
+      if($ipaddy_present)
 	$sql = "UPDATE banlist SET ban_ip = '$ipaddy', ban_start = '$starttime', ban_end = '$endtime', ban_time_type = '$unit' WHERE ban_id = '$ban_id'";
       else {
 	 $banneduserdata = get_userdata($user_name, $db);

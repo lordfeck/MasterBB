@@ -20,6 +20,37 @@
 ***************************************************************************/
 include('extention.inc');
 include("functions.$phpEx");
+
+$next = request_string('next', '', 'post');
+$done = request_present('done', 'post');
+$dbserver = request_string('dbserver', '', 'post');
+$dbname = request_string('dbname', '', 'post');
+$dbuser = request_string('dbuser', '', 'post');
+$dbpass = request_string('dbpass', '', 'post');
+$username = request_string('username', '', 'post');
+$password = request_string('password', '', 'post');
+$password_rep = request_string('password_rep', '', 'post');
+$email = request_string('email', '', 'post');
+$website = request_string('website', '', 'post');
+$sig = request_string('sig', '', 'post');
+$occ = request_string('occ', '', 'post');
+$intrest = request_string('intrest', '', 'post');
+$from = request_string('from', '', 'post');
+$hint = request_string('hint', '', 'post');
+$viewemail = request_int('viewemail', 0, 'post');
+$icq = request_string('icq', '', 'post');
+$aim = request_string('aim', '', 'post');
+$yim = request_string('yim', '', 'post');
+$msnm = request_string('msnm', '', 'post');
+$name = request_string('name', '', 'post');
+$email_from = request_string('email_from', '', 'post');
+$email_sig = request_string('email_sig', '', 'post');
+$html = request_int('html', 0, 'post');
+$bb = request_int('bb', 0, 'post');
+$hot = request_int('hot', 0, 'post');
+$ppp = request_int('ppp', 0, 'post');
+$tpp = request_int('tpp', 0, 'post');
+$language = request_string('language', 'english', 'post');
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Strict//EN">
           <HTML>

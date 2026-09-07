@@ -37,6 +37,8 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$sortby = request_string('sortby', '', 'get');
+$start = request_int('start', 0, 'get');
 $pagetitle = "Members List";
 $pagetype = "other";
 include('page_header.' . $phpEx);
@@ -62,6 +64,10 @@ switch ($sortby) {
 	case 'posts':
 		$sortby = "user_posts DESC";
 		$sortlink = "posts";
+	break;
+	default:
+		$sortby = "user_id ASC";
+		$sortlink = "";
 	break;
 }
 

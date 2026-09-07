@@ -27,6 +27,7 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$mode = request_string('mode', '', 'get');
 $pagetitle = "FAQ";
 $pagetype = "other";
 include('page_header.'.$phpEx);

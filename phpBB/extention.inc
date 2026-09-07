@@ -15,15 +15,44 @@ $HTTP_POST_VARS =& $_POST;
 $HTTP_COOKIE_VARS =& $_COOKIE;
 $HTTP_SERVER_VARS =& $_SERVER;
 
-foreach (array($_GET, $_POST, $_COOKIE) as $request_values)
+function request_value($name, $default = null, $source = 'both')
 {
-    foreach ($request_values as $request_key => $request_value)
+    if (($source === 'post' || $source === 'both') && array_key_exists($name, $_POST))
     {
-        if ($request_key !== 'GLOBALS' && preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $request_key))
-        {
-            $GLOBALS[$request_key] = $request_value;
-        }
+        return is_array($_POST[$name]) ? $default : $_POST[$name];
     }
+    if (($source === 'get' || $source === 'both') && array_key_exists($name, $_GET))
+    {
+        return is_array($_GET[$name]) ? $default : $_GET[$name];
+    }
+    return $default;
+}
+
+function request_string($name, $default = '', $source = 'both')
+{
+    return (string) request_value($name, $default, $source);
+}
+
+function request_int($name, $default = 0, $source = 'both')
+{
+    return (int) request_value($name, $default, $source);
+}
+
+function request_present($name, $source = 'both')
+{
+    if (($source === 'post' || $source === 'both') && array_key_exists($name, $_POST))
+    {
+        return !is_array($_POST[$name]);
+    }
+    return ($source === 'get' || $source === 'both')
+        && array_key_exists($name, $_GET)
+        && !is_array($_GET[$name]);
+}
+
+function request_array($name, $source = 'post')
+{
+    $values = $source === 'get' ? $_GET : $_POST;
+    return isset($values[$name]) && is_array($values[$name]) ? $values[$name] : array();
 }
 
 $PHP_SELF = $_SERVER['PHP_SELF'] ?? '';
@@ -41,5 +70,5 @@ foreach (explode(' ', $legacy_array_keys) as $legacy_array_key)
         define($legacy_array_key, $legacy_array_key);
     }
 }
-unset($legacy_array_key, $legacy_array_keys, $request_key, $request_value, $request_values);
+unset($legacy_array_key, $legacy_array_keys);
 ?>

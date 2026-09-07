@@ -22,6 +22,29 @@ include('extention.inc');
 include('functions.'.$phpEx);
 include('config.'.$phpEx);
 require('auth.'.$phpEx);
+$submit = request_string('submit');
+$term = request_string('term');
+$addterms = request_string('addterms', 'any');
+$forum = request_string('forum', 'all');
+$search_username = request_string('search_username');
+$sortby = request_string('sortby', 'p.post_time desc');
+$searchboth = request_string('searchboth', 'both');
+$addquery = '';
+$subquery = '';
+
+$allowed_sort_fields = array('p.post_time desc', 't.topic_title', 'f.forum_name', 'u.username');
+if (!in_array($sortby, $allowed_sort_fields, true))
+{
+	$sortby = 'p.post_time desc';
+}
+if (!in_array($searchboth, array('both', 'title', 'text'), true))
+{
+	$searchboth = 'both';
+}
+if ($forum !== 'all')
+{
+	$forum = (string) intval($forum);
+}
 $pagetitle = $l_search;
 $pagetype = "other";
 include('page_header.'.$phpEx);
@@ -169,7 +192,7 @@ if(isset($term) && $term != "")
 }
 if(isset($forum) && $forum!="all")
 {
-	if(isset($addquery)) {
+	if($addquery !== '') {
 	   $addquery .= " AND ";
 	   $subquery .= " AND ";
 	}
@@ -190,7 +213,7 @@ if(isset($search_username)&&$search_username!="")
 		error_die("That user does not exist.  Please go back and search again.");
 	}
    $userid = $row[user_id];
-   if(isset($addquery)) {
+   if($addquery !== '') {
       $addquery.=" AND p.poster_id=$userid AND u.username='$search_username'";
       $subquery.=" AND p.poster_id=$userid AND u.username='$search_username'";
    }
@@ -199,7 +222,7 @@ if(isset($search_username)&&$search_username!="")
       $subquery.=" p.poster_id=$userid AND u.username='$search_username'";
    }
 }	
-if(isset($addquery)) {
+if($addquery !== '') {
    switch ($searchboth) { 
     case "both" : 
       $query .= " WHERE ( $subquery OR $addquery ) AND "; 

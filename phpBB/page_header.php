@@ -23,6 +23,9 @@ $mtime = microtime();
 $mtime = explode(" ",$mtime);
 $mtime = $mtime[1] + $mtime[0];
 $starttime = $mtime;
+$l_special_meta = $l_special_meta ?? '';
+$forward = $forward ?? false;
+$total_topic = $total_topic ?? '';
 
 
 
@@ -48,7 +51,7 @@ $login_logout_link = make_login_logout_link($user_logged_in, $url_phpbb);
 <HEAD>
 <TITLE><?php echo "$sitename $l_forums - $pagetitle" ?></TITLE>
 <?php
-if($l_special_meta) {
+if($l_special_meta !== '') {
 	echo $l_special_meta . "\n";
 }
 if($forward) {

@@ -1336,9 +1336,14 @@ function get_translated_file($file){
 }
 
 function get_syslang_string($sys_lang, $string) {
-	global $phpEx;
+	global $phpEx, $username, $password, $sitename, $email_sig, $hot_threshold;
+	$username = $username ?? '';
+	$password = $password ?? '';
+	$sitename = $sitename ?? '';
+	$email_sig = $email_sig ?? '';
+	$hot_threshold = $hot_threshold ?? 0;
 	include('language/lang_'.$sys_lang.'.'.$phpEx);
-	$ret_string = $$string;
+	$ret_string = isset($$string) ? $$string : '';
 	return($ret_string);
 }
 
