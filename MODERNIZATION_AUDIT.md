@@ -152,6 +152,37 @@ Progress is tracked as focused, independently verified commits:
 - [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,
   deployment guidance, and final residual-risk review.
 
+## Deferred presentation work: themes
+
+The existing theme system is a small database-backed presentation layer: it
+controls colours, legacy font settings, table width, and four image paths
+(header, new-topic, reply, and locked-reply). It is sufficient for cosmetic,
+period-appropriate variants without PHP changes, but it is not a template
+engine: page structure and most shared imagery remain embedded throughout the
+application HTML.
+
+Creating another theme in the current model is therefore straightforward for
+palette, typography, and header/button-image changes. A substantially different
+layout, responsive treatment, or component-level icon set would require a
+separate, broader presentation refactor.
+
+After the security programme, a contained theme-quality slice could centralise
+theme loading, validate colours/fonts/dimensions and image paths, keep images
+under an approved theme directory, and add safe clone, preview, default, and
+in-use deletion behaviour. It should preserve the table-based 2001 interface;
+a base stylesheet with CSS variables could remain an optional later enhancement,
+not a visual rewrite.
+
+Two themes well suited to the current implementation are:
+
+- **Midnight Terminal** — charcoal and near-black tables, muted green links,
+  pale monospace-friendly text, and the existing dark header/topic/reply art.
+  It would read like a late-1990s technical forum while needing only theme
+  values and four matching images.
+- **Sepia Gazette** — parchment page and table backgrounds, dark-brown text,
+  burgundy links, and a compact newspaper-style masthead. It would give the
+  board a warmly archival identity without changing its layout or interactions.
+
 ## Conclusion
 
 The runtime upgrade is reasonably straightforward and is now working for the
