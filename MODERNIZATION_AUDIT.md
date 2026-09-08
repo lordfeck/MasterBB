@@ -183,6 +183,10 @@ Two period-appropriate themes are now included in each fresh installation:
   burgundy links, and a compact newspaper-style masthead. It would give the
   board a warmly archival identity without changing its layout or interactions.
   It uses the existing monochrome logo and button art.
+- **Redmond95** — teal desktop background, silver controls, navy links, and
+  classic system-font styling: an unashamed homage to the Windows 95 shell.
+- **Hot Dog Stand** — high-contrast yellow, red, teal, and purple in the spirit
+  of Windows 3.1's most gloriously questionable colour scheme.
 
 ## Conclusion
 

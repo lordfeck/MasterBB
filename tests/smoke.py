@@ -322,6 +322,8 @@ def exercise(base_url: str) -> None:
     require(page, "Edit Your Preferences", "preferences request boundary")
     require(page, "Midnight Terminal", "Midnight Terminal theme availability")
     require(page, "Sepia Gazette", "Sepia Gazette theme availability")
+    require(page, "Redmond95", "Redmond95 theme availability")
+    require(page, "Hot Dog Stand", "Hot Dog Stand theme availability")
     page = user.request("bb_memberlist.php?sortby=user&start=0")
     require(page, "Memberslist", "member-list request boundary")
     page = user.request("faq.php?mode=bbcode")

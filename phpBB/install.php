@@ -317,7 +317,9 @@ if($next) {
 				 "ocean" => "INSERT INTO themes VALUES (2,'Ocean','#FFFFFF','#000000','#CCCCCC','#9BB6DA','#000000','images/header.jpg','images/new_topic.jpg','images/reply.jpg','#011001','#2100cc', '0', 'sans-serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')",
 				 "OCPrices.com" => "INSERT INTO themes VALUES (3,'OCPrices.com','#FFFFFF','#000000','#efefef','#cdcdcd','#001100','images/header.jpg','images/new_topic.jpg','images/reply.jpg','#000000','#000000', '0', 'sans-serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')",
 				 "Midnight Terminal" => "INSERT INTO themes VALUES (4,'Midnight Terminal','#101510','#D5E9D0','#283428','#162116','#0B100B','images/header-dark.jpg','images/new_topic-dark.jpg','images/reply-dark.jpg','#75D46C','#A7BD73', '0', 'monospace', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')",
-				 "Sepia Gazette" => "INSERT INTO themes VALUES (5,'Sepia Gazette','#F2E6C8','#2D2114','#C9B68B','#E6D7B6','#5B422A','images/header.jpg','images/new_topic.jpg','images/reply.jpg','#6D1F1F','#4D2A16', '0', 'serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')");
+				 "Sepia Gazette" => "INSERT INTO themes VALUES (5,'Sepia Gazette','#F2E6C8','#2D2114','#C9B68B','#E6D7B6','#5B422A','images/header.jpg','images/new_topic.jpg','images/reply.jpg','#6D1F1F','#4D2A16', '0', 'serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')",
+				 "Redmond95" => "INSERT INTO themes VALUES (6,'Redmond95','#008080','#000000','#C0C0C0','#FFFFFF','#808080','images/header.jpg','images/new_topic.jpg','images/reply.jpg','#000080','#800080', '0', 'Arial, sans-serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')",
+				 "Hot Dog Stand" => "INSERT INTO themes VALUES (7,'Hot Dog Stand','#FFFF00','#000000','#FF0000','#00FFFF','#FF00FF','images/header-dark.jpg','images/new_topic-dark.jpg','images/reply-dark.jpg','#0000FF','#800080', '0', 'Arial, sans-serif', '1','2','-2','+1','95%','images/reply_locked-dark.jpg')");
 	 $ta_smile_data = array(
 				"INSERT INTO smiles VALUES (1,':D','icon_biggrin.gif','Very Happy')",
 				"INSERT INTO smiles VALUES (2,':-D','icon_biggrin.gif','Very Happy')",
