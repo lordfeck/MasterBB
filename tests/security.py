@@ -32,6 +32,7 @@ def known_vulnerability(step: str) -> None:
 
 
 def characterize(base_url: str) -> None:
+    known_findings = 0
     anonymous = Browser(base_url)
     user = Browser(base_url)
     attacker = Browser(base_url)
@@ -55,6 +56,28 @@ def characterize(base_url: str) -> None:
     require(page, "You have been added to the database", "attacker fixture")
     page = login(attacker, ATTACKER_NAME, ATTACKER_PASSWORD)
     require(page, f"Logged in as {ATTACKER_NAME}", "attacker login")
+
+    session_cookies = [
+        cookie for cookie in attacker.cookies if cookie.name == "phpBBsession"
+    ]
+    if len(session_cookies) != 1:
+        raise SmokeFailure("session characterization: expected one session cookie")
+    session_cookie = session_cookies[0]
+    if not session_cookie.value.isdigit():
+        raise SmokeFailure("session characterization: expected a legacy numeric token")
+    cookie_attributes = {key.lower() for key in session_cookie._rest}
+    if "httponly" in cookie_attributes or "samesite" in cookie_attributes:
+        raise SmokeFailure(
+            "session characterization: expected missing HttpOnly and SameSite attributes"
+        )
+    known_vulnerability(
+        "session identifiers are small numeric values and the cookie lacks HttpOnly/SameSite"
+    )
+    known_findings += 1
+
+    page = attacker.request("admin/admin_board.php?mode=setoptions")
+    require(page, "do not have acess to this area", "member administration boundary")
+    secure("a regular user cannot enter the administration pages")
 
     page = attacker.request(
         "editpost.php",
@@ -114,6 +137,22 @@ def characterize(base_url: str) -> None:
     require(page, "&lt;script id=&quot;masterbb-xss&quot;&gt;", "private-message HTML escaping")
     secure("forged HTML option cannot enable stored script markup in private messages")
 
+    post_xss_marker = '<script id="masterbb-post-xss">alert(1)</script>'
+    page = attacker.request(
+        "reply.php",
+        {
+            "submit": "Submit",
+            "forum": "1",
+            "topic": "1",
+            "message": post_xss_marker,
+        },
+    )
+    require(page, "Your Message has been stored", "raw post HTML characterization")
+    page = attacker.request("viewtopic.php?topic=1&forum=1")
+    require(page, post_xss_marker, "raw post HTML characterization persistence")
+    known_vulnerability("raw post HTML is stored and rendered without encoding")
+    known_findings += 1
+
     page = attacker.request(
         "search.php",
         {
@@ -143,8 +182,37 @@ def characterize(base_url: str) -> None:
     page = attacker.request("viewtopic.php?topic=1&forum=1")
     require(page, csrf_marker, "CSRF characterization persistence")
     known_vulnerability("state-changing POSTs still have no CSRF token")
+    known_findings += 1
 
-    print("Security characterization completed with 1 known open finding.", flush=True)
+    page = anonymous.request("install.php")
+    require(page, "not writeable by the web server", "installer availability characterization")
+    known_vulnerability(
+        "the installer endpoint remains reachable and relies on config.php permissions"
+    )
+    known_findings += 1
+
+    if anonymous.last_headers is None:
+        raise SmokeFailure("security-header characterization: no response headers")
+    expected_headers = (
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "Referrer-Policy",
+        "X-Frame-Options",
+    )
+    present_headers = {
+        name.lower() for name in anonymous.last_headers.keys()
+    }
+    if any(name.lower() in present_headers for name in expected_headers):
+        raise SmokeFailure(
+            "security-header characterization: baseline unexpectedly changed"
+        )
+    known_vulnerability("baseline browser security headers are absent")
+    known_findings += 1
+
+    print(
+        f"Security characterization completed with {known_findings} known open findings.",
+        flush=True,
+    )
 
 
 def parse_args() -> argparse.Namespace:

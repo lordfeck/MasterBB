@@ -26,6 +26,7 @@ class Browser:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
         self.cookies = http.cookiejar.CookieJar()
+        self.last_headers = None
         self.opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self.cookies)
         )
@@ -40,6 +41,7 @@ class Browser:
         request = urllib.request.Request(url, data=data)
         try:
             with self.opener.open(request, timeout=45) as response:
+                self.last_headers = response.headers
                 payload = response.read()
         except (OSError, urllib.error.URLError) as error:
             raise SmokeFailure(f"Request failed for {url}: {error}") from error

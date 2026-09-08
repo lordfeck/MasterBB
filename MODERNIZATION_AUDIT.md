@@ -122,6 +122,31 @@ Each step can be made behind the original presentation. The smoke suite should
 remain the behavioural baseline, with focused negative security tests added
 alongside each hardening change.
 
+## Security hardening progress
+
+The PHP 8 compatibility milestone is preserved at `PortToPhp8Complete`. The
+detailed evidence and endpoint inventory now live in
+[`SECURITY_AUDIT.md`](SECURITY_AUDIT.md). The agreed product and deployment
+decisions are:
+
+- remove raw user-authored HTML while retaining BBCode and smilies;
+- preserve the web installer, but lock it permanently after successful setup;
+- target HTTPS deployment using explicit trusted-proxy configuration; and
+- preserve the 2001 presentation while modernising every trust boundary.
+
+Progress is tracked as focused, independently verified commits:
+
+- [x] Slice 1 — complete security inventory and executable characterization
+  baseline (`SECURITY_AUDIT.md`; five known-open conditions reproduced).
+- [ ] Slice 2 — parameterized database API and complete query conversion.
+- [ ] Slice 3 — contextual output encoding, safe URLs, and BBCode-only content.
+- [ ] Slice 4 — password hashing, reset tokens, sessions, cookies, HTTPS, and
+  trusted proxies.
+- [ ] Slice 5 — CSRF tokens and POST-only state changes.
+- [ ] Slice 6 — centralized authorization and full role/ownership coverage.
+- [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,
+  deployment guidance, and final residual-risk review.
+
 ## Conclusion
 
 The runtime upgrade is reasonably straightforward and is now working for the

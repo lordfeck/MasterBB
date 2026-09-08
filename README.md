@@ -120,4 +120,5 @@ untrusted network.
 
 Do not expose this stack directly to the public Internet. See
 [MODERNIZATION_AUDIT.md](MODERNIZATION_AUDIT.md) for the current status and the
-recommended hardening sequence.
+recommended hardening sequence, and [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for
+the detailed findings and remediation status.
