@@ -49,7 +49,6 @@ if($submit) {
 	$username = strip_tags($username);
 	$username = trim($username);
 	$username = normalize_whitespace($username);
-	$username = addslashes($username);
 
    if(trim($password) == '' || trim($username) == '' || trim($email) == '') {
       include('page_header.'.$phpEx);
@@ -72,12 +71,7 @@ if($submit) {
   
    $sig = chop($sig); // Strip all trailing whitespace.
    $sig = str_replace("\n", "<BR>", $sig);
-   $sig = addslashes($sig);
-   $occ = addslashes($occ);
-   $intrest = addslashes($intrest);
-   $from = addslashes($from);
    $passwd = md5($password);
-	$email = addslashes($email);
    $regdate = date("M d, Y");
    
    // Ensure the website URL starts with "http://".
@@ -91,14 +85,10 @@ if($submit) {
    if($website == "http://")
      $website = "";
 
-	$website = addslashes($website);
    
    // Check if the ICQ number only contains digits
    $icq = (preg_match("/^[0-9]+$/", $icq)) ? $icq : '';
 
-	$aim = addslashes($aim);
-	$yim = addslashes($yim);
-	$msnm = addslashes($msnm);
   
    if($viewemail == 1) {
       $sqlviewemail = "1";
@@ -111,10 +101,10 @@ if($submit) {
      die("Error connecting to the database.");
    list($total) = db_fetch_array($r);
    $total += 1;
-   $sql = "INSERT INTO users (user_id, username, user_regdate, user_email, user_icq, user_password, user_occ, user_intrest, user_from, user_website, user_sig, user_aim, user_viewemail, user_yim, user_msnm) 
-				VALUES ('$total', '$username', '$regdate', '$email', '$icq', '$passwd', '$occ', '$intrest', '$from', '$website', '$sig', '$aim', '$sqlviewemail', '$yim', '$msnm')";
+   $sql = "INSERT INTO users (user_id, username, user_regdate, user_email, user_icq, user_password, user_occ, user_intrest, user_from, user_website, user_sig, user_aim, user_viewemail, user_yim, user_msnm)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-   if(!$result = db_query($sql, $db)) {
+   if(!$result = db_query_params($sql, array((int) $total, $username, $regdate, $email, $icq, $passwd, $occ, $intrest, $from, $website, $sig, $aim, (int) $sqlviewemail, $yim, $msnm), $db)) {
       include('page_header.'.$phpEx);
       die("An Error Occured while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
    }

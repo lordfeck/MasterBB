@@ -114,8 +114,6 @@ include('../page_header.'.$phpEx);
 switch($mode) {
 	case 'setoptions':
 		if($submit) {
-		   $name = addslashes($name);
-		   $esig = addslashes($esig);
 		   $sql = "SELECT count(*) AS total FROM config WHERE (selected = 1)";
 		   $result = db_query($sql, $db);
 		   if (!$result) {
@@ -124,13 +122,13 @@ switch($mode) {
 		   $row = db_fetch_array($result);
 		   if ($row[total] != 0) {
 		      // settings exist, so we can just update.
-		      $sql = "UPDATE config SET sitename = '$name', allow_html = '$html', allow_bbcode = '$bb', allow_sig = '$sig', hot_threshold = $hot, posts_per_page = $ppp, topics_per_page = $tpp, override_themes = $override_themes, allow_namechange = $allow_name_change, email_from = '$from', email_sig = '$esig', default_lang = '$selected_lang' WHERE selected = 1";
-		      $result = db_query($sql, $db);
+		      $sql = "UPDATE config SET sitename = ?, allow_html = ?, allow_bbcode = ?, allow_sig = ?, hot_threshold = ?, posts_per_page = ?, topics_per_page = ?, override_themes = ?, allow_namechange = ?, email_from = ?, email_sig = ?, default_lang = ? WHERE selected = 1";
+		      $result = db_query_params($sql, array($name, $html, $bb, $sig, $hot, $ppp, $tpp, $override_themes, $allow_name_change, $from, $esig, $selected_lang), $db);
 		   } else {
 		      // have to do an insert..
 		      $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page, override_themes, allow_namechange, email_from, email_sig, default_lang, selected) ";
-		      $sql .= "VALUES ('$name', $html, $bb, $sig, $hot, $ppp, $tpp, $override_themes, $allow_name_change, '$from', '$esig', '$selected_lang', 1)";
-		      $result = db_query($sql, $db);
+		      $sql .= "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+		      $result = db_query_params($sql, array($name, $html, $bb, $sig, $hot, $ppp, $tpp, $override_themes, $allow_name_change, $from, $esig, $selected_lang), $db);
 		   }
 		   if (!$result) {
 		      echo db_error() . "<br>";
@@ -250,17 +248,14 @@ switch($mode) {
 	case 'headermetafooter':
 
 		if($submit) {
-			$header = addslashes($header);
-			$metacode = addslashes($metacode);
-			$footer = addslashes($footer);
 			$sql = "DELETE FROM headermetafooter WHERE (1=1)";
 			$result = db_query($sql, $db);
 			if (!$result) {
 				echo db_error() . "<br>\n";
 				die("Error doing deletion in admin_board.$phpEx");
 			}
-			$sql = "INSERT INTO headermetafooter (header, meta, footer) VALUES ('$header', '$metacode', '$footer')";
-			$result = db_query($sql, $db);
+			$sql = "INSERT INTO headermetafooter (header, meta, footer) VALUES (?, ?, ?)";
+			$result = db_query_params($sql, array($header, $metacode, $footer), $db);
 			if(!$result) {
 				echo db_error() . "<br>\n";
 				die("<FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Error doing insertion in board_admin.$phpEx</FONT>");
@@ -320,31 +315,37 @@ switch($mode) {
 		if($edit || $delete || $add) {
 
 			if($add) {
-				$title = addslashes($title);
-				if($special)
-					$sql = "INSERT INTO ranks (rank_title, rank_min, rank_max, rank_special, rank_image) VALUES ('$title', '-1', '-1', '1', '$image')";
-				else
-					$sql = "INSERT INTO ranks (rank_title, rank_min, rank_max, rank_special, rank_image) VALUES ('$title', '$min_posts', '$max_posts', '0', '$image')";
-				if($r = db_query($sql, $db))
+				if($special) {
+					$sql = "INSERT INTO ranks (rank_title, rank_min, rank_max, rank_special, rank_image) VALUES (?, -1, -1, 1, ?)";
+					$rank_params = array($title, $image);
+				}
+				else {
+					$sql = "INSERT INTO ranks (rank_title, rank_min, rank_max, rank_special, rank_image) VALUES (?, ?, ?, 0, ?)";
+					$rank_params = array($title, $min_posts, $max_posts, $image);
+				}
+				if($r = db_query_params($sql, $rank_params, $db))
 					echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Rank added to the database.</FONT></DIV>";
 				else
 					echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Error. Could not add rank to the database.</FONT></DIV>";
 
 			}
 			else if($edit) {
-				$title = addslashes($title);
-				if($selected)
-					$sql = "UPDATE ranks SET rank_title = '$title', rank_image = '$image' WHERE rank_id = '$id'";
-				else
-					$sql = "UPDATE ranks SET rank_title = '$title', rank_max = '$max_posts', rank_min = '$min_posts', rank_image = '$image' WHERE rank_id = '$id'";
-				if($r = db_query($sql, $db))
+				if($selected) {
+					$sql = "UPDATE ranks SET rank_title = ?, rank_image = ? WHERE rank_id = ?";
+					$rank_params = array($title, $image, $id);
+				}
+				else {
+					$sql = "UPDATE ranks SET rank_title = ?, rank_max = ?, rank_min = ?, rank_image = ? WHERE rank_id = ?";
+					$rank_params = array($title, $max_posts, $min_posts, $image, $id);
+				}
+				if($r = db_query_params($sql, $rank_params, $db))
 					echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Rank Updated</FONT></DIV>";
 				else
 					echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Error. Could not modify the database.</FONT></DIV>";
 			}
 			else if($delete) {
-				$sql = "DELETE FROM ranks WHERE rank_id = '$id'";
-				if($r = db_query($sql, $db))
+				$sql = "DELETE FROM ranks WHERE rank_id = ?";
+				if($r = db_query_params($sql, array($id), $db))
                                         echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Rank Removed</FONT></DIV>";
                                 else
                                         echo "<DIV ALIGN=\"CENTER\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize\" COLOR=\"$textcolor\">Error. Could not modify the database.</FONT></DIV>";

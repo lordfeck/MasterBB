@@ -43,8 +43,8 @@ $pagetitle = "Edit Post";
 $pagetype = "index";
 
 if($submit) {
-   $sql = "SELECT * FROM posts WHERE post_id = '$post_id'";
-   if (!$result = db_query($sql, $db)) die($err_db_retrieve_data);
+   $sql = "SELECT * FROM posts WHERE post_id = ?";
+   if (!$result = db_query_params($sql, array($post_id), $db)) die($err_db_retrieve_data);
    if (db_num_rows($result) <= 0) die($err_db_retrieve_data);
    $myrow = db_fetch_array($result);
 
@@ -128,14 +128,13 @@ if($submit) {
    $message .= "<BR><BR><font size=-1>[ $edit_by $username $on_date $date ]</font>";
    $message = censor_string($message, $db);
    
-   $message = addslashes($message);
    if(!$delete) {
       $forward = 1;
       $topic = $topic_id;
       $forum = $forum_id;
       include('page_header.' . $phpEx);
-      $sql = "UPDATE posts_text SET post_text = '$message' WHERE (post_id = '$post_id')";
-      if(!$result = db_query($sql, $db))
+      $sql = "UPDATE posts_text SET post_text = ? WHERE post_id = ?";
+      if(!$result = db_query_params($sql, array($message, $post_id), $db))
 			error_die("Unable to update the posting in the database");
 		$subject = strip_tags($subject);
       if(isset($subject) && (trim($subject) != '')) {
@@ -144,9 +143,8 @@ if($submit) {
 			 else
 			   $notify = 1;
 			 $subject = censor_string($subject, $db);
-			 $subject = addslashes($subject);
-			 $sql = "UPDATE topics SET topic_title = '$subject', topic_notify = '$notify' WHERE topic_id = '$topic_id'";
-			 if(!$result = db_query($sql, $db)) {
+			 $sql = "UPDATE topics SET topic_title = ?, topic_notify = ? WHERE topic_id = ?";
+			 if(!$result = db_query_params($sql, array($subject, (int) $notify, (int) $topic_id), $db)) {
 			 	error_die("Unable to update the topic subject in the database");
 			 }
       }
@@ -174,35 +172,35 @@ if($submit) {
       include('page_header.'.$phpEx);
       $last_post_in_thread = get_last_post($topic_id, $db, "time_fix");
 
-      $sql = "DELETE FROM posts WHERE post_id = '$post_id'";
-      if(!$r = db_query($sql, $db)){
+      $sql = "DELETE FROM posts WHERE post_id = ?";
+      if(!$r = db_query_params($sql, array($post_id), $db)){
 			error_die("Couldn't delete post from database");
 		}
 		
-		$sql = "DELETE FROM posts_text WHERE post_id = '$post_id'";
-      if(!$r = db_query($sql, $db)){
+		$sql = "DELETE FROM posts_text WHERE post_id = ?";
+      if(!$r = db_query_params($sql, array($post_id), $db)){
 			error_die("Couldn't delete post from database");
 		}
 		
 		else if($last_post_in_thread == $this_post_time) {
 	     $topic_time_fixed = get_last_post($topic_id, $db, "time_fix");
-   	  $sql = "UPDATE topics SET topic_time = '$topic_time_fixed' WHERE topic_id = '$topic_id'";
-        if(!$r = db_query($sql, $db)) {
+	     $sql = "UPDATE topics SET topic_time = ? WHERE topic_id = ?";
+        if(!$r = db_query_params($sql, array($topic_time_fixed, (int) $topic_id), $db)) {
 			 	error_die("Couldn't update to previous post time - last post has been removed");
 		  }
 	 	}
 
       if(get_total_posts($topic_id, $db, "topic") == 0) 
       {
-	 		$sql = "DELETE FROM topics WHERE topic_id = '$topic_id'";
-	 		if(!$r = db_query($sql, $db))
+			$sql = "DELETE FROM topics WHERE topic_id = ?";
+			if(!$r = db_query_params($sql, array((int) $topic_id), $db))
 	 			error_die("Couldn't delete topic from database");
 	 		$topic_removed = TRUE;
       }
       
       if($posterdata[user_id] != -1) {
-	 		$sql = "UPDATE users SET user_posts = user_posts - 1 WHERE user_id = $posterdata[user_id]";
-	 		if(!$r = db_query($sql, $db))
+			$sql = "UPDATE users SET user_posts = user_posts - 1 WHERE user_id = ?";
+			if(!$r = db_query_params($sql, array((int) $posterdata[user_id]), $db))
 	 		{
 	 			error_die("Couldn't change user post count.");
 	 		}
@@ -222,8 +220,8 @@ if($submit) {
 }
 else {
 	// Gotta handle private forums right here. They're naturally covered on submit, but not in this part.
-	$sql = "SELECT f.forum_type, f.forum_name, t.topic_title FROM forums f, topics t WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (t.forum_id = f.forum_id)";
-	if(!$result = db_query($sql, $db))
+	$sql = "SELECT f.forum_type, f.forum_name, t.topic_title FROM forums f, topics t WHERE f.forum_id = ? AND t.topic_id = ? AND t.forum_id = f.forum_id";
+	if(!$result = db_query_params($sql, array($forum, $topic), $db))
 	{
 		error_die("Couldn't get forum and topic information from the database.");
 	}
@@ -325,12 +323,12 @@ else {
 	
    $sql = "SELECT p.*, pt.post_text, u.username, u.user_id, u.user_sig, t.topic_title, t.topic_notify 
    			FROM posts p, users u, topics t, posts_text pt 
-   			WHERE (p.post_id = '$post_id') 
+			WHERE p.post_id = ?
    			AND pt.post_id = p.post_id
    			AND (p.topic_id = t.topic_id) 
    			AND (p.poster_id = u.user_id)";
    			
-   if(!$result = db_query($sql, $db))
+   if(!$result = db_query_params($sql, array($post_id), $db))
 		error_die("Couldn't get user and topic information from the database.<br>$sql");
    $myrow = db_fetch_array($result);
    // Freekin' ugly but I couldn't get it to work right as 1 big if 

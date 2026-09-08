@@ -42,8 +42,8 @@ $sig = request_present('sig', 'post');
 $notify = request_present('notify', 'post');
 $pagetitle = "New Topic";
 $pagetype = "newtopic";
-$sql = "SELECT forum_name, forum_access, forum_type FROM forums WHERE (forum_id = '$forum')";
-if(!$result = db_query($sql, $db))
+$sql = "SELECT forum_name, forum_access, forum_type FROM forums WHERE forum_id = ?";
+if(!$result = db_query_params($sql, array($forum), $db))
 	error_die("Can't get forum data.");
 $myrow = db_fetch_array($result);
 $forum_name = $myrow[forum_name];
@@ -138,10 +138,8 @@ if($submit) {
    $message = str_replace("\n", "<BR>", $message);
 
    $message = censor_string($message, $db);
-   $message = addslashes($message);
    $subject = strip_tags($subject);
    $subject = censor_string($subject, $db);
-   $subject = addslashes($subject);
    $poster_ip = $REMOTE_ADDR;
    $time = date("Y-m-d H:i");
 
@@ -149,18 +147,14 @@ if($submit) {
    if($sig && $userdata[user_id] != -1) {
       $message .= "\n[addsig]";
    }
-   $sql = "INSERT INTO topics (topic_title, topic_poster, forum_id, topic_time, topic_notify) VALUES ('$subject', '$userdata[user_id]', '$forum', '$time'";
-   if($notify && $userdata[user_id] != -1)
-     $sql .= ", '1'";
-   else
-     $sql .= ", '0'";
-   $sql .= ")";
-   if(!$result = db_query($sql, $db)) {
+   $sql = "INSERT INTO topics (topic_title, topic_poster, forum_id, topic_time, topic_notify) VALUES (?, ?, ?, ?, ?)";
+   $topic_notify = ($notify && $userdata[user_id] != -1) ? 1 : 0;
+   if(!$result = db_query_params($sql, array($subject, (int) $userdata[user_id], $forum, $time, $topic_notify), $db)) {
 		error_die("Couldn't enter topic in database.");
    }
    $topic_id = db_insert_id();
-   $sql = "INSERT INTO posts (topic_id, forum_id, poster_id, post_time, poster_ip) VALUES ('$topic_id', '$forum', '$userdata[user_id]', '$time', '$poster_ip')";
-   if(!$result = db_query($sql, $db)) {
+   $sql = "INSERT INTO posts (topic_id, forum_id, poster_id, post_time, poster_ip) VALUES (?, ?, ?, ?, ?)";
+   if(!$result = db_query_params($sql, array((int) $topic_id, $forum, (int) $userdata[user_id], $time, $poster_ip), $db)) {
 		error_die("Couldn't enter post in datbase.");
    }
    else
@@ -168,13 +162,13 @@ if($submit) {
    	$post_id = db_insert_id();
    	if($post_id)
    	{
-   		$sql = "INSERT INTO posts_text (post_id, post_text) values ($post_id, '$message')";
-   		if(!$result = db_query($sql, $db))
+		$sql = "INSERT INTO posts_text (post_id, post_text) VALUES (?, ?)";
+		if(!$result = db_query_params($sql, array((int) $post_id, $message), $db))
    		{
    			error_die("Could not enter post text!");
    		}
-   		$sql = "UPDATE topics SET topic_last_post_id = $post_id WHERE topic_id = '$topic_id'";
-   		if(!$result = db_query($sql, $db))
+		$sql = "UPDATE topics SET topic_last_post_id = ? WHERE topic_id = ?";
+		if(!$result = db_query_params($sql, array((int) $post_id, (int) $topic_id), $db))
    		{
    			error_die("Could not update topics table!");
    		}
@@ -182,14 +176,14 @@ if($submit) {
    }
 
    if($userdata[user_id] != -1) {
-      $sql = "UPDATE users SET user_posts=user_posts+1 WHERE (user_id = $userdata[user_id])";
-      $result = db_query($sql, $db);
+      $sql = "UPDATE users SET user_posts=user_posts+1 WHERE user_id = ?";
+      $result = db_query_params($sql, array((int) $userdata[user_id]), $db);
       if (!$result) {
 			error_die("Couldn't update users post count.");
       }
    }
-   $sql = "UPDATE forums SET forum_posts = forum_posts+1, forum_topics = forum_topics+1, forum_last_post_id = $post_id WHERE forum_id = '$forum'";
-   $result = db_query($sql, $db);
+   $sql = "UPDATE forums SET forum_posts = forum_posts+1, forum_topics = forum_topics+1, forum_last_post_id = ? WHERE forum_id = ?";
+   $result = db_query_params($sql, array((int) $post_id, $forum), $db);
    if (!$result) {
       error_die("Couldn't update forums post count.");
    }

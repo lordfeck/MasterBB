@@ -81,18 +81,22 @@ POST has no CSRF protection.
 
 **Severity:** Critical
 
-**Status:** Open; systemic source finding
+**Status:** Closed in Slice 2
 
-`database.php::db_query()` passes complete strings to `PDO::query()`. Request,
-session, stored, and derived values are interpolated throughout public and
-administration workflows. Integer request conversion and scattered
-`addslashes()` calls reduce some individual payloads but are not an adequate
-query boundary. The historical regex in `fix.php` can also corrupt legitimate
-input while providing false assurance.
+`database.php::db_query_params()` now uses native PDO prepares and binds every
+value separately with an appropriate string, integer, or null type. All
+request-, session-, stored-, and derived-value queries in public, account, PM,
+moderation, administration, and installation paths use that boundary. Dynamic
+lists generate placeholders; pagination limits are integer-bound; search and
+member-list ordering retain explicit allowlists. Direct execution remains only
+for constant statements, installer schema/seed constants, and the installer's
+database identifier after a strict identifier check.
 
-Add a parameterized execution API, use native PDO prepares, convert all
-application queries, and retain strict allowlists only for identifiers such as
-sort expressions. Remove the SQL regex after conversion.
+The conversion also removed the scattered SQL `addslashes()` calls and the
+historical mutating SQL regex in `fix.php`. Fresh-install smoke tests pass on
+PHP 8.4/MariaDB 11.4, the negative SQL-shaped login and search-sort tests pass,
+and the security fixture now registers and authenticates a username containing
+an apostrophe to verify that legitimate data survives the parameter boundary.
 
 ### SEC-002 — Password and password-reset primitives are obsolete
 

@@ -39,16 +39,16 @@ function new_session($userid, $remote_ip, $lifespan, $db) {
 	$currtime = (string) (time());
 	$expirytime = (string) (time() - $lifespan);
 
-	$deleteSQL = "DELETE FROM sessions WHERE (start_time < $expirytime)";
-	$delresult = db_query($deleteSQL, $db);
+	$deleteSQL = "DELETE FROM sessions WHERE (start_time < ?)";
+	$delresult = db_query_params($deleteSQL, array((int) $expirytime), $db);
 
 	if (!$delresult) {
 		die("Delete failed in new_session()");
 	}
 
-	$sql = "INSERT INTO sessions (sess_id, user_id, start_time, remote_ip) VALUES ($sessid, $userid, $currtime, '$remote_ip')";
+	$sql = "INSERT INTO sessions (sess_id, user_id, start_time, remote_ip) VALUES (?, ?, ?, ?)";
 	
-	$result = db_query($sql, $db);
+	$result = db_query_params($sql, array($sessid, (int) $userid, (int) $currtime, $remote_ip), $db);
 	
 	if ($result) {
 		return $sessid;
@@ -84,8 +84,8 @@ function set_session_cookie($sessid, $cookietime, $cookiename, $cookiepath, $coo
 function get_userid_from_session($sessid, $cookietime, $remote_ip, $db) {
 
 	$mintime = time() - $cookietime;
-	$sql = "SELECT user_id FROM sessions WHERE (sess_id = $sessid) AND (start_time > $mintime) AND (remote_ip = '$remote_ip')";
-	$result = db_query($sql, $db);
+	$sql = "SELECT user_id FROM sessions WHERE (sess_id = ?) AND (start_time > ?) AND (remote_ip = ?)";
+	$result = db_query_params($sql, array((int) $sessid, $mintime, $remote_ip), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Error doing DB query in get_userid_from_session()");
@@ -107,8 +107,8 @@ function get_userid_from_session($sessid, $cookietime, $remote_ip, $db) {
 function update_session_time($sessid, $db) {
 	
 	$newtime = (string) time();
-	$sql = "UPDATE sessions SET start_time=$newtime WHERE (sess_id = $sessid)";
-	$result = db_query($sql, $db);
+	$sql = "UPDATE sessions SET start_time = ? WHERE (sess_id = ?)";
+	$result = db_query_params($sql, array((int) $newtime, (int) $sessid), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Error doing DB update in update_session_time()");
@@ -122,8 +122,8 @@ function update_session_time($sessid, $db) {
  */
 function end_user_session($userid, $db) {
 
-	$sql = "DELETE FROM sessions WHERE (user_id = $userid)";
-	$result = db_query($sql, $db);
+	$sql = "DELETE FROM sessions WHERE (user_id = ?)";
+	$result = db_query_params($sql, array((int) $userid), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Delete failed in end_user_session()");
@@ -172,8 +172,8 @@ function make_login_logout_link($user_logged_in, $url_phpbb) {
  */
 function get_total_topics($forum_id, $db) {
 	global $l_error;
-	$sql = "SELECT count(*) AS total FROM topics WHERE forum_id = '$forum_id'";
-	if(!$result = db_query($sql, $db))
+	$sql = "SELECT count(*) AS total FROM topics WHERE forum_id = ?";
+	if(!$result = db_query_params($sql, array((int) $forum_id), $db))
 		return($l_error);
 	if(!$myrow = db_fetch_array($result))
 		return($l_error);
@@ -227,11 +227,14 @@ function get_whosonline($IP, $username, $forum, $db) {
 	$time= explode(  " ", microtime());
 	$userusec= (double)$time[0];
 	$usersec= (double)$time[1];
-	$username= addslashes($username);
-	$deleteuser= db_query( "delete from whosonline where date < $usersec - 300", $db);
-	$userlog= db_fetch_row(db_QUERY( "SELECT * FROM whosonline where IP = '$IP'", $db));
+	$deleteuser = db_query_params("DELETE FROM whosonline WHERE date < ?", array((int) $usersec - 300), $db);
+	$userlog = db_fetch_row(db_query_params("SELECT * FROM whosonline WHERE IP = ?", array($IP), $db));
 	if($userlog == false) {
-		$ok= @db_query( "insert INTO whosonline (IP,DATE,username,forum) VALUES('$IP','$usersec', '$username', '$forum')", $db)or die( "Unable to query db!");
+		$ok = @db_query_params(
+			"INSERT INTO whosonline (IP, DATE, username, forum) VALUES (?, ?, ?, ?)",
+			array($IP, (int) $usersec, $username, (int) $forum),
+			$db
+		) or die("Unable to query db!");
 	}
 	$resultlogtab   = db_query("SELECT Count(*) as total FROM whosonline", $db);
 	$numberlogtab   = db_fetch_array($resultlogtab);
@@ -243,6 +246,7 @@ function get_whosonline($IP, $username, $forum, $db) {
  * Also can return the number of users on the system.
  */ 
 function get_total_posts($id, $db, $type) {
+	$params = array();
    switch($type) {
     case 'users':
       $sql = "SELECT count(*) AS total FROM users WHERE (user_id != -1) AND (user_level != -1)";
@@ -251,16 +255,18 @@ function get_total_posts($id, $db, $type) {
       $sql = "SELECT count(*) AS total FROM posts";
       break;
     case 'forum':
-      $sql = "SELECT count(*) AS total FROM posts WHERE forum_id = '$id'";
+	  $sql = "SELECT count(*) AS total FROM posts WHERE forum_id = ?";
+	  $params[] = (int) $id;
       break;
     case 'topic':
-      $sql = "SELECT count(*) AS total FROM posts WHERE topic_id = '$id'";
+	  $sql = "SELECT count(*) AS total FROM posts WHERE topic_id = ?";
+	  $params[] = (int) $id;
       break;
    // Old, we should never get this.   
     case 'user':
       die("Should be using the users.user_posts column for this.");
    }
-   if(!$result = db_query($sql, $db))
+   if(!$result = $params ? db_query_params($sql, $params, $db) : db_query($sql, $db))
      return("ERROR");
    if(!$myrow = db_fetch_array($result))
      return("0");
@@ -274,21 +280,22 @@ function get_total_posts($id, $db, $type) {
  */
 function get_last_post($id, $db, $type) {
    global $l_error, $l_noposts, $l_by;
+	$params = array((int) $id);
    switch($type) {
     case 'time_fix':
-      $sql = "SELECT p.post_time FROM posts p WHERE p.topic_id = '$id' ORDER BY post_time DESC LIMIT 1";   
+	  $sql = "SELECT p.post_time FROM posts p WHERE p.topic_id = ? ORDER BY post_time DESC LIMIT 1";
       break;
     case 'forum':
-      $sql = "SELECT p.post_time, p.poster_id, u.username FROM posts p, users u WHERE p.forum_id = '$id' AND p.poster_id = u.user_id ORDER BY post_time DESC LIMIT 1";
+	  $sql = "SELECT p.post_time, p.poster_id, u.username FROM posts p, users u WHERE p.forum_id = ? AND p.poster_id = u.user_id ORDER BY post_time DESC LIMIT 1";
       break;
     case 'topic':
-      $sql = "SELECT p.post_time, u.username FROM posts p, users u WHERE p.topic_id = '$id' AND p.poster_id = u.user_id ORDER BY post_time DESC LIMIT 1";
+	  $sql = "SELECT p.post_time, u.username FROM posts p, users u WHERE p.topic_id = ? AND p.poster_id = u.user_id ORDER BY post_time DESC LIMIT 1";
       break;
     case 'user':
-      $sql = "SELECT p.post_time FROM posts p WHERE p.poster_id = '$id' LIMIT 1";
+	  $sql = "SELECT p.post_time FROM posts p WHERE p.poster_id = ? LIMIT 1";
       break;
    }
-   if(!$result = db_query($sql, $db))
+   if(!$result = db_query_params($sql, $params, $db))
      return($l_error);
    
    if(!$myrow = db_fetch_array($result))
@@ -305,8 +312,8 @@ function get_last_post($id, $db, $type) {
  * Returns an array of all the moderators of a forum
  */
 function get_moderators($forum_id, $db) {
-   $sql = "SELECT u.user_id, u.username FROM users u, forum_mods f WHERE f.forum_id = '$forum_id' and f.user_id = u.user_id";
-    if(!$result = db_query($sql, $db))
+	$sql = "SELECT u.user_id, u.username FROM users u, forum_mods f WHERE f.forum_id = ? and f.user_id = u.user_id";
+    if(!$result = db_query_params($sql, array((int) $forum_id), $db))
      return(array());
    if(!$myrow = db_fetch_array($result))
      return(array());
@@ -321,8 +328,8 @@ function get_moderators($forum_id, $db) {
  * Retruns 1 if TRUE, 0 if FALSE or Error
  */
 function is_moderator($forum_id, $user_id, $db) {
-   $sql = "SELECT user_id FROM forum_mods WHERE forum_id = '$forum_id' AND user_id = '$user_id'";
-   if(!$result = db_query($sql, $db))
+   $sql = "SELECT user_id FROM forum_mods WHERE forum_id = ? AND user_id = ?";
+   if(!$result = db_query_params($sql, array((int) $forum_id, (int) $user_id), $db))
      return("0");
    if(!$myrow = db_fetch_array($result))
      return("0");
@@ -338,9 +345,8 @@ function is_moderator($forum_id, $user_id, $db) {
  */
 function check_user_pw($username, $password, $db) {
 	$password = md5($password);
-	$username = addslashes($username);
-	$sql = "SELECT user_id FROM users WHERE (username = '$username') AND (user_password = '$password')";
-	$resultID = db_query($sql, $db);
+	$sql = "SELECT user_id FROM users WHERE (username = ?) AND (user_password = ?)";
+	$resultID = db_query_params($sql, array($username, $password), $db);
 	if (!$resultID) {
 		echo db_error() . "<br>";
 		die("Error doing DB query in check_user_pw()");
@@ -354,8 +360,8 @@ function check_user_pw($username, $password, $db) {
  * Returns a count of the given userid's private messages.
  */
 function get_pmsg_count($user_id, $db) {
-	$sql = "SELECT msg_id FROM priv_msgs WHERE (to_userid = $user_id)";
-	$resultID = db_query($sql);
+	$sql = "SELECT msg_id FROM priv_msgs WHERE (to_userid = ?)";
+	$resultID = db_query_params($sql, array((int) $user_id), $db);
 	if (!$resultID) {
 		echo db_error() . "<br>";
 		die("Error doing DB query in get_pmsg_count");
@@ -369,9 +375,8 @@ function get_pmsg_count($user_id, $db) {
  * Checks if a given username exists in the DB. Returns true if so, false if not.
  */
 function check_username($username, $db) {
-	$username = addslashes($username);
-	$sql = "SELECT user_id FROM users WHERE (username = '$username') AND (user_level != '-1')";
-	$resultID = db_query($sql);
+	$sql = "SELECT user_id FROM users WHERE (username = ?) AND (user_level != -1)";
+	$resultID = db_query_params($sql, array($username), $db);
 	if (!$resultID) {
 		echo db_error() . "<br>";
 		die("Error doing DB query in check_username()");
@@ -387,8 +392,8 @@ function check_username($username, $db) {
 
 function get_userdata_from_id($userid, $db) {
 	
-	$sql = "SELECT * FROM users WHERE user_id = $userid";
-	if(!$result = db_query($sql, $db)) {
+	$sql = "SELECT * FROM users WHERE user_id = ?";
+	if(!$result = db_query_params($sql, array((int) $userid), $db)) {
 		$userdata = array("error" => "1");
 		return ($userdata);
 	}
@@ -404,9 +409,8 @@ function get_userdata_from_id($userid, $db) {
  * Gets user's data based on their username
  */
 function get_userdata($username, $db) {
-	$username = addslashes($username);
-	$sql = "SELECT * FROM users WHERE username = '$username' AND user_level != -1";
-	if(!$result = db_query($sql, $db))
+	$sql = "SELECT * FROM users WHERE username = ? AND user_level != -1";
+	if(!$result = db_query_params($sql, array($username), $db))
 		$userdata = array("error" => "1");
 	if(!$myrow = db_fetch_array($result))
 		$userdata = array("error" => "1");
@@ -418,8 +422,8 @@ function get_userdata($username, $db) {
  * Returns all the rows in the themes table
  */
 function setuptheme($theme, $db) {
-	$sql = "SELECT * FROM themes WHERE theme_id = '$theme'";
-	if(!$result = db_query($sql, $db))
+	$sql = "SELECT * FROM themes WHERE theme_id = ?";
+	if(!$result = db_query_params($sql, array((int) $theme), $db))
 		return(0);
 	if(!$myrow = db_fetch_array($result))
 		return(0);
@@ -433,13 +437,13 @@ function setuptheme($theme, $db) {
 function does_exists($id, $db, $type) {
 	switch($type) {
 		case 'forum':
-			$sql = "SELECT forum_id FROM forums WHERE forum_id = '$id'";
+			$sql = "SELECT forum_id FROM forums WHERE forum_id = ?";
 		break;
 		case 'topic':
-			$sql = "SELECT topic_id FROM topics WHERE topic_id = '$id'";
+			$sql = "SELECT topic_id FROM topics WHERE topic_id = ?";
 		break;
 	}
-	if(!$result = db_query($sql, $db))
+	if(!$result = db_query_params($sql, array((int) $id), $db))
 		return(0);
 	if(!$myrow = db_fetch_array($result)) 
 		return(0);
@@ -450,8 +454,8 @@ function does_exists($id, $db, $type) {
  * Checks if a topic is locked
  */
 function is_locked($topic, $db) {
-	$sql = "SELECT topic_status FROM topics WHERE topic_id = '$topic'";
-	if(!$r = db_query($sql, $db))
+	$sql = "SELECT topic_status FROM topics WHERE topic_id = ?";
+	if(!$r = db_query_params($sql, array((int) $topic), $db))
 		return(FALSE);
 	if(!$m = db_fetch_array($r))
 		return(FALSE);
@@ -1031,8 +1035,8 @@ function escape_slashes($input)
  * Returns the name of the forum based on ID number
  */
 function get_forum_name($forum_id, $db) {
-	$sql = "SELECT forum_name FROM forums WHERE forum_id = '$forum_id'";
-	if(!$r = db_query($sql, $db))
+	$sql = "SELECT forum_name FROM forums WHERE forum_id = ?";
+	if(!$r = db_query_params($sql, array((int) $forum_id), $db))
 		return("ERROR");
 	if(!$m = db_fetch_array($r))
 		return("None");
@@ -1119,8 +1123,8 @@ function undo_htmlspecialchars($input) {
  * Make sure a username isn't on the disallow list
  */
 function validate_username($username, $db) {
-	$sql = "SELECT disallow_username FROM disallow WHERE disallow_username = '" . addslashes($username) . "'";
-	if(!$r = db_query($sql, $db))
+	$sql = "SELECT disallow_username FROM disallow WHERE disallow_username = ?";
+	if(!$r = db_query_params($sql, array($username), $db))
 		return(0);
 	if($m = db_fetch_array($r)) {
 		if($m[disallow_username] == $username)
@@ -1134,8 +1138,8 @@ function validate_username($username, $db) {
  * Check if this is the first post in a topic. Used in editpost.php
  */
 function is_first_post($topic_id, $post_id, $db) {
-   $sql = "SELECT post_id FROM posts WHERE topic_id = '$topic_id' ORDER BY post_id LIMIT 1";
-   if(!$r = db_query($sql, $db))
+   $sql = "SELECT post_id FROM posts WHERE topic_id = ? ORDER BY post_id LIMIT 1";
+   if(!$r = db_query_params($sql, array((int) $topic_id), $db))
      return(0);
    if(!$m = db_fetch_array($r))
      return(0);
@@ -1165,8 +1169,8 @@ function censor_string($string, $db) {
 function is_banned($ipuser, $type, $db) {
    
    // Remove old bans
-   $sql = "DELETE FROM banlist WHERE (ban_end < ". mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y")).") AND (ban_end > 0)";
-   @db_query($sql, $db);
+   $sql = "DELETE FROM banlist WHERE (ban_end < ?) AND (ban_end > 0)";
+   @db_query_params($sql, array(time()), $db);
    
    switch($type) {
     case "ip":
@@ -1194,8 +1198,8 @@ function is_banned($ipuser, $type, $db) {
 	return(FALSE);
       break;
     case "username":
-      $sql = "SELECT ban_userid FROM banlist WHERE ban_userid = '$ipuser'";
-      if($r = db_query($sql, $db)) {
+      $sql = "SELECT ban_userid FROM banlist WHERE ban_userid = ?";
+      if($r = db_query_params($sql, array((int) $ipuser), $db)) {
 	 if(db_num_rows($r) > 0)
 	   return(TRUE);
       }
@@ -1211,14 +1215,14 @@ function is_banned($ipuser, $type, $db) {
  */
 function check_priv_forum_auth($userid, $forumid, $is_posting, $db)
 {
-	$sql = "SELECT count(*) AS user_count FROM forum_access WHERE (user_id = $userid) AND (forum_id = $forumid) ";
+	$sql = "SELECT count(*) AS user_count FROM forum_access WHERE (user_id = ?) AND (forum_id = ?) ";
 	
 	if ($is_posting)
 	{
 		$sql .= "AND (can_post = 1)";
 	}
 	
-	if (!$result = db_query($sql, $db))
+	if (!$result = db_query_params($sql, array((int) $userid, (int) $forumid), $db))
 	{
 		// no good..
 		return FALSE;
@@ -1280,9 +1284,8 @@ global $l_jumpto, $l_selectforum, $l_go;
 	      echo "<OPTION VALUE=\"-1\">&nbsp;</OPTION>\n";
 	      echo "<OPTION VALUE=\"-1\">$myrow[cat_title]</OPTION>\n";
 	      echo "<OPTION VALUE=\"-1\">----------------</OPTION>\n";
-	      $sub_sql = "SELECT forum_id, forum_name FROM forums WHERE cat_id =
-	'$myrow[cat_id]' ORDER BY forum_id";
-	      if($res = db_query($sub_sql, $db)) {
+	      $sub_sql = "SELECT forum_id, forum_name FROM forums WHERE cat_id = ? ORDER BY forum_id";
+	      if($res = db_query_params($sub_sql, array((int) $myrow[cat_id]), $db)) {
 	    if($row = db_fetch_array($res)) {
 	       do {
 		  $name = stripslashes($row[forum_name]);
@@ -1370,10 +1373,10 @@ function normalize_whitespace($str)
 }
 
 function sync($db, $id, $type) {
-   switch($type) {
-   	case 'forum':
-   		$sql = "SELECT max(post_id) AS last_post FROM posts WHERE forum_id = $id";
-   		if(!$result = db_query($sql, $db))
+	switch($type) {
+		case 'forum':
+			$sql = "SELECT max(post_id) AS last_post FROM posts WHERE forum_id = ?";
+			if(!$result = db_query_params($sql, array((int) $id), $db))
    		{
    			die("Could not get post ID");
    		}
@@ -1382,8 +1385,8 @@ function sync($db, $id, $type) {
    			$last_post = $row["last_post"];
    		}
    		
-   		$sql = "SELECT count(post_id) AS total FROM posts WHERE forum_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "SELECT count(post_id) AS total FROM posts WHERE forum_id = ?";
+			if(!$result = db_query_params($sql, array((int) $id), $db))
    		{
    			die("Could not get post count");
    		}
@@ -1392,8 +1395,8 @@ function sync($db, $id, $type) {
    			$total_posts = $row["total"];
    		}
    		
-   		$sql = "SELECT count(topic_id) AS total FROM topics WHERE forum_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "SELECT count(topic_id) AS total FROM topics WHERE forum_id = ?";
+			if(!$result = db_query_params($sql, array((int) $id), $db))
    		{
    			die("Could not get topic count");
    		}
@@ -1402,16 +1405,16 @@ function sync($db, $id, $type) {
    			$total_topics = $row["total"];
    		}
    		
-   		$sql = "UPDATE forums SET forum_last_post_id = '$last_post', forum_posts = $total_posts, forum_topics = $total_topics WHERE forum_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "UPDATE forums SET forum_last_post_id = ?, forum_posts = ?, forum_topics = ? WHERE forum_id = ?";
+			if(!$result = db_query_params($sql, array((int) $last_post, (int) $total_posts, (int) $total_topics, (int) $id), $db))
    		{
    			die("Could not update forum $id");
    		}
    	break;
 
    	case 'topic':
-   		$sql = "SELECT max(post_id) AS last_post FROM posts WHERE topic_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "SELECT max(post_id) AS last_post FROM posts WHERE topic_id = ?";
+			if(!$result = db_query_params($sql, array((int) $id), $db))
    		{
    			die("Could not get post ID");
    		}
@@ -1420,8 +1423,8 @@ function sync($db, $id, $type) {
    			$last_post = $row["last_post"];
    		}
    		
-   		$sql = "SELECT count(post_id) AS total FROM posts WHERE topic_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "SELECT count(post_id) AS total FROM posts WHERE topic_id = ?";
+			if(!$result = db_query_params($sql, array((int) $id), $db))
    		{
    			die("Could not get post count");
    		}
@@ -1430,8 +1433,8 @@ function sync($db, $id, $type) {
    			$total_posts = $row["total"];
    		}
    		$total_posts -= 1;
-   		$sql = "UPDATE topics SET topic_replies = $total_posts, topic_last_post_id = $last_post WHERE topic_id = $id";
-   		if(!$result = db_query($sql, $db))
+			$sql = "UPDATE topics SET topic_replies = ?, topic_last_post_id = ? WHERE topic_id = ?";
+			if(!$result = db_query_params($sql, array((int) $total_posts, (int) $last_post, (int) $id), $db))
    		{
    			die("Could not update topic $id");
    		}

@@ -41,8 +41,8 @@ if($submit) {
 		error_die("$l_emptymsg $l_tryagain");
 	}
 
-	$sql = "SELECT u.* FROM users u, priv_msgs p WHERE (u.user_id = p.to_userid) AND (p.msg_id = $msgid)";
-	$result = db_query($sql, $db);
+	$sql = "SELECT u.* FROM users u, priv_msgs p WHERE u.user_id = p.to_userid AND p.msg_id = ?";
+	$result = db_query_params($sql, array($msgid), $db);
 	if (!$result) {
 		die("Error getting userinfo from database");
 	}
@@ -98,11 +98,10 @@ if($submit) {
 	}
 	
 	$message = str_replace("\n", "<BR>", $message);
-	$message = addslashes($message);
 	$time = date("Y-m-d H:i");
 	$poster_ip = $REMOTE_ADDR;
-	$sql = "SELECT from_userid FROM priv_msgs WHERE (msg_id = $msgid)";
-	$result = db_query($sql);
+	$sql = "SELECT from_userid FROM priv_msgs WHERE msg_id = ?";
+	$result = db_query_params($sql, array($msgid));
 	if (!$result) {
 		echo $sql . db_error();
 		error_die("Error getting userid from message");
@@ -110,10 +109,9 @@ if($submit) {
 	$row = db_fetch_array($result);
 	$touserid = $row[from_userid];
 
-	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text, poster_ip) ";
-	$sql .= "VALUES ($fromuserdata[user_id], $touserid, '$time', '$message', '$poster_ip')";
+	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text, poster_ip) VALUES (?, ?, ?, ?, ?)";
 	
-	if(!$result = db_query($sql, $db)) {
+	if(!$result = db_query_params($sql, array((int) $fromuserdata[user_id], (int) $touserid, $time, $message, $poster_ip), $db)) {
 		error_die("Error - Could not enter data into the database. Please go back and try again");
 	}
    echo "<br><TABLE BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\" ALIGN=\"CENTER\" VALIGN=\"TOP\" WIDTH=\"$tablewidth\">";
@@ -123,8 +121,8 @@ if($submit) {
    echo "</TD></TR></TABLE></TD></TR></TABLE><br>";
 		
 } else {
-	$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE (msg_id = $msgid)";
-	$result = db_query($sql, $db);
+	$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE msg_id = ?";
+	$result = db_query_params($sql, array($msgid), $db);
 	if (!$result) {
 		error_die("Error doing DB query to get userid's from message.");
 	}
@@ -213,8 +211,8 @@ if($submit) {
 
 		if($quote) {
 			$sql = "SELECT p.msg_text, p.msg_time, u.username FROM priv_msgs p, users u ";
-			$sql .= "WHERE (p.msg_id = $msgid) AND (p.from_userid = u.user_id)";
-			if($result = db_query($sql, $db)) {
+			$sql .= "WHERE p.msg_id = ? AND p.from_userid = u.user_id";
+			if($result = db_query_params($sql, array($msgid), $db)) {
 				$m = db_fetch_array($result);
 				$m[post_time] = $m[msg_time];
 				$text = desmile($m[msg_text]);

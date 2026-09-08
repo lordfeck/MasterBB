@@ -149,11 +149,9 @@ switch($pagetype) {
 			// do PM notification.
 			$last_visit_date = date("Y-m-d h:i", $last_visit);
 			
-			$username = addslashes($userdata[username]);
-			
-			$sql = "SELECT count(*) AS count FROM priv_msgs WHERE msg_status = '0' and to_userid = '$userdata[user_id]'";	
+			$sql = "SELECT count(*) AS count FROM priv_msgs WHERE msg_status = 0 AND to_userid = ?";
 			 
-			if(!$result = db_query($sql, $db))
+			if(!$result = db_query_params($sql, array((int) $userdata[user_id]), $db))
 			{
 				error_die("phpBB was unable to check private messages because " .db_error($db));
 			}

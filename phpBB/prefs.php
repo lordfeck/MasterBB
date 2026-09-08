@@ -75,13 +75,13 @@ if($submit || $user_logged_in) {
 		$fdishtml = str_replace('=','',$dishtml);
 		$fdisbbcode = str_replace('=','',$disbbcode);
 		$flang = str_replace('=','',$lang);
-		$sql = "UPDATE users SET user_viewemail='$fviewemail', user_theme='$fthemes', user_attachsig = '$fsig', user_desmile = '$fsmile', user_html = '$fdishtml', user_bbcode = '$fdisbbcode', user_lang = '$flang', user_level = " . $userdata['user_level'] .", user_rank = " . $userdata['user_rank'] . " WHERE (user_id = '$userdata[user_id]')";
+		$sql = "UPDATE users SET user_viewemail = ?, user_theme = ?, user_attachsig = ?, user_desmile = ?, user_html = ?, user_bbcode = ?, user_lang = ?, user_level = ?, user_rank = ? WHERE user_id = ?";
 
       // 
       // END: patch code
       // 
       
-      if(!$result = db_query($sql, $db)) {
+      if(!$result = db_query_params($sql, array((int) $fviewemail, (int) $fthemes, (int) $fsig, (int) $fsmile, (int) $fdishtml, (int) $fdisbbcode, $flang, (int) $userdata['user_level'], (int) $userdata['user_rank'], (int) $userdata[user_id]), $db)) {
 	 error_die("An Error Occured<hr>Could not update the database. Please go back and try again.");
       }
       echo "<br><TABLE BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\" ALIGN=\"CENTER\" VALIGN=\"TOP\" WIDTH=\"$tablewidth\">";

@@ -73,12 +73,14 @@ if($next) {
 	 flush();
 	 echo "Selected database $dbname...";
 	 flush();
+	 if(!db_valid_identifier($dbname))
+	   die("<font color=\"#FF0000\">Invalid database name. Please use only letters, numbers, and underscores.");
 	 if(!@db_select_db("$dbname", $db)) {
 	    echo "<font color=\"#FF0000\">Database could not be found</font><BR>";
 	    flush();
 	    echo "Attempting to create database $dbname...";
 	    flush();
-	    if(!$r = db_query("CREATE DATABASE $dbname", $db))
+	    if(!$r = db_query("CREATE DATABASE `$dbname`", $db))
 	      die("<font color=\"#FF0000\">Error, count not select or create database $dbname, please create it manually or have your system administrator do it for you and try again.");
 	    db_select_db("$dbname", $db);
 	    echo "<font color=\"#00FF00\">Database Created!</font><BR>";
@@ -492,13 +494,7 @@ if($next) {
       if($password != $password_rep)
 	die("The passwords you entered do not match. Please go back and try again");
       $sig = str_replace("\n", "<BR>", $sig);
-      $sig = addslashes($sig);
-      $username = addslashes($username);
-      $occ = addslashes($occ);
-      $intrest = addslashes($intrest);
-      $from = addslashes($from);
       $passwd = md5($password);   
-      $hint = addslashes($hint);
       $regdate = date("M d, Y");
       
       if(trim($website) == "http://")
@@ -510,11 +506,10 @@ if($next) {
       else {
 	 $sqlviewemail = "0";
       }
-      $sql = "INSERT INTO users (user_id, username, user_regdate, user_email, user_icq, user_password, user_occ, user_intrest, user_from, user_website, user_sig, 
-			         user_aim, user_viewemail, user_yim, user_msnm, user_level) 
-	                         VALUES (1 , '$username', '$regdate', '$email', '$icq', '$passwd', '$occ', '$intrest', '$from', '$website', '$sig',
-				 '$aim', '$sqlviewemail', '$yim', '$msnm', 4)";  
-      if(!$result = db_query($sql, $db))
+      $sql = "INSERT INTO users (user_id, username, user_regdate, user_email, user_icq, user_password, user_occ, user_intrest, user_from, user_website, user_sig,
+			         user_aim, user_viewemail, user_yim, user_msnm, user_level)
+	                         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 4)";
+      if(!$result = db_query_params($sql, array($username, $regdate, $email, $icq, $passwd, $occ, $intrest, $from, $website, $sig, $aim, (int) $sqlviewemail, $yim, $msnm), $db))
 	die("An Error Occurred while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
       $color1 = "#6C706D";
       $color2 = "#2E4460";
@@ -593,11 +588,9 @@ The Site Admin</TEXTAREA></TD>
 	die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
       db_select_db("$dbname", $db);
       
-      $name = addslashes($name);
-      $email_sig = addslashes($email_sig);
-      $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page,  email_from, email_sig, selected, default_lang) ";
-      $sql .= "VALUES ('$name', $html, $bb, $sig, $hot, $ppp, $tpp,  '$email_from', '$email_sig', 1, '$language')";
-      $result = db_query($sql, $db);
+      $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page, email_from, email_sig, selected, default_lang) ";
+      $sql .= "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
+      $result = db_query_params($sql, array($name, $html, $bb, $sig, $hot, $ppp, $tpp, $email_from, $email_sig, $language), $db);
       if (!$result) {
 	 echo db_error() . "<br>";
 	 die("Error - Cannot update the database.</FONT>");

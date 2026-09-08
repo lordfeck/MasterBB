@@ -2,8 +2,8 @@
 /**
  * Minimal PDO adapter for the original phpBB database call shape.
  *
- * Queries are intentionally left unchanged for the compatibility milestone.
- * They will be converted to prepared statements during security hardening.
+ * Value-bearing queries use native prepared statements. Direct execution is
+ * retained only for constant SQL and strictly validated identifiers.
  */
 
 $db_default_connection = null;
@@ -24,6 +24,7 @@ function db_connect($host, $username, $password)
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_BOTH,
                 PDO::ATTR_STRINGIFY_FETCHES => true,
+                PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
             )
         );
@@ -46,7 +47,7 @@ function db_select_db($database, $connection = null)
     global $db_default_connection, $db_last_error, $db_last_errno;
 
     $connection = $connection ?: $db_default_connection;
-    if (!$connection || !preg_match('/^[A-Za-z0-9_]+$/', $database))
+    if (!$connection || !db_valid_identifier($database))
     {
         $db_last_error = 'Invalid database connection or database name.';
         $db_last_errno = 0;
@@ -62,6 +63,11 @@ function db_select_db($database, $connection = null)
 
     $connection->exec('SET NAMES utf8mb4');
     return true;
+}
+
+function db_valid_identifier($identifier)
+{
+    return is_string($identifier) && preg_match('/^[A-Za-z0-9_]+$/', $identifier) === 1;
 }
 
 function db_query($sql, $connection = null)
@@ -86,6 +92,52 @@ function db_query($sql, $connection = null)
     $db_last_error = '';
     $db_last_errno = 0;
     return $result;
+}
+
+function db_query_params($sql, $parameters = array(), $connection = null)
+{
+    global $db_default_connection, $db_last_error, $db_last_errno;
+
+    $connection = $connection ?: $db_default_connection;
+    if (!$connection)
+    {
+        $db_last_error = 'No database connection is available.';
+        $db_last_errno = 0;
+        return false;
+    }
+
+    $statement = $connection->prepare($sql);
+    if ($statement === false)
+    {
+        db_capture_error($connection);
+        return false;
+    }
+
+    foreach ($parameters as $name => $value)
+    {
+        $placeholder = is_int($name) ? $name + 1 : ':' . ltrim($name, ':');
+        $type = PDO::PARAM_STR;
+        if (is_int($value) || is_bool($value))
+        {
+            $type = PDO::PARAM_INT;
+            $value = (int) $value;
+        }
+        else if ($value === null)
+        {
+            $type = PDO::PARAM_NULL;
+        }
+        $statement->bindValue($placeholder, $value, $type);
+    }
+
+    if (!$statement->execute())
+    {
+        db_capture_error($statement);
+        return false;
+    }
+
+    $db_last_error = '';
+    $db_last_errno = 0;
+    return $statement;
 }
 
 function db_fetch_array($result)

@@ -146,11 +146,7 @@ echo "</font><P></TD>";
 echo "</TR></table></TD></TR></TABLE>";
    } else {
       
-      $code = addslashes($code);
-      $smile_url = addslashes($smile_url);
-      $emotion = addslashes($emotion);
-      
-      if (!$insertsmile = db_query("INSERT INTO smiles (code, smile_url, emotion) VALUES ('$code', '$smile_url', '$emotion')")) {
+      if (!$insertsmile = db_query_params("INSERT INTO smiles (code, smile_url, emotion) VALUES (?, ?, ?)", array($code, $smile_url, $emotion))) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Add Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";
@@ -179,7 +175,7 @@ echo "</TR></table></TD></TR></TABLE>";
    
    if ($submit == "Let's Edit the Smile!") {
       
-      if ($getsmiles = db_query("SELECT * FROM smiles WHERE id = '$smile'")) {
+      if ($getsmiles = db_query_params("SELECT * FROM smiles WHERE id = ?", array((int) $smile))) {
 	 $smiles = db_fetch_array($getsmiles);
 
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -208,10 +204,7 @@ echo "</TR></table></TD></TR></TABLE>";
       }
       
    } elseif ($submit == "Submit Changes") {
-      $code = addslashes($code);
-      $smile_url = addslashes($smile_url);
-      $emotion = addslashes($emotion);
-      if ($updatesmile = db_query("UPDATE smiles SET code = '$code', emotion = '$emotion', smile_url = '$smile_url' WHERE id = '$smile_id'")) {
+      if ($updatesmile = db_query_params("UPDATE smiles SET code = ?, emotion = ?, smile_url = ? WHERE id = ?", array($code, $emotion, $smile_url, (int) $smile_id))) {
 
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Edit Smilie.</B></font></td>";
@@ -285,7 +278,7 @@ echo "</TR></table></TD></TR></TABLE>";
       }
    } elseif ($submit == "Delete Smile") {
       
-      if (!$delsmile = db_query("DELETE FROM smiles WHERE id = '$smile_id'")) {
+      if (!$delsmile = db_query_params("DELETE FROM smiles WHERE id = ?", array((int) $smile_id))) {
 echo "<TABLE width=\"45%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Delete Smilie.</B></font></td>";
 echo "</tr><TR><TD><TABLE width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><TR>";

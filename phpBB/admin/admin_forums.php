@@ -114,34 +114,27 @@ switch($mode) {
  case 'editforum':
    if($save) {
       if(!$delete) {
-			$name = addslashes($name);
-			$desc = addslashes($desc);
+		 $sql = "UPDATE forums SET forum_name = ?, forum_desc = ?, forum_type = ?, cat_id = ?, forum_access = ? WHERE forum_id = ?";
 
-	 $sql = "UPDATE forums SET forum_name = '$name', forum_desc = '$desc', forum_type = '$type', cat_id = '$cat', forum_access = '$forum_access' WHERE forum_id = '$forum'";
-
-	 if(!$r = db_query($sql, $db))
+		 if(!$r = db_query_params($sql, array($name, $desc, $type, $cat, $forum_access, $forum), $db))
 	   die("Error - could not update the database, please go back and try again.");
 	 $count = 0;
 	 if(count($mods) > 0) {
 		    foreach($mods as $mod) {
 	       $mod_data = get_userdata_from_id($mod, $db);
 	       if($mod_data[user_level] < 2) {
-		  if(!isset($user_query))
-		    $user_query = "UPDATE users SET user_level = 2 WHERE ";
-		  if($count > 0)
-		    $user_query .= "OR ";
-		  $user_query .= "user_id = '$mod' ";
+			  $users_to_promote[] = (int) $mod;
 		  $count++;
 	       }
-	       $mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES ('$forum', '$mod')";
-	       if(!db_query($mod_query, $db))
+		       $mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES (?, ?)";
+		       if(!db_query_params($mod_query, array($forum, (int) $mod), $db))
 		 die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
 	    }
 	 }
 
 	 if(count($mods) === 0) {
-	    $current_mods = "SELECT count(*) AS total FROM forum_mods WHERE forum_id = '$forum'";
-	    $r = @db_query($current_mods, $db);
+		    $current_mods = "SELECT count(*) AS total FROM forum_mods WHERE forum_id = ?";
+		    $r = @db_query_params($current_mods, array($forum), $db);
 	    list($total) = db_fetch_array($r);
 	 }
 	 else
@@ -149,8 +142,8 @@ switch($mode) {
 
 	 if(count($rem_mods) > 0 && $total > 1) {
 		    foreach($rem_mods as $mod) {
-	       $rem_query = "DELETE FROM forum_mods WHERE forum_id = '$forum' AND user_id = '$mod'";
-	       if(!db_query($rem_query))
+		       $rem_query = "DELETE FROM forum_mods WHERE forum_id = ? AND user_id = ?";
+		       if(!db_query_params($rem_query, array($forum, (int) $mod)))
 		 die("Error removing moderators for forum!<BR>".db_error($db)."<BR>$rem_query");
 	    }
 	 }
@@ -158,8 +151,9 @@ switch($mode) {
 	    if(count($rem_mods) > 0)
 	      $mod_not_removed = 1;
 	 }
-	 if(isset($user_query)) {
-	    if(!db_query($user_query, $db))
+		 if(!empty($users_to_promote)) {
+		    $user_query = "UPDATE users SET user_level = 2 WHERE user_id IN (" . implode(', ', array_fill(0, count($users_to_promote), '?')) . ")";
+		    if(!db_query_params($user_query, $users_to_promote, $db))
 	      die("User Error!<BR>".db_error($db)."<BR>$user_query");
 	 }
 
@@ -173,37 +167,32 @@ switch($mode) {
 	 echo "</TR></table></TD></TR></TABLE>";
       }
       else {
-      	$sql = "SELECT post_id FROM posts WHERE forum_id = $forum";
-    		if(!$r = db_query($sql, $db))
+			$sql = "SELECT post_id FROM posts WHERE forum_id = ?";
+			if(!$r = db_query_params($sql, array($forum), $db))
 	 		  die("Error could not delete the posts in this forum");
-	 		$sql = "DELETE FROM posts_text WHERE ";
-	 		$looped = FALSE;
+			$post_ids = array();
 	 		while($ids = db_fetch_array($r))
 	 		{
-	 			if($looped == TRUE)
-	 			{
-	 				$sql .= " OR ";
-	 			}
-	 			$sql .= "post_id = ".$ids["post_id"]." ";
-	 			$looped = TRUE;
-	 		}
-			if(!$r = db_query($sql, $db))
+				$post_ids[] = (int) $ids["post_id"];
+			}
+				$sql = "DELETE FROM posts_text WHERE post_id IN (" . implode(', ', array_fill(0, count($post_ids), '?')) . ")";
+				if($post_ids && !($r = db_query_params($sql, $post_ids, $db)))
 	 		  die("Error could not delete the posts in this forum");
 
-	 		$sql = "DELETE FROM posts WHERE forum_id = '$forum'";
-	 		if(!$r = db_query($sql, $db))
+			$sql = "DELETE FROM posts WHERE forum_id = ?";
+			if(!$r = db_query_params($sql, array($forum), $db))
 	   		die("Error could not delete the posts in this forum");
 
-	 		$sql = "DELETE FROM topics WHERE forum_id = '$forum'";
-	 		if(!$r = db_query($sql, $db))
+			$sql = "DELETE FROM topics WHERE forum_id = ?";
+			if(!$r = db_query_params($sql, array($forum), $db))
 	   		die("Error could not delete the topics in this forum");
 
-			 $sql = "DELETE FROM forums WHERE forum_id = '$forum'";
-	 		if(!$r = db_query($sql, $db))
+				 $sql = "DELETE FROM forums WHERE forum_id = ?";
+			if(!$r = db_query_params($sql, array($forum), $db))
 	   		die("Error could not delete the forum");
 
-	 		$sql = "DELETE FROM forum_mods WHERE forum_id = '$forum'";
-	 		if(!$r = db_query($sql, $db))
+			$sql = "DELETE FROM forum_mods WHERE forum_id = ?";
+			if(!$r = db_query_params($sql, array($forum), $db))
 	   		die("Error could not delete the forum");
 
 	 		echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -214,8 +203,8 @@ switch($mode) {
       }
    }
    if($submit && !$save) {
-      $sql = "SELECT * FROM forums WHERE forum_id = '$forum'";
-      if(!$result = db_query($sql, $db))
+	      $sql = "SELECT * FROM forums WHERE forum_id = ?";
+	      if(!$result = db_query_params($sql, array($forum), $db))
 	die("Error connecting to the database.");
       if(!$myrow = db_fetch_array($result)) {
 	 echo "No such forum";
@@ -245,8 +234,8 @@ switch($mode) {
         <TD valign="top"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Moderator(s):</FONT></TD>
         <TD><b>Current:</b><BR>
 <?php
-	$sql = "SELECT u.username, u.user_id FROM users u, forum_mods f WHERE f.forum_id = '$forum' AND u.user_id = f.user_id";
-      if(!$r = db_query($sql, $db))
+	$sql = "SELECT u.username, u.user_id FROM users u, forum_mods f WHERE f.forum_id = ? AND u.user_id = f.user_id";
+	      if(!$r = db_query_params($sql, array($forum), $db))
 	die("Error connecting to the database.");
       if($row = db_fetch_array($r)) {
 	 do {
@@ -263,11 +252,13 @@ switch($mode) {
 	<SELECT NAME="mods[]" size="5" multiple>
 <?php
 	$sql = "SELECT user_id, username FROM users WHERE user_id != -1 AND user_level != -1 ";
-	      foreach($current_mods as $currMod) {
-	 $sql .= "AND user_id != $currMod ";
-      }
-      $sql .= "ORDER BY username";
-      if(!$r = db_query($sql, $db))
+	      $current_mod_params = array();
+	      if(!empty($current_mods)) {
+	         $sql .= "AND user_id NOT IN (" . implode(', ', array_fill(0, count($current_mods), '?')) . ") ";
+	         $current_mod_params = array_map('intval', $current_mods);
+	      }
+	      $sql .= "ORDER BY username";
+	      if(!$r = $current_mod_params ? db_query_params($sql, $current_mod_params, $db) : db_query($sql, $db))
 	die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
       if($row = db_fetch_array($r)) {
 	 do {
@@ -405,9 +396,8 @@ if($myrow[forum_access] == 3)
    case 'editcat':
 	if($submit && $save)
    	{
-			$new_title = addslashes($new_title);
-			$sql = "UPDATE catagories SET cat_title = '$new_title' WHERE cat_id = $cat_id";
-			if(!$result = db_query($sql, $db))
+			$sql = "UPDATE catagories SET cat_title = ? WHERE cat_id = ?";
+			if(!$result = db_query_params($sql, array($new_title, $cat_id), $db))
    		{
    			die("Could not get catagory data!<br>$sql");
    		}
@@ -423,8 +413,8 @@ if($myrow[forum_access] == 3)
    	}
 	else if($submit)
    	{
-   		$sql = "SELECT cat_title FROM catagories WHERE cat_id = '$cat'";
-   		if(!$result = db_query($sql, $db))
+		$sql = "SELECT cat_title FROM catagories WHERE cat_id = ?";
+		if(!$result = db_query_params($sql, array($cat), $db))
    		{
    			die("Could not get catagory data!<br>$sql");
    		}
@@ -488,8 +478,8 @@ if($myrow[forum_access] == 3)
    break;
  case 'remcat':
    if($submit) {
-      $sql = "DELETE FROM catagories WHERE cat_id = '$cat'";
-      if(!$r = db_query($sql, $db))
+	      $sql = "DELETE FROM catagories WHERE cat_id = ?";
+	      if(!$r = db_query_params($sql, array($cat), $db))
 	die("Error Deleteing Category<BR>".db_error($db));
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>Category Created.</B></font></td>";
@@ -538,9 +528,8 @@ if($myrow[forum_access] == 3)
 			die("Error - Could not query the DB");
       list($highest) = db_fetch_array($r);
       $highest++;
-      $title = addslashes($title);
-      $sql = "INSERT INTO catagories (cat_title, cat_order) VALUES ('$title', '$highest')";
-      if(!$result = db_query($sql, $db))
+	      $sql = "INSERT INTO catagories (cat_title, cat_order) VALUES (?, ?)";
+	      if(!$result = db_query_params($sql, array($title, (int) $highest), $db))
 			die("Error - Could not insert category into the database, please go back and try again.");
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>Category Created.</B></font></td>";
@@ -577,12 +566,9 @@ if($myrow[forum_access] == 3)
       if($name == '' || $desc == '' || count($mods) === 0)
 			die("You did not fill out all the parts of the form.<br>Did you assign at least one moderator? Please go back and correct the form.");
       $desc = str_replace("\n", "<BR>", $desc);
-      $desc = addslashes($desc);
-      $name = addslashes($name);
+			$sql = "INSERT INTO forums (forum_name, forum_desc, forum_access, cat_id, forum_type) VALUES (?, ?, ?, ?, ?)";
 
-		$sql = "INSERT INTO forums (forum_name, forum_desc, forum_access, cat_id, forum_type) VALUES ('$name', '$desc', '$forum_access', '$cat', '$type')";
-
-      if(!$result = db_query($sql, $db))
+	      if(!$result = db_query_params($sql, array($name, $desc, $forum_access, $cat, $type), $db))
 			die("An Error Occurred<HR>Could not contact the database. Please check your config file.<BR>".db_error()."<BR>$sql");
       $forum = db_insert_id($db);
       $count = 0;
@@ -591,20 +577,17 @@ if($myrow[forum_access] == 3)
 	 		$mod_data = get_userdata_from_id($mod, $db);
 
 	 		if($mod_data[user_level] < 2) {
-	    		if(!isset($user_query))
-	      		$user_query = "UPDATE users SET user_level = 2 WHERE ";
-	    	if($count > 0)
-	      	$user_query .= "OR ";
-	    	$user_query .= "user_id = '$mod' ";
+				$users_to_promote[] = (int) $mod;
 	    	$count++;
 	 		}
-	 		$mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES ('$forum', '$mod')";
-	 		if(!db_query($mod_query, $db))
+			$mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES (?, ?)";
+			if(!db_query_params($mod_query, array((int) $forum, (int) $mod), $db))
 	   		die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
     	}
 
-    if(isset($user_query)) {
-	 	if(!db_query($user_query, $db))
+	    if(!empty($users_to_promote)) {
+	       $user_query = "UPDATE users SET user_level = 2 WHERE user_id IN (" . implode(', ', array_fill(0, count($users_to_promote), '?')) . ")";
+		if(!db_query_params($user_query, $users_to_promote, $db))
 	   	die("User Error!<BR>".db_error($db)."<BR>$user_query");
     }
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -707,11 +690,11 @@ if($myrow[forum_access] == 3)
       if($up) {
 	 if($current_order != "1") {
 	    $order = $current_order - 1;
-	    $sql1 = "UPDATE catagories SET cat_order = $order WHERE cat_id = '$cat_id'";
-	    if(!$r = db_query($sql1, $db))
+		    $sql1 = "UPDATE catagories SET cat_order = ? WHERE cat_id = ?";
+		    if(!$r = db_query_params($sql1, array((int) $order, $cat_id), $db))
 	      die("Error connecting to the database<BR>".db_error($db));
-	    $sql2 = "UPDATE catagories SET cat_order = $current_order WHERE cat_id = '$last_id'";
-	    if(!$r = db_query($sql2, $db))
+		    $sql2 = "UPDATE catagories SET cat_order = ? WHERE cat_id = ?";
+		    if(!$r = db_query_params($sql2, array((int) $current_order, $last_id), $db))
 	      die("Error connecting to the database<BR>".db_error($db));
 	    echo "<div align=\"center\"><font size=\"$FontSize4\" face=\"$FontFace\" color=\"$textcolor\">Category Moved Up</font></div><BR>";
 	 }
@@ -726,11 +709,11 @@ if($myrow[forum_access] == 3)
 	 list($last_number) = db_fetch_array($r);
 	 if($last_number != $current_order) {
 	    $order = $current_order + 1;
-	    $sql = "UPDATE catagories SET cat_order = $current_order WHERE cat_order = $order";
-	    if(!$r  = db_query($sql, $db))
+		    $sql = "UPDATE catagories SET cat_order = ? WHERE cat_order = ?";
+		    if(!$r  = db_query_params($sql, array((int) $current_order, (int) $order), $db))
 	      die("Error quering the database");
-	    $sql = "UPDATE catagories SET cat_order = $order where cat_id = $cat_id";
-	    if(!$r  = db_query($sql, $db))
+		    $sql = "UPDATE catagories SET cat_order = ? WHERE cat_id = ?";
+		    if(!$r  = db_query_params($sql, array((int) $order, $cat_id), $db))
 	      die("Error quering the database");
 	    echo "<div align=\"center\"><font size=\"$FontSize4\" face=\"$FontFace\" color=\"$textcolor\">Category Moved Down</font></div><BR>";
 

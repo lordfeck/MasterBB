@@ -54,8 +54,8 @@ if (!$submit && !$user_logged_in) {
 		$userdata = get_userdata($user, $db);
 	}
 
-	$sql = "SELECT to_userid FROM priv_msgs WHERE (msg_id = $msgid)";
-	$resultID = db_query($sql);
+	$sql = "SELECT to_userid FROM priv_msgs WHERE msg_id = ?";
+	$resultID = db_query_params($sql, array($msgid));
 	if (!$resultID) {
 		echo db_error() . "<br>\n";
 		error_die("Error during DB query (checking msg ownership)");
@@ -65,8 +65,8 @@ if (!$submit && !$user_logged_in) {
 		error_die("That's not your message. You can't delete it.");
 	}
 
-	$deleteSQL = "DELETE FROM priv_msgs WHERE (msg_id = $msgid)";
-	$success = db_query($deleteSQL);
+	$deleteSQL = "DELETE FROM priv_msgs WHERE msg_id = ?";
+	$success = db_query_params($deleteSQL, array($msgid));
 	if (!$success) {
 		error_die("Error deleting from DB.");
 	}

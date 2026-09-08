@@ -172,38 +172,38 @@ else  // Submitting query
 
 $query = "SELECT u.user_id,f.forum_id, p.topic_id, u.username, p.post_time,t.topic_title,f.forum_name 
 			 FROM posts p, posts_text pt, users u, forums f,topics t";
+$body_parts = array();
+$title_parts = array();
+$body_params = array();
+$title_params = array();
 if(isset($term) && $term != "")
 {
-	$terms = explode(" ",addslashes($term));				// Get all the words into an array
-	$addquery .= "(pt.post_text LIKE '%$terms[0]%'";		
-	$subquery .= "(t.topic_title LIKE '%$terms[0]%'"; 
-	
+	$terms = preg_split('/\s+/', trim($term));
 	if($addterms=="any")					// AND/OR relates to the ANY or ALL on Search Page
 		$andor = "OR";
 	else
 		$andor = "AND";
-	$size = sizeof($terms);
-	for($i=1;$i<$size;$i++) {
-		$addquery.=" $andor pt.post_text LIKE '%$terms[$i]%'";
-		$subquery.=" $andor t.topic_title LIKE '%$terms[$i]%'"; 
-	}	     
-	$addquery.=")";
-	$subquery.=")";
+	$body_terms = array();
+	$title_terms = array();
+	foreach($terms as $word) {
+		$body_terms[] = "pt.post_text LIKE ?";
+		$title_terms[] = "t.topic_title LIKE ?";
+		$body_params[] = "%$word%";
+		$title_params[] = "%$word%";
+	}
+	$body_parts[] = "(" . implode(" $andor ", $body_terms) . ")";
+	$title_parts[] = "(" . implode(" $andor ", $title_terms) . ")";
 }
 if(isset($forum) && $forum!="all")
 {
-	if($addquery !== '') {
-	   $addquery .= " AND ";
-	   $subquery .= " AND ";
-	}
-	
-	$addquery .=" p.forum_id=$forum";
-	$subquery .=" p.forum_id=$forum";
+	$body_parts[] = "p.forum_id = ?";
+	$title_parts[] = "p.forum_id = ?";
+	$body_params[] = (int) $forum;
+	$title_params[] = (int) $forum;
 }
 if(isset($search_username)&&$search_username!="")
 {
-	$search_username = addslashes($search_username);
-   if(!$result = db_query("SELECT user_id FROM users WHERE username='$search_username'",$db))
+   if(!$result = db_query_params("SELECT user_id FROM users WHERE username = ?", array($search_username), $db))
 	{
 		error_die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database");
 	}
@@ -213,25 +213,29 @@ if(isset($search_username)&&$search_username!="")
 		error_die("That user does not exist.  Please go back and search again.");
 	}
    $userid = $row[user_id];
-   if($addquery !== '') {
-      $addquery.=" AND p.poster_id=$userid AND u.username='$search_username'";
-      $subquery.=" AND p.poster_id=$userid AND u.username='$search_username'";
-   }
-   else {
-      $addquery.=" p.poster_id=$userid AND u.username='$search_username'";
-      $subquery.=" p.poster_id=$userid AND u.username='$search_username'";
-   }
+	$body_parts[] = "p.poster_id = ? AND u.username = ?";
+	$title_parts[] = "p.poster_id = ? AND u.username = ?";
+	$body_params[] = (int) $userid;
+	$body_params[] = $search_username;
+	$title_params[] = (int) $userid;
+	$title_params[] = $search_username;
 }	
+$addquery = implode(" AND ", $body_parts);
+$subquery = implode(" AND ", $title_parts);
+$query_params = array();
 if($addquery !== '') {
    switch ($searchboth) { 
     case "both" : 
       $query .= " WHERE ( $subquery OR $addquery ) AND "; 
+      $query_params = array_merge($title_params, $body_params);
       break; 
     case "title" : 
       $query .= " WHERE ( $subquery ) AND "; 
+      $query_params = $title_params;
       break; 
     case "text" : 
       $query .= " WHERE ( $addquery ) AND "; 
+      $query_params = $body_params;
       break; 
    }
 }
@@ -250,7 +254,7 @@ else
    $query .= " ORDER BY $sortby";
    $query .= " LIMIT 200";
 
-	if(!$result = db_query($query,$db))
+	if(!$result = db_query_params($query, $query_params, $db))
 	{
 		die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database<BR>".db_error($db)."<BR>$query");
 	}

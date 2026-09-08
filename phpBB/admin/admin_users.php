@@ -116,8 +116,8 @@ include('../page_header.'.$phpEx);
 switch($mode) {
 	case 'moduser':
 		if($submit && $edit_user_id) {
-			$sql = "UPDATE users SET username = '$edit_username', user_email = '$email', user_rank = '$rank', user_level = '$level' WHERE user_id = $edit_user_id";
-			if(!$r = db_query($sql, $db))
+			$sql = "UPDATE users SET username = ?, user_email = ?, user_rank = ?, user_level = ? WHERE user_id = ?";
+			if(!$r = db_query_params($sql, array($edit_username, $email, $rank, $level, $edit_user_id), $db))
 				die("Error could not update the database.");
 		echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
 		echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize1\" color=\"$textcolor\"><B>User Information Updated.</B></font></td>";
@@ -164,14 +164,14 @@ switch($mode) {
 			else {
 				$moduserdata = get_userdata_from_id($edit_user_id, $db);
 				if($moduserdata[user_rank] != 0) {
-					$sql = "SELECT rank_id, rank_title FROM ranks WHERE rank_min < " . $moduserdata[user_posts] . " AND rank_max > " . $moduserdata[user_posts] . " AND rank_special = 0";
-					if(!$r = db_query($sql, $db))
+					$sql = "SELECT rank_id, rank_title FROM ranks WHERE rank_min < ? AND rank_max > ? AND rank_special = 0";
+					if(!$r = db_query_params($sql, array((int) $moduserdata[user_posts], (int) $moduserdata[user_posts]), $db))
 						die("Error connecting to the database. Please check your config.$phpEx file.");
 					list($rank_id, $rank) = @db_fetch_array($r);
 				}
 				else {
-					$sql = "SELECT rank_title FROM ranks WHERE rank_id = '$moduserdata[user_rank]'";
-					if(!$r = db_query($sql, $db))
+					$sql = "SELECT rank_title FROM ranks WHERE rank_id = ?";
+					if(!$r = db_query_params($sql, array((int) $moduserdata[user_rank]), $db))
                                                 die("Error connecting to the database. Please check your config.$phpEx file.");
                                         list($rank) = @db_fetch_array($r);
 				}
@@ -253,10 +253,8 @@ switch($mode) {
       switch($action) {
        case 'Add':
 	 if($bad_word != '' && $replacement != '') {
-	    $bad_word = addslashes($bad_word);
-	    $replacement = addslashes($replacement);
-	    $sql = "INSERT INTO words (word, replacement) VALUES ('$bad_word', '$replacement')";
-	    if(!$r = db_query($sql, $db)) {
+	    $sql = "INSERT INTO words (word, replacement) VALUES (?, ?)";
+	    if(!$r = db_query_params($sql, array($bad_word, $replacement), $db)) {
 	       echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not insert into the DB</FONT></CENTER><BR>";
 	       break;
 	    }
@@ -269,8 +267,8 @@ switch($mode) {
 	 }
 	 break;
        case 'Delete':
-	 $sql = "DELETE FROM words WHERE word_id = '$word_id'";
-	 if(!$r = db_query($sql, $db)) {
+	 $sql = "DELETE FROM words WHERE word_id = ?";
+	 if(!$r = db_query_params($sql, array($word_id), $db)) {
 	    echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not delete from the DB</FONT></CENTER><BR>";
 	    break;
 	 }
@@ -279,10 +277,8 @@ switch($mode) {
 	 }
 	 break;
        case 'Edit':
-	 $bad_word = addslashes($bad_word);
-	 $replacement = addslashes($replacement);
-	 $sql = "UPDATE words SET word = '$bad_word', replacement = '$replacement' WHERE word_id = '$word_id'";
-	 if(!$r = db_query($sql, $db)) {
+	 $sql = "UPDATE words SET word = ?, replacement = ? WHERE word_id = ?";
+	 if(!$r = db_query_params($sql, array($bad_word, $replacement, $word_id), $db)) {
 	    echo "<CENTER><FONT FACE=\"$FontFace\" SIZE=\"$FontSize4\" COLOR=\"$textcolor\">Error. Could not update the DB</FONT></CENTER><BR>";
 	    break;
 	 }
@@ -351,24 +347,22 @@ switch($mode) {
  case 'badusernames':
    if($edit || $add || $delete) {
 			if($add) {
-				$dis_username = addslashes($dis_username);
-				$sql = "INSERT INTO disallow (disallow_username) VALUES ('$dis_username')";
-				if(!$r = db_query($sql, $db))
+				$sql = "INSERT INTO disallow (disallow_username) VALUES (?)";
+				if(!$r = db_query_params($sql, array($dis_username), $db))
 					echo "<CENTER><font size=+1>Error - Could not add username. Please try again.</font></center>";
 				else
 					echo "<CENTER><font size=+1>Username Added</font></center>";
 			}
 			else if($delete) {
-				$sql = "DELETE FROM disallow WHERE disallow_id = '$id'";
-				if(!$r = db_query($sql, $db))
+				$sql = "DELETE FROM disallow WHERE disallow_id = ?";
+				if(!$r = db_query_params($sql, array($id), $db))
                                         echo "<CENTER><font size=+1>Error - Could not remove username. Please try again.</font></center>";
                                 else
                                         echo "<CENTER><font size=+1>Username Removed</font></center>";
 			}
 			else if($edit) {
-				$dis_username = addslashes($dis_username);
-				$sql = "UPDATE disallow SET disallow_username = '$dis_username' WHERE disallow_id = '$id'";
-				if(!$r = db_query($sql, $db))
+				$sql = "UPDATE disallow SET disallow_username = ? WHERE disallow_id = ?";
+				if(!$r = db_query_params($sql, array($dis_username, $id), $db))
                                         echo "<CENTER><font size=+1>Error - Could not update the database. Please try again.</font></center>";
                                 else
                                         echo "<CENTER><font size=+1>Username Updated</font></center>";
@@ -431,17 +425,17 @@ switch($mode) {
 			 include('../page_tail.'.$phpEx);
 			 exit();
 		      }
-		      $sql = "DELETE FROM users WHERE user_id = '$user_id'";
+		      $sql = "DELETE FROM users WHERE user_id = ?";
 		   }
 		   else
-		     $sql = "UPDATE users SET user_level = -1 WHERE user_id = '$user_id'";
-		   if(!$r = db_query($sql, $db)) {
+		     $sql = "UPDATE users SET user_level = -1 WHERE user_id = ?";
+		   if(!$r = db_query_params($sql, array($user_id), $db)) {
 		      echo "Error - Could not remove user from the database.";
 		      include('../page_tail.'.$phpEx);
 		      exit();
 		   }
-		   $sql = "DELETE FROM forum_mods WHERE user_id = '$user_id'";
-		   if(!$r = db_query($sql, $db)) {
+		   $sql = "DELETE FROM forum_mods WHERE user_id = ?";
+		   if(!$r = db_query_params($sql, array($user_id), $db)) {
 		      echo "Error - Could not remove user from the database.";
 		      include('../page_tail.'.$phpEx);
 		      exit();
@@ -521,17 +515,17 @@ switch($mode) {
 	$endtime = 0;
 
       if($banby == 1) {
-	$sql = "INSERT INTO banlist (ban_ip, ban_start, ban_end, ban_time_type) VALUES ('$ipuser', '$starttime', '$endtime', '$durtype')";
-	 if(!$r = db_query($sql, $db))
+	$sql = "INSERT INTO banlist (ban_ip, ban_start, ban_end, ban_time_type) VALUES (?, ?, ?, ?)";
+	 if(!$r = db_query_params($sql, array($ipuser, (int) $starttime, (int) $endtime, $durtype), $db))
 	   echo "<font size=\"$FontSize4\"><center>Error. Could not add ban!</center></font><br>";
 	 echo "<font size=\"$FontSize4\"><center>Ban Added</center></font><br>";
       }
       else {
 	 $banuserdata = get_userdata($ipuser, $db);
 	 if($banuserdata[user_id]) {
-	    $sql = "INSERT INTO banlist (ban_userid, ban_start, ban_end, ban_time_type) VALUES ('$banuserdata[user_id]', '$starttime', '$endtime', '$durtype')";
+	    $sql = "INSERT INTO banlist (ban_userid, ban_start, ban_end, ban_time_type) VALUES (?, ?, ?, ?)";
 
-	    if(!$r = db_query($sql, $db))
+	    if(!$r = db_query_params($sql, array((int) $banuserdata[user_id], (int) $starttime, (int) $endtime, $durtype), $db))
 	      echo "<font size=\"$FontSize4\"><center>Error. Could not add ban!</center></font><br>";
 	    echo "<font size=\"$FontSize4\"><center>Ban Added</center></font><br>";
 	 }
@@ -540,8 +534,8 @@ switch($mode) {
       }
    }
    else if($del) {
-      $sql = "DELETE FROM banlist WHERE ban_id = '$ban_id'";
-      if(!$r = db_query($sql, $db))
+      $sql = "DELETE FROM banlist WHERE ban_id = ?";
+      if(!$r = db_query_params($sql, array($ban_id), $db))
 	echo "<font size=\"$FontSize4\"><center>Error. Could not remove ban!</center></font><br>";
       echo "<font size=\"$FontSize4\"><center>Ban Removed</center></font><br>";
 
@@ -569,14 +563,17 @@ switch($mode) {
 	$endtime = $starttime + ($dur * $type);
       else
 	$endtime = 0;
-      if($ipaddy_present)
-	$sql = "UPDATE banlist SET ban_ip = '$ipaddy', ban_start = '$starttime', ban_end = '$endtime', ban_time_type = '$unit' WHERE ban_id = '$ban_id'";
+      if($ipaddy_present) {
+	$sql = "UPDATE banlist SET ban_ip = ?, ban_start = ?, ban_end = ?, ban_time_type = ? WHERE ban_id = ?";
+	$ban_params = array($ipaddy, (int) $starttime, (int) $endtime, $unit, $ban_id);
+      }
       else {
 	 $banneduserdata = get_userdata($user_name, $db);
-	$sql = "UPDATE banlist SET ban_userid = '$banneduserdata[user_id]', ban_start = '$starttime', ban_end = '$endtime', ban_time_type = '$unit' WHERE ban_id = '$ban_id'";
+	$sql = "UPDATE banlist SET ban_userid = ?, ban_start = ?, ban_end = ?, ban_time_type = ? WHERE ban_id = ?";
+	$ban_params = array((int) $banneduserdata[user_id], (int) $starttime, (int) $endtime, $unit, $ban_id);
       }
 
-      if(!$r = db_query($sql, $db))
+      if(!$r = db_query_params($sql, $ban_params, $db))
 	echo "<font size=\"$FontSize4\"><center>Error. Ban could not be updated</center></font>";
       echo "<center><font size=\"$FontSize4\">Ban Modified</font></center>";
    }

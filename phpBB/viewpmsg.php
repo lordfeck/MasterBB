@@ -55,8 +55,8 @@ if (!$submit && !$user_logged_in) {
 	     error_die($l_banned);
 	}
 
-	$sql = "SELECT * FROM priv_msgs WHERE (to_userid = $userdata[user_id]) ORDER BY msg_time DESC";
-	$resultID = db_query($sql, $db);
+	$sql = "SELECT * FROM priv_msgs WHERE to_userid = ? ORDER BY msg_time DESC";
+	$resultID = db_query_params($sql, array((int) $userdata[user_id]), $db);
 	if (!$resultID) {
 		error_die("Error getting messages from DB.");
 	}
@@ -115,8 +115,8 @@ if (!$submit && !$user_logged_in) {
 		echo "</TD></TR>";
 	} //while ($myrow = db_fetch_array($resultID));
 	
-	$sql = "UPDATE priv_msgs SET msg_status='1' WHERE (to_userid = $userdata[user_id])";
-	if (!db_query($sql, $db)) {
+	$sql = "UPDATE priv_msgs SET msg_status = 1 WHERE to_userid = ?";
+	if (!db_query_params($sql, array((int) $userdata[user_id]), $db)) {
 		error_die("Error marking the messages as read in the DB.");
 	}
 	

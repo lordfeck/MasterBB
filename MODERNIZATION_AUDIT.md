@@ -54,9 +54,12 @@ The complete suite passes on PHP 8.4 and MariaDB 11.4. All PHP source files
 also pass PHP 8.4 syntax checks, and the successful run produced no PHP fatal
 errors, parse errors, or deprecation diagnostics.
 
-The covered run produces no PHP warnings, deprecations, fatal errors, or parse
-errors. The long-array aliases remain temporarily for the legacy filter and
-cookie code, but request keys are no longer copied into arbitrary globals.
+The covered run produces no deprecations, fatal errors, or parse errors. A
+later explicit log audit identified legacy undefined-variable warnings in
+unselected form options; these do not break the covered workflows and remain
+tracked for the final error-handling cleanup. The long-array aliases remain
+temporarily for cookie code, but request keys are no longer copied into
+arbitrary globals.
 
 The negative characterization suite also passes for SQL-injection-shaped login
 input, arbitrary search sort expressions, cross-user post edit/delete attempts,
@@ -138,7 +141,9 @@ Progress is tracked as focused, independently verified commits:
 
 - [x] Slice 1 — complete security inventory and executable characterization
   baseline (`SECURITY_AUDIT.md`; five known-open conditions reproduced).
-- [ ] Slice 2 — parameterized database API and complete query conversion.
+- [x] Slice 2 — native prepared-statement API and complete value-bearing query
+  conversion; legacy SQL escaping/filtering removed; smoke and security suites
+  passing.
 - [ ] Slice 3 — contextual output encoding, safe URLs, and BBCode-only content.
 - [ ] Slice 4 — password hashing, reset tokens, sessions, cookies, HTTPS, and
   trusted proxies.

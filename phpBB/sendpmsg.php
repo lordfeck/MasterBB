@@ -91,13 +91,11 @@ if($submit) {
 	}
 	
 	$message = str_replace("\n", "<BR>", $message);
-	$message = addslashes($message);
 	$time = date("Y-m-d H:i");
 	
-	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text) ";
-	$sql .= "VALUES ($fromuserdata[user_id], $touserdata[user_id], '$time', '$message')";
+	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text) VALUES (?, ?, ?, ?)";
 	
-	if(!db_query($sql, $db)) {
+	if(!db_query_params($sql, array((int) $fromuserdata[user_id], (int) $touserdata[user_id], $time, $message), $db)) {
 		echo $sql . " : " . db_error() . "<br>";
 		error_die("Could not enter data into the database.");
 	}

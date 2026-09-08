@@ -61,9 +61,11 @@ if($total_categories)
      }
 
    $limit_forums = "";
+   $forum_params = array();
    if($viewcat != -1)
      {
-	$limit_forums = "WHERE f.cat_id = $viewcat";
+	$limit_forums = "WHERE f.cat_id = ?";
+	$forum_params[] = $viewcat;
      }
    $sql = "SELECT f.*, u.username, u.user_id, p.post_time
 	    FROM forums f
@@ -71,7 +73,7 @@ if($total_categories)
 	    LEFT JOIN users u ON u.user_id = p.poster_id
 	    $limit_forums
 	    ORDER BY f.cat_id, f.forum_id";
-   if(!$f_res = db_query($sql, $db))
+   if(!$f_res = $forum_params ? db_query_params($sql, $forum_params, $db) : db_query($sql, $db))
      {
 	die("Error getting forum data<br>$sql");
      }

@@ -31,8 +31,8 @@ $pagetitle = "Send Password";
 include('page_header.'.$phpEx);
 
 if($actkey) {
-	$sql = "SELECT user_id FROM users WHERE user_actkey = '$actkey'";
-	if(!$r = db_query($sql, $db))
+	$sql = "SELECT user_id FROM users WHERE user_actkey = ?";
+	if(!$r = db_query_params($sql, array($actkey), $db))
 		error_die("Error while attempting to query the database");
    if(db_num_rows($r) != 1) {
 		error_die($l_wrongactiv);
@@ -40,8 +40,8 @@ if($actkey) {
    else {
       list($update_id) = db_fetch_array($r);
    }
-   $sql = "UPDATE users SET user_password = user_newpasswd WHERE user_id = '$update_id'";
-   if(!$r = db_query($sql, $db))                        
+   $sql = "UPDATE users SET user_password = user_newpasswd WHERE user_id = ?";
+   if(!$r = db_query_params($sql, array((int) $update_id), $db))
      error_die("Error while attempting to query the database");  
 ?>
      <TABLE BORDER="0" WIDTH="<?php echo $TableWidth?>" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP">
@@ -82,8 +82,8 @@ else if($submit) {
    // Don't ask...
    $key = md5(md5(md5($newpw_enc)));
    
-   $sql = "UPDATE users SET user_actkey = '$key', user_newpasswd = '$newpw_enc' WHERE user_id = '$checkinfo[user_id]'";
-   if(!$r = db_query($sql, $db)) {
+   $sql = "UPDATE users SET user_actkey = ?, user_newpasswd = ? WHERE user_id = ?";
+   if(!$r = db_query_params($sql, array($key, $newpw_enc, (int) $checkinfo[user_id]), $db)) {
 		error_die("An error occured while tring to update the database. Please go back and try again.");
    }
 	

@@ -74,8 +74,8 @@ switch ($sortby) {
 
 if(!$start) $start = 0;
 
-$sql = "SELECT * FROM users WHERE user_id != -1 AND user_level != -1 ORDER BY $sortby LIMIT $start, $topics_per_page";
-if(!$result = db_query($sql, $db))
+$sql = "SELECT * FROM users WHERE user_id != -1 AND user_level != -1 ORDER BY $sortby LIMIT ?, ?";
+if(!$result = db_query_params($sql, array($start, (int) $topics_per_page), $db))
 	error_die("Couldn't get userlist from database");
 
 ?>

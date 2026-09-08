@@ -129,15 +129,15 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 	    exit();
 	 }
 
-	 $theme_name = addslashes($theme_name);
 	 $image_header = "images/".$image_header;
 	 $image_reply = "images/".$image_reply;
 	 $image_newtopic = "images/".$image_newtopic;
 	 $image_replylocked = "images/".$image_replylocked;
 
 	 $sql = "INSERT INTO themes (theme_name, bgcolor, textcolor, color1, color2, table_bgcolor, header_image, newtopic_image, reply_image, linkcolor, vlinkcolor, theme_default, fontface, fontsize1, fontsize2, fontsize3, fontsize4, tablewidth, replylocked_image)
-	         VALUES ('$theme_name', '$theme_bgcolor', '$theme_textcolor', '$theme_color1', '$theme_color2', '$theme_tablebg', '$image_header', '$image_newtopic', '$image_reply', '$theme_linkcolor', '$theme_vlinkcolor', '0', '$theme_fontface', '$theme_fontsize1', '$theme_fontsize2', '$theme_fontsize3', '$theme_fontsize4', '$theme_tablewidth', '$image_replylocked')";
-	 if(!$r = db_query($sql, $db)) {
+	         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)";
+	 $theme_params = array($theme_name, $theme_bgcolor, $theme_textcolor, $theme_color1, $theme_color2, $theme_tablebg, $image_header, $image_newtopic, $image_reply, $theme_linkcolor, $theme_vlinkcolor, $theme_fontface, $theme_fontsize1, $theme_fontsize2, $theme_fontsize3, $theme_fontsize4, $theme_tablewidth, $image_replylocked);
+	 if(!$r = db_query_params($sql, $theme_params, $db)) {
 	    echo "Error inserting theme into the database.<BR>".db_error($db)."\n";
 	    include('../page_tail.'.$phpEx);
 	    exit();
@@ -270,8 +270,8 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       }
       break;
     case 'remove':
-      $sql = "DELETE FROM themes WHERE theme_id = 'theme_id'";
-      if(!$r = db_query($sql, $db))
+      $sql = "DELETE FROM themes WHERE theme_id = ?";
+      if(!$r = db_query_params($sql, array($theme_id), $db))
 	die("Error updateing the databse. Go back and try again");
 ?>
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -298,34 +298,19 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 	    exit();
 	 }
 
-	 $theme_name = addslashes($theme_name);
 	 $image_header = "images/".$image_header;
 	 $image_reply = "images/".$image_reply;
 	 $image_newtopic = "images/".$image_newtopic;
 	 $image_replylocked = "images/".$image_replylocked;
 
 	 $sql = "UPDATE themes SET
-		  theme_name        = '$theme_name',
-		  bgcolor           = '$theme_bgcolor',
-		  textcolor         = '$theme_textcolor',
-		  color1            = '$theme_color1',
-		  color2            = '$theme_color2',
-		  table_bgcolor     = '$theme_tablebg',
-		  header_image      = '$image_header',
-		  newtopic_image    = '$image_newtopic',
-		  reply_image       = '$image_reply',
-		  linkcolor         = '$theme_linkcolor',
-		  vlinkcolor        = '$theme_vlinkcolor',
-		  theme_default     = '$theme_default',
-		  fontface          = '$theme_fontface',
-		  fontsize1         = '$theme_fontsize1',
-		  fontsize2         = '$theme_fontsize2',
-		  fontsize3         = '$theme_fontsize3',
-		  fontsize4         = '$theme_fontsize4',
-		  tablewidth        = '$theme_tablewidth',
-		  replylocked_image = '$image_replylocked'
-		  WHERE theme_id = '$theme_id'";
-	 if(!$r = db_query($sql, $db))
+		  theme_name = ?, bgcolor = ?, textcolor = ?, color1 = ?, color2 = ?,
+		  table_bgcolor = ?, header_image = ?, newtopic_image = ?, reply_image = ?,
+		  linkcolor = ?, vlinkcolor = ?, theme_default = ?, fontface = ?,
+		  fontsize1 = ?, fontsize2 = ?, fontsize3 = ?, fontsize4 = ?,
+		  tablewidth = ?, replylocked_image = ? WHERE theme_id = ?";
+	 $theme_params = array($theme_name, $theme_bgcolor, $theme_textcolor, $theme_color1, $theme_color2, $theme_tablebg, $image_header, $image_newtopic, $image_reply, $theme_linkcolor, $theme_vlinkcolor, $theme_default, $theme_fontface, $theme_fontsize1, $theme_fontsize2, $theme_fontsize3, $theme_fontsize4, $theme_tablewidth, $image_replylocked, $theme_id);
+	 if(!$r = db_query_params($sql, $theme_params, $db))
 	   die("Error updateing the database!");
 ?>
 	   <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -339,8 +324,8 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 <?php
       }
       else {
-	 $sql = "SELECT * FROM themes WHERE theme_id = '$theme_id'";
-	 if(!$r = db_query($sql, $db)) {
+	 $sql = "SELECT * FROM themes WHERE theme_id = ?";
+	 if(!$r = db_query_params($sql, array($theme_id), $db)) {
 	    echo "Error selecting theme from the database. Please go back and try again.<BR>";
 	    include('page_tail.'.$phpEx);
 	    exit();
@@ -466,8 +451,8 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       $sql = "UPDATE themes SET theme_default = 0";
       if(!$r = db_query($sql, $db))
 	die("Error updateing the databse. Go back and try again");
-      $sql = "UPDATE themes SET theme_default = 1 WHERE theme_id = '$theme_id'";
-      if(!$r = db_query($sql, $db))
+      $sql = "UPDATE themes SET theme_default = 1 WHERE theme_id = ?";
+      if(!$r = db_query_params($sql, array($theme_id), $db))
 	        die("Error updateing the databse. Go back and try again");
       ?>
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">

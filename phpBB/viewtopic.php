@@ -31,8 +31,8 @@ $password = request_string('password', '', 'post');
 $pagetitle = $l_topictitle;
 $pagetype = "viewtopic";
 
-$sql = "SELECT f.forum_type, f.forum_name FROM forums f, topics t WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (t.forum_id = f.forum_id)";
-if(!$result = db_query($sql, $db))
+$sql = "SELECT f.forum_type, f.forum_name FROM forums f, topics t WHERE f.forum_id = ? AND t.topic_id = ? AND t.forum_id = f.forum_id";
+if(!$result = db_query_params($sql, array($forum, $topic), $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
 if(!$myrow = db_fetch_array($result))
 	error_die("Error - The forum/topic you selected does not exist. Please go back and try again.");
@@ -129,7 +129,7 @@ else
 
 
 
-$sql = "SELECT topic_title, topic_status FROM topics WHERE topic_id = '$topic'";
+$sql = "SELECT topic_title, topic_status FROM topics WHERE topic_id = ?";
 
 $total = get_total_posts($topic, $db, "topic");
 if($total > $posts_per_page) {
@@ -139,7 +139,7 @@ if($total > $posts_per_page) {
    $pages = $times;
 }
 
-if(!$result = db_query($sql, $db))
+if(!$result = db_query_params($sql, array($topic), $db))
   error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
 $myrow = db_fetch_array($result);
 $topic_subject = own_stripslashes($myrow[topic_title]);
@@ -185,19 +185,11 @@ if($total > $posts_per_page) {
 	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2 ?>"COLOR="<?php echo $textcolor?>"><?php echo $topic_subject?></FONT></TD>
 </TR>
 <?php
-if(isset($start)) {
-   $sql = "SELECT p.*, pt.post_text FROM posts p, posts_text pt
-   WHERE topic_id = '$topic'
+$sql = "SELECT p.*, pt.post_text FROM posts p, posts_text pt
+   WHERE topic_id = ?
    AND p.post_id = pt.post_id
-   ORDER BY post_id LIMIT $start, $posts_per_page";
-}
-else {
-   $sql = "SELECT p.*, pt.post_text FROM posts p, posts_text pt
-   WHERE topic_id = '$topic'
-   AND p.post_id = pt.post_id
-   ORDER BY post_id LIMIT $posts_per_page";
-}
-if(!$result = db_query($sql, $db))
+   ORDER BY post_id LIMIT ?, ?";
+if(!$result = db_query_params($sql, array($topic, $start, (int) $posts_per_page), $db))
   error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the Posts database. $sql");
 $myrow = db_fetch_array($result);
 $row_color = $color2;
@@ -217,11 +209,15 @@ do {
    echo "<TD valign=top><FONT FACE=\"$FontFace\" COLOR=\"$textcolor\"><b>$posterdata[username]</b></FONT>";
    $posts = $posterdata[user_posts];
    if($posterdata[user_id] != -1) {
-      if($posterdata[user_rank] != 0)
-	$sql = "SELECT rank_title, rank_image FROM ranks WHERE rank_id = '$posterdata[user_rank]'";
-      else
-	$sql = "SELECT rank_title, rank_image  FROM ranks WHERE rank_min <= " . $posterdata[user_posts] . " AND rank_max >= " . $posterdata[user_posts] . " AND rank_special = 0";
-      if(!$rank_result = db_query($sql, $db))
+      if($posterdata[user_rank] != 0) {
+	$sql = "SELECT rank_title, rank_image FROM ranks WHERE rank_id = ?";
+        $rank_params = array((int) $posterdata[user_rank]);
+      }
+      else {
+	$sql = "SELECT rank_title, rank_image FROM ranks WHERE rank_min <= ? AND rank_max >= ? AND rank_special = 0";
+        $rank_params = array((int) $posterdata[user_posts], (int) $posterdata[user_posts]);
+      }
+      if(!$rank_result = db_query_params($sql, $rank_params, $db))
 	error_die("Error connecting to the database!");
       list($rank, $rank_image) = db_fetch_array($rank_result);
       echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\"><B>" . own_stripslashes($rank) . "</B></font>";
@@ -295,8 +291,8 @@ do {
    echo "</TD></TR>";
    $count++;
 } while($myrow = db_fetch_array($result));
-$sql = "UPDATE topics SET topic_views = topic_views + 1 WHERE topic_id = '$topic'";
-@db_query($sql, $db);
+$sql = "UPDATE topics SET topic_views = topic_views + 1 WHERE topic_id = ?";
+@db_query_params($sql, array($topic), $db);
 ?>
 
 </TABLE></TD></TR></TABLE>

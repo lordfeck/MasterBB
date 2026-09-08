@@ -32,8 +32,8 @@ $pagetype = "viewforum";
 if($forum == -1)
   header("Location: $url_phpbb");
 
-$sql = "SELECT f.forum_type, f.forum_name FROM forums f WHERE forum_id = '$forum'";
-if(!$result = db_query($sql, $db))
+$sql = "SELECT f.forum_type, f.forum_name FROM forums f WHERE forum_id = ?";
+if(!$result = db_query_params($sql, array($forum), $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
 if(!$myrow = db_fetch_array($result))
 	error_die("Error - The forum you selected does not exist. Please go back and try again.");
@@ -145,10 +145,10 @@ $sql = "SELECT t.*, u.username, u2.username as last_poster, p.post_time FROM top
         LEFT JOIN users u ON t.topic_poster = u.user_id 
         LEFT JOIN posts p ON t.topic_last_post_id = p.post_id
         LEFT JOIN users u2 ON p.poster_id = u2.user_id
-        WHERE t.forum_id = '$forum' 
-        ORDER BY topic_time DESC LIMIT $start, $topics_per_page";
+        WHERE t.forum_id = ?
+        ORDER BY topic_time DESC LIMIT ?, ?";
         
-if(!$result = db_query($sql, $db))
+if(!$result = db_query_params($sql, array($forum, $start, (int) $topics_per_page), $db))
 	error_die("</table></table><font size=+1>An Error Occured</font><hr>phpBB could not query the topics database.<br>$sql");
 $topics_start = $start;
    
@@ -253,8 +253,8 @@ else {
 </font></TD>
 <TD ALIGN="RIGHT">
 <?php
-$sql = "SELECT count(*) AS total FROM topics WHERE forum_id = '$forum'";
-if(!$r = db_query($sql, $db))
+$sql = "SELECT count(*) AS total FROM topics WHERE forum_id = ?";
+if(!$r = db_query_params($sql, array($forum), $db))
      error_die("Error could not contact the database!</TABLE></TABLE>");
 list($all_topics) = db_fetch_array($r);   
 $count = 1;

@@ -49,18 +49,20 @@ if ($post_id)
 	// We have a post id, so include that in the checks..
 	$sql = "SELECT f.forum_type, f.forum_name, f.forum_access ";
 	$sql .= "FROM forums f, topics t, posts p ";
-	$sql .= "WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (p.post_id = $post_id) AND (t.forum_id = f.forum_id) AND (p.forum_id = f.forum_id) AND (p.topic_id = t.topic_id)";
+	$sql .= "WHERE f.forum_id = ? AND t.topic_id = ? AND p.post_id = ? AND t.forum_id = f.forum_id AND p.forum_id = f.forum_id AND p.topic_id = t.topic_id";
+	$sql_params = array($forum, $topic, $post_id);
 }
 else
 {
 	// No post id, just check forum and topic.
 	$sql = "SELECT f.forum_type, f.forum_name, f.forum_access ";
 	$sql .= "FROM forums f, topics t ";
-	$sql .= "WHERE (f.forum_id = '$forum') AND (t.topic_id = $topic) AND (t.forum_id = f.forum_id)";
+	$sql .= "WHERE f.forum_id = ? AND t.topic_id = ? AND t.forum_id = f.forum_id";
+	$sql_params = array($forum, $topic);
 }
 
 
-if(!$result = db_query($sql, $db)) {
+if(!$result = db_query_params($sql, $sql_params, $db)) {
 	error_die("Could not connect to the forums database.");
 }
 if (!$myrow = db_fetch_array($result))
@@ -169,7 +171,6 @@ if($submit) {
 
 	$message = str_replace("\n", "<BR>", $message);
    $message = censor_string($message, $db);
-   $message = addslashes($message);
    $time = date("Y-m-d H:i");
 
    //to prevent [addsig] from getting in the way, let's put the sig insert down here.
@@ -177,38 +178,38 @@ if($submit) {
       $message .= "\n[addsig]";
    }
 
-   $sql = "INSERT INTO posts (topic_id, forum_id, poster_id, post_time, poster_ip) VALUES ('$topic', '$forum', '$userdata[user_id]','$time', '$poster_ip')";
-   if(!$result = db_query($sql, $db)) {
+   $sql = "INSERT INTO posts (topic_id, forum_id, poster_id, post_time, poster_ip) VALUES (?, ?, ?, ?, ?)";
+   if(!$result = db_query_params($sql, array($topic, $forum, (int) $userdata[user_id], $time, $poster_ip), $db)) {
       error_die("Error - Could not enter data into the database. Please go back and try again");
    }
    $this_post = db_insert_id();
    if($this_post)
    {
-   	$sql = "INSERT INTO posts_text (post_id, post_text) VALUES ($this_post, '$message')";
-   	if(!$result = db_query($sql, $db))
+		$sql = "INSERT INTO posts_text (post_id, post_text) VALUES (?, ?)";
+		if(!$result = db_query_params($sql, array((int) $this_post, $message), $db))
    	{
    		error_die("Could not enter post text!<br>Reason:".db_error());
    	}
    }
 
-   $sql = "UPDATE topics SET topic_replies = topic_replies+1, topic_last_post_id = $this_post, topic_time = '$time' WHERE topic_id = '$topic'";
-   if(!$result = db_query($sql, $db)) {
+   $sql = "UPDATE topics SET topic_replies = topic_replies+1, topic_last_post_id = ?, topic_time = ? WHERE topic_id = ?";
+   if(!$result = db_query_params($sql, array((int) $this_post, $time, $topic), $db)) {
       error_die("Error - Could not enter data into the database. Please go back and try again");
    }
    if($userdata["user_id"] != -1) {
-      $sql = "UPDATE users SET user_posts=user_posts+1 WHERE (user_id = $userdata[user_id])";
-      $result = db_query($sql, $db);
+      $sql = "UPDATE users SET user_posts=user_posts+1 WHERE user_id = ?";
+      $result = db_query_params($sql, array((int) $userdata[user_id]), $db);
       if (!$result) {
 	 error_die("Error updating user post count.");
       }
    }
-   $sql = "UPDATE forums SET forum_posts = forum_posts+1, forum_last_post_id = '$this_post' WHERE forum_id = '$forum'";
-   $result = db_query($sql, $db);
+   $sql = "UPDATE forums SET forum_posts = forum_posts+1, forum_last_post_id = ? WHERE forum_id = ?";
+   $result = db_query_params($sql, array((int) $this_post, $forum), $db);
    if (!$result) {
       error_die("Error updating forums post count.");
    }
-   $sql = "SELECT t.topic_notify, u.user_email, u.username, u.user_id FROM topics t, users u WHERE t.topic_id = '$topic' AND t.topic_poster = u.user_id";
-   if(!$result = db_query($sql, $db)) {
+   $sql = "SELECT t.topic_notify, u.user_email, u.username, u.user_id FROM topics t, users u WHERE t.topic_id = ? AND t.topic_poster = u.user_id";
+   if(!$result = db_query_params($sql, array($topic), $db)) {
 		error_die("Couldn't get topic and user information from database.");
    }
    $m = db_fetch_array($result);
@@ -390,8 +391,8 @@ if($submit) {
 			echo "$l_off<BR>\n";
 
 		if($quote) {
-			$sql = "SELECT pt.post_text, p.post_time, u.username FROM posts p, users u, posts_text pt WHERE p.post_id = '$post' AND p.poster_id = u.user_id AND pt.post_id = p.post_id";
-			if($r = db_query($sql, $db)) {
+			$sql = "SELECT pt.post_text, p.post_time, u.username FROM posts p, users u, posts_text pt WHERE p.post_id = ? AND p.poster_id = u.user_id AND pt.post_id = p.post_id";
+			if($r = db_query_params($sql, array($post), $db)) {
 				$m = db_fetch_array($r);
 				$text = desmile($m[post_text]);
 				$text = str_replace("<BR>", "\n", $text);

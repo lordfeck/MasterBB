@@ -19,7 +19,7 @@ from smoke import (
 )
 
 
-ATTACKER_NAME = "SmokeAttacker"
+ATTACKER_NAME = "Smoke O'Brien"
 ATTACKER_PASSWORD = "smoke-attacker-pass"
 
 
@@ -56,6 +56,7 @@ def characterize(base_url: str) -> None:
     require(page, "You have been added to the database", "attacker fixture")
     page = login(attacker, ATTACKER_NAME, ATTACKER_PASSWORD)
     require(page, f"Logged in as {ATTACKER_NAME}", "attacker login")
+    secure("an apostrophe-containing username registers and authenticates intact")
 
     session_cookies = [
         cookie for cookie in attacker.cookies if cookie.name == "phpBBsession"

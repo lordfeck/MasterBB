@@ -195,16 +195,11 @@ if($mode) {
 		 }
 		 $sig = chop($sig); // Strip all trailing whitespace.
 		 $sig = str_replace("\n", "<BR>", $sig);
-		 $sig = addslashes($sig);
-		 $occ = addslashes($occ);
-		 $intrest = addslashes($intrest);
-		 $from = addslashes($from);
 		 $passwd = $md_pass;
-		 $email = addslashes($email);
 
 
 		 // Ensure the website URL starts with "http://".
-	    $website = addslashes(trim($website));
+	    $website = trim($website);
 		 if(substr(strtolower($website), 0, 7) != "http://")
 		   {
 		      $website = "http://" . $website;
@@ -218,18 +213,15 @@ if($mode) {
 		 // Check if the ICQ number only contains digits
 		 $icq = (preg_match("/^[0-9]+$/", $icq)) ? $icq : '';
 
-       $aim = addslashes($aim);
-       $yim = addslashes($yim);
-       $msnm = addslashes($msnm);
-
-
 		 if($new_name) {
-		    $sql = "UPDATE users SET username = '$user_name', user_password = '$md_pass', user_icq = '$icq', user_occ = '$occ', user_intrest = '$intrest', user_from = '$from', user_website = '$website', user_sig = '$sig', user_email = '$email', user_viewemail = '$viewemail', user_aim = '$aim', user_yim = '$yim', user_msnm = '$msnm' WHERE (user_id = '$user_id')";
+		    $sql = "UPDATE users SET username = ?, user_password = ?, user_icq = ?, user_occ = ?, user_intrest = ?, user_from = ?, user_website = ?, user_sig = ?, user_email = ?, user_viewemail = ?, user_aim = ?, user_yim = ?, user_msnm = ? WHERE user_id = ?";
+		    $profile_params = array($user_name, $md_pass, $icq, $occ, $intrest, $from, $website, $sig, $email, (int) $viewemail, $aim, $yim, $msnm, (int) $user_id);
 		 }
 		 else {
-		    $sql = "UPDATE users SET user_password = '$md_pass', user_icq = '$icq', user_occ = '$occ', user_intrest = '$intrest', user_from = '$from', user_website = '$website', user_sig = '$sig', user_email = '$email', user_viewemail = '$viewemail', user_aim = '$aim', user_yim = '$yim', user_msnm = '$msnm' WHERE (user_id = '$user_id')";
+		    $sql = "UPDATE users SET user_password = ?, user_icq = ?, user_occ = ?, user_intrest = ?, user_from = ?, user_website = ?, user_sig = ?, user_email = ?, user_viewemail = ?, user_aim = ?, user_yim = ?, user_msnm = ? WHERE user_id = ?";
+		    $profile_params = array($md_pass, $icq, $occ, $intrest, $from, $website, $sig, $email, (int) $viewemail, $aim, $yim, $msnm, (int) $user_id);
 		 }
-		 if(!$result = db_query($sql, $db)) {
+		 if(!$result = db_query_params($sql, $profile_params, $db)) {
 		    error_die("Could not update userinfo in database.<br>$sql");
 		 }
 		 // They have authed, log them in.

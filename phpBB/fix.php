@@ -61,42 +61,4 @@ for ($n = 0; $n < sizeof($fix_vars); ++$n)
 	}
 }
 
-/***
- * SQL-check
- ***/
-$fix_vars = array('HTTP_GET_VARS', 'HTTP_POST_VARS', 'HTTP_COOKIE_VARS');
-for ($n = 0; $n < sizeof($fix_vars); ++$n)
-{
-	if (is_array($GLOBALS[$fix_vars[$n]]))
-	{
-		foreach ($GLOBALS[$fix_vars[$n]] as $k => $v)
-		{
-			if (is_array($v))
-			{
-				continue;
-			}
-			if (($k != 'message') && ($k != 'subject') && ($k != 'username') && ($k != 'sig'))
-			{
-				while (preg_match("/(.*)'( *)((NOT)?( *))(((!|<|=|>)+)|IS( *)NOT( *)NULL|IN( *)\(|LIKE|BETWEEN(.*)AND|OR|((\|)+)|,(.*)=)(.*)['|\"]/i", $v, $matches))
-				{
-					$v = $matches[1];
-				}
-				$GLOBALS[$fix_vars[$n]][$k] = $v;
-			}
-		}
-		@reset($GLOBALS[$fix_vars[$n]]);
-	}
-}
-
-foreach (array('user_id', 'post_id', 'topic_id') as $fix_id)
-{
-	foreach (array(&$HTTP_GET_VARS, &$HTTP_POST_VARS, &$HTTP_COOKIE_VARS) as &$fix_source)
-	{
-		if (isset($fix_source[$fix_id]) && !is_array($fix_source[$fix_id]))
-		{
-			$fix_source[$fix_id] = intval($fix_source[$fix_id]);
-		}
-	}
-}
-unset($fix_id, $fix_source);
 ?>
