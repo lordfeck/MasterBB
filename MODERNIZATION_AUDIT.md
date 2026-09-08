@@ -173,7 +173,7 @@ in-use deletion behaviour. It should preserve the table-based 2001 interface;
 a base stylesheet with CSS variables could remain an optional later enhancement,
 not a visual rewrite.
 
-Two themes well suited to the current implementation are:
+Two period-appropriate themes are now included in each fresh installation:
 
 - **Midnight Terminal** — charcoal and near-black tables, muted green links,
   pale monospace-friendly text, and the existing dark header/topic/reply art.
@@ -182,6 +182,7 @@ Two themes well suited to the current implementation are:
 - **Sepia Gazette** — parchment page and table backgrounds, dark-brown text,
   burgundy links, and a compact newspaper-style masthead. It would give the
   board a warmly archival identity without changing its layout or interactions.
+  It uses the existing monochrome logo and button art.
 
 ## Conclusion
 
