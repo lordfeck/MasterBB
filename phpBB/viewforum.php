@@ -59,7 +59,7 @@ if(($myrow[forum_type] == 1) && !$user_logged_in && !$logging_in)
 							  <TR>
 							    <TD>
 							      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-							      <b>User Name: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>">
+							      <b>User Name: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>">
 							    </TD>
 							  </TR><TR>
 							    <TD>
@@ -156,7 +156,7 @@ if($myrow = db_fetch_array($result)) {
    do {
       echo"<TR>\n";
       $replys = $myrow["topic_replies"];
-      $last_post = $myrow["post_time"] . "<br>$l_by ".$myrow["last_poster"];
+      $last_post = html_escape($myrow["post_time"]) . "<br>$l_by " . html_escape($myrow["last_poster"]);
       $last_post_datetime = $myrow["post_time"];
       
       //list($last_post_datetime, $null) = split("by", $last_post);
@@ -228,11 +228,11 @@ if($myrow = db_fetch_array($result)) {
 
 		$topiclink .= "&$replys";
 
-      echo "<TD BGCOLOR=\"$color2\"><font face=\"$FontFace\" size=\"2\">&nbsp;<a href=\"$topiclink\">$topic_title</a></font>$pagination";
+      echo "<TD BGCOLOR=\"$color2\"><font face=\"$FontFace\" size=\"2\">&nbsp;<a href=\"$topiclink\">" . html_escape($topic_title) . "</a></font>$pagination";
 	      
       echo "</TD>\n";
       echo "<TD BGCOLOR=\"$color1\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize2\">$replys</font></TD>\n";
-      echo "<TD BGCOLOR=\"$color2\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize2\">$myrow[username]</font></TD>\n";
+      echo "<TD BGCOLOR=\"$color2\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize2\">" . html_escape($myrow[username]) . "</font></TD>\n";
       echo "<TD BGCOLOR=\"$color1\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize2\">$myrow[topic_views]</font></TD>\n";
       echo "<TD BGCOLOR=\"$color2\" ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><font face=\"$FontFace\" size=\"$FontSize1\">$last_post</font></TD></TR>\n";
       

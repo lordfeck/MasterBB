@@ -64,7 +64,7 @@ if($login) {
 	       die("You have to enter your password. Go back and do so.");
       }
       if (!check_username($username, $db)) {
-	       die("Invalid username \"$username\". Go back and try again.");
+	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
       }
       if (!check_user_pw($username, $password, $db)) {
 	       die("Invalid password. Go back and try again.");
@@ -98,7 +98,7 @@ else if(!$user_logged_in) {
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
           <UL>
           <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
      <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
           <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
           </FORM>
@@ -144,7 +144,7 @@ switch($mode) {
         <TD><SELECT NAME="edit_user_id">
 <?php
 				do {
-					echo "<OPTION VALUE=\"$m[user_id]\">$m[username]</OPTION>\n";
+					echo "<OPTION VALUE=\"$m[user_id]\">" . html_escape($m[username]) . "</OPTION>\n";
 				} while($m = db_fetch_array($r));
 ?>
 	</SELECT>
@@ -180,15 +180,15 @@ switch($mode) {
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Modifying <b><?php echo $moduserdata[username]?></b></FONT></TD>
+	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Modifying <b><?php echo html_escape($moduserdata[username])?></b></FONT></TD>
 </TR>
 <TR ALIGN="LEFT">
 	<TD ALIGN="LEFT" BGCOLOR="<?php echo $color1?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">User Name:</FONT></TD>
-	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="edit_username" VALUE="<?php echo $moduserdata[username]?>" MAXLENGTH=40 SIZE=25></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="edit_username" VALUE="<?php echo html_escape($moduserdata[username])?>" MAXLENGTH=40 SIZE=25></TD>
 </TR>
 <TR ALIGN="LEFT">
 	<TD BGCOLOR="<?php echo $color1?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Email Address:</FONT></TD>
-	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="email" VALUE="<?php echo $moduserdata[user_email]?>" MAXLENGTH=50 SIZE=30></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="email" VALUE="<?php echo html_escape($moduserdata[user_email])?>" MAXLENGTH=50 SIZE=30></TD>
 </TR>
 <TR ALIGN="LEFT">
         <TD BGCOLOR="<?php echo $color1?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Rank:</FONT></TD>
@@ -203,7 +203,7 @@ switch($mode) {
 						unset($selected);
 						if($moduserdata[user_rank] == $m[rank_id])
 							$selected = "SELECTED";
-						echo "<OPTION VALUE=\"$m[rank_id]\" $selected>$m[rank_title]</OPTION>\n";
+						echo "<OPTION VALUE=\"$m[rank_id]\" $selected>" . html_escape($m[rank_title]) . "</OPTION>\n";
 					} while($m = db_fetch_array($r));
 				echo "</SELECT>\n";
 				}
@@ -312,8 +312,8 @@ switch($mode) {
       do {
 	 echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
 	 echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
-	 echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"bad_word\" VALUE=\"" . stripslashes($m[word]) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
-	 echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"replacement\" VALUE=\"" . stripslashes($m[replacement]) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+	 echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"bad_word\" VALUE=\"" . html_escape(stripslashes($m[word])) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+	 echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"replacement\" VALUE=\"" . html_escape(stripslashes($m[replacement])) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
 	 echo "<TD><INPUT TYPE=\"HIDDEN\" NAME=\"word_id\" VALUE=\"$m[word_id]\">\n";
 	 echo "<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"$mode\">\n";
 	 echo "<INPUT TYPE=\"SUBMIT\" NAME=\"action\" VALUE=\"Edit\"></TD>\n";
@@ -390,7 +390,7 @@ switch($mode) {
 	if($m = db_fetch_array($r)) {
 		do {
 			echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
-			echo "<TD><FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\"><INPUT TYPE=\"TEXT\" NAME=\"dis_username\" VALUE=\"" . stripslashes($m[disallow_username]) . "\" MAXLENGTH=\"40\" SIZE=\"25\"></TD>\n";
+			echo "<TD><FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\"><INPUT TYPE=\"TEXT\" NAME=\"dis_username\" VALUE=\"" . html_escape(stripslashes($m[disallow_username])) . "\" MAXLENGTH=\"40\" SIZE=\"25\"></TD>\n";
 			echo "<TD><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"$mode\"><INPUT TYPE=\"HIDDEN\" NAME=\"id\" VALUE=\"$m[disallow_id]\">";
 			echo "<INPUT TYPE=\"SUBMIT\" NAME=\"edit\" VALUE=\"Edit\"></TD>\n";
                         echo "<TD><INPUT TYPE=\"SUBMIT\" NAME=\"delete\" VALUE=\"Delete\"></FORM></TD></TR>\n";
@@ -465,7 +465,7 @@ switch($mode) {
         <TD><SELECT NAME="user_id">
 <?php
                                 do {
-                                        echo "<OPTION VALUE=\"$m[user_id]\">$m[username]</OPTION>\n";
+						echo "<OPTION VALUE=\"$m[user_id]\">" . html_escape($m[username]) . "</OPTION>\n";
                                 } while($m = db_fetch_array($r));
 ?>
         </SELECT>
@@ -599,7 +599,7 @@ switch($mode) {
    while($banlist = db_fetch_array($r)) {
       unset($dur);
       unset($unit);
-      echo "<tr bgcolor=\"$color2\" align=\"center\"><td><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"ipaddy\" value=\"$banlist[ban_ip]\" size=\"32\"></td>\n";
+      echo "<tr bgcolor=\"$color2\" align=\"center\"><td><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"ipaddy\" value=\"" . html_escape($banlist[ban_ip]) . "\" size=\"32\"></td>\n";
       $type = $banlist[ban_time_type];
       if($banlist[ban_end] == 0) {
 	 $dur = "Parmanent";
@@ -672,7 +672,7 @@ switch($mode) {
      echo "<tr bgcolor=\"$color2\"><td colspan=\"4\"><b>Error quering the database!</b></td></tr>";
    while($banlist = db_fetch_array($r)) {
       $banuserdata = get_userdata_from_id($banlist[ban_userid], $db);
-      echo "<tr bgcolor=\"$color2\" align=\"center\"><td align=\"center\"><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"user_name\" value=\"$banuserdata[username]\" maxlenght=\"35\" size=\"25\"></td>\n";
+      echo "<tr bgcolor=\"$color2\" align=\"center\"><td align=\"center\"><form action=\"$PHP_SELF\" method=\"POST\"><input type=\"text\" name=\"user_name\" value=\"" . html_escape($banuserdata[username]) . "\" maxlenght=\"35\" size=\"25\"></td>\n";
       $type = $banlist[ban_time_type];
       if($banlist[ban_end] == 0) {
 	 $dur = "Permanent";

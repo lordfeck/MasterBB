@@ -54,7 +54,7 @@ include('page_header.'.$phpEx);
           <a href="#pw">Ich habe mein Passwort vergessen. Was kann ich tun?</a><br>
           <a href="#notify">Kann ich per email benachrichtigt werden, sobald jemand auf mein Thema antwortet?</a><br>
           <a href="#searchprivate">Kann ich private Foren durchsuchen?</a><br>
-          <a href="#ranks">Was sind R&auml;nge in den <?php echo $sitename?> Foren?</a><br>
+          <a href="#ranks">Was sind R&auml;nge in den <?php echo html_escape($sitename)?> Foren?</a><br>
           <a href="#rednumbers">Warum brennen die Ordner in der Liste der Themen?</a></p></font>
         </td>
     </tr>
@@ -130,16 +130,16 @@ include('page_header.'.$phpEx);
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="50%">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="55">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -629,12 +629,12 @@ Schr&auml;gstrich / enthalten: (<FONT COLOR="#FF0000">[/email]</FONT>)
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	// The rank image has not been implemented at this time.
         if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

@@ -94,7 +94,7 @@ if(!$submit)
 			}
 			while($row = @db_fetch_array($result))
 			{
-				echo "<option value=$row[forum_id]>$row[forum_name]</option>";
+				echo "<option value=\"" . (int) $row[forum_id] . "\">" . html_escape($row[forum_name]) . "</option>";
 			}
 		?>
 		</select>
@@ -276,9 +276,9 @@ else
 <?php
 	do {
 		echo "<TR BGCOLOR=\"$color2\">";
-		echo "<TD ALIGN=\"CENTER\" WIDTH=\"30%\"><a href=\"viewforum.$phpEx?forum=$row[forum_id]\">". stripslashes($row[forum_name]) . "</a></TD>";
-		echo "<TD ALIGN=\"CENTER\" WIDTH=\"30%\"><a href=\"viewtopic.$phpEx?topic=$row[topic_id]&forum=$row[forum_id]\">". stripslashes($row[topic_title]) . "</a></TD>";
-		echo "<TD ALIGN=\"CENTER\" WIDTH=\"25%\"><a href=\"bb_profile.$phpEx?mode=view&user=$row[user_id]\">$row[username]</a></TD>";
+		echo "<TD ALIGN=\"CENTER\" WIDTH=\"30%\"><a href=\"viewforum.$phpEx?forum=$row[forum_id]\">" . html_escape(stripslashes($row[forum_name])) . "</a></TD>";
+		echo "<TD ALIGN=\"CENTER\" WIDTH=\"30%\"><a href=\"viewtopic.$phpEx?topic=$row[topic_id]&forum=$row[forum_id]\">" . html_escape(stripslashes($row[topic_title])) . "</a></TD>";
+		echo "<TD ALIGN=\"CENTER\" WIDTH=\"25%\"><a href=\"bb_profile.$phpEx?mode=view&user=$row[user_id]\">" . html_escape($row[username]) . "</a></TD>";
 		echo "<TD ALIGN=\"CENTER\" WIDTH=\"15%\">$row[post_time]</TD>";
 		echo "</TR>";
 	}while($row=@db_fetch_array($result));

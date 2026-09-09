@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 
 from smoke import (
@@ -42,6 +43,23 @@ def characterize(base_url: str) -> None:
     reject(page, f"Logged in as {ADMIN_NAME}", "SQL-injection login attempt")
     secure("SQL-injection-shaped login is rejected")
 
+    reflected_marker = '<script id="masterbb-reflected-xss">alert(1)</script>'
+    page = Browser(base_url).request(
+        "admin/index.php",
+        {
+            "login": "Submit",
+            "username": reflected_marker,
+            "password": "not-the-password",
+        },
+    )
+    reject(page, reflected_marker, "administration login HTML escaping")
+    require(
+        page,
+        "&lt;script id=&quot;masterbb-reflected-xss&quot;&gt;",
+        "administration login HTML escaping",
+    )
+    secure("administration login errors encode reflected input")
+
     page = attacker.request(
         "bb_register.php",
         {
@@ -55,7 +73,7 @@ def characterize(base_url: str) -> None:
     )
     require(page, "You have been added to the database", "attacker fixture")
     page = login(attacker, ATTACKER_NAME, ATTACKER_PASSWORD)
-    require(page, f"Logged in as {ATTACKER_NAME}", "attacker login")
+    require(page, "Logged in as Smoke O&#039;Brien", "attacker login")
     secure("an apostrophe-containing username registers and authenticates intact")
 
     session_cookies = [
@@ -139,20 +157,124 @@ def characterize(base_url: str) -> None:
     secure("forged HTML option cannot enable stored script markup in private messages")
 
     post_xss_marker = '<script id="masterbb-post-xss">alert(1)</script>'
+    bbcode_body = (
+        post_xss_marker
+        + "\n[b]BBCode survives[/b]"
+        + "\n[url=https://example.test/path?a=1&b=2]safe link[/url]"
+        + "\n[url=javascript:alert(1)]unsafe link[/url]"
+        + "\n[img]data:text/html,unsafe[/img]"
+        + "\n:)"
+    )
     page = attacker.request(
         "reply.php",
         {
             "submit": "Submit",
             "forum": "1",
             "topic": "1",
-            "message": post_xss_marker,
+            "message": bbcode_body,
+            # Raw HTML remains disabled even when an old client forges this field.
+            "html": "1",
         },
     )
-    require(page, "Your Message has been stored", "raw post HTML characterization")
+    require(page, "Your Message has been stored", "post rendering fixture")
     page = attacker.request("viewtopic.php?topic=1&forum=1")
-    require(page, post_xss_marker, "raw post HTML characterization persistence")
-    known_vulnerability("raw post HTML is stored and rendered without encoding")
-    known_findings += 1
+    reject(page, post_xss_marker, "post HTML escaping")
+    require(page, "&lt;script id=&quot;masterbb-post-xss&quot;&gt;", "post HTML escaping")
+    require(page, "<B>BBCode survives</B>", "BBCode preservation")
+    require(
+        page,
+        'HREF="https://example.test/path?a=1&amp;b=2"',
+        "safe BBCode URL rendering",
+    )
+    reject(page, 'HREF="javascript:', "unsafe BBCode URL rendering")
+    reject(page, 'SRC="data:', "unsafe BBCode image rendering")
+    require(page, 'ALT="smilie"', "smilie preservation")
+    secure("raw post HTML is encoded while constrained BBCode and smilies remain active")
+
+    for path, step in (
+        ("editpost.php?post_id=3&topic=1&forum=1", "post edit form escaping"),
+        ("reply.php?topic=1&forum=1&post=3&quote=1", "quoted reply escaping"),
+    ):
+        page = attacker.request(path)
+        reject(page, post_xss_marker, step)
+        require(page, "&lt;script id=&quot;masterbb-post-xss&quot;&gt;", step)
+    secure("post source remains inert in edit and quoted-reply forms")
+
+    profile_form = attacker.request("bb_profile.php?mode=edit")
+    user_id_match = re.search(r'NAME="user_id" VALUE="([0-9]+)"', profile_form)
+    if user_id_match is None:
+        raise SmokeFailure("profile XSS fixture: could not identify attacker user")
+    attacker_user_id = user_id_match.group(1)
+    profile_marker = '<script id="masterbb-profile-xss">alert(1)</script>'
+    page = attacker.request(
+        "bb_profile.php",
+        {
+            "submit": "Submit",
+            "mode": "edit",
+            "save": "1",
+            "user_id": attacker_user_id,
+            "password": ATTACKER_PASSWORD,
+            "email": "attacker@example.test",
+            "website": "javascript:alert(1)",
+            "from": profile_marker,
+            "occ": '\" onmouseover=\"alert(1)',
+            "intrest": "Arcane boards & secure code",
+            "sig": "[b]Safe signature[/b] " + profile_marker,
+        },
+    )
+    require(page, "Your Information has been updated", "profile XSS fixture")
+    page = attacker.request(f"bb_profile.php?mode=view&user={attacker_user_id}")
+    reject(page, profile_marker, "profile HTML escaping")
+    require(
+        page,
+        "&lt;script id=&quot;masterbb-profile-xss&quot;&gt;",
+        "profile HTML escaping",
+    )
+    require(page, '&quot; onmouseover=&quot;alert(1)', "profile attribute escaping")
+    require(page, '<a href="#" target="_blank"', "unsafe profile URL handling")
+    secure("profile text and attributes are encoded and unsafe website schemes are inert")
+
+    page = attacker.request(
+        "reply.php",
+        {
+            "submit": "Submit",
+            "forum": "1",
+            "topic": "1",
+            "message": "Signature rendering check",
+            "sig": "1",
+        },
+    )
+    require(page, "Your Message has been stored", "signature rendering fixture")
+    page = attacker.request("viewtopic.php?topic=1&forum=1")
+    require(page, "<B>Safe signature</B>", "signature BBCode preservation")
+    reject(page, profile_marker, "signature HTML escaping")
+    secure("signatures use the same constrained renderer as posts")
+
+    hmf_marker = '<script id="masterbb-hmf-xss">alert(1)</script>'
+    page = admin.request(
+        "admin/admin_board.php",
+        {
+            "submit": "Save Text",
+            "mode": "headermetafooter",
+            "header": hmf_marker,
+            "metacode": '\" onload=\"alert(1)',
+            "footer": hmf_marker,
+        },
+    )
+    require(page, "Data Added", "header/meta/footer fixture")
+    page = anonymous.request("index.php")
+    reject(page, hmf_marker, "header/footer HTML escaping")
+    require(
+        page,
+        "&lt;script id=&quot;masterbb-hmf-xss&quot;&gt;",
+        "header/footer HTML escaping",
+    )
+    require(
+        page,
+        'CONTENT="&quot; onload=&quot;alert(1)"',
+        "meta-description attribute escaping",
+    )
+    secure("administrator header, meta, and footer values are display text only")
 
     page = attacker.request(
         "search.php",

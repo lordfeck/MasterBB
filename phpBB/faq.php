@@ -58,7 +58,7 @@ include('page_header.'.$phpEx);
           <a href="#pw">Is there a username/password retrieval system?</a><br>
           <a href="#notify">Can I be notified by email if someone responds to my topic?</a><br>
           <a href="#searchprivate">Can I search private forums?</a><br>
-          <a href="#ranks">What are the ranks in the <?php echo $sitename?> Forums?</a><br>
+          <a href="#ranks">What are the ranks in the <?php echo html_escape($sitename)?> Forums?</a><br>
           <a href="#rednumbers">Why are icons flaming in the topic view?</a></p></font>
         </td>
     </tr>
@@ -129,16 +129,16 @@ include('page_header.'.$phpEx);
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="50%">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="55">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -159,12 +159,8 @@ include('page_header.'.$phpEx);
 	<tr bgcolor="<?php echo $color2?>">
 	<td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	You may be able to use HTML in your posts, if your
-	administrators and moderators have this option turned on.
-	Every time you post a new note, you will be told whether BB Code and/or HTML
-	is enabled. If HTML is on, you may use any HTML tags, but please be very
-	careful that you proper HTML syntax. If you do not, your moderator or
-	administrator may have to edit your post.
+	Raw HTML is not accepted in posts. Use BB Code for formatting and links;
+	HTML entered as message text will be displayed harmlessly as text.
 	</td>
 	<tr bgcolor="<?php echo $color1?>">
 	<td>
@@ -176,7 +172,7 @@ include('page_header.'.$phpEx);
 	<tr bgcolor="<?php echo $color2?>">
 	<td>
 
-BBCode is a variation on the HTML tags you may already be familiar with.  Basically, it allows you to add functionality or style to your message that would normally require HTML.  You can use BBCode even if HTML is not enabled for the forum you are using.  You may want to use BBCode as opposed to HTML, even if HTML is enabled for your forum, because there is less coding required and it is safer to use (incorrect coding syntax will not lead to as many problems).
+BBCode is a small, safe formatting language that provides common styles and links without accepting raw HTML. BBCode is available when the administrator has enabled it for the forum.
 <P>
 
 <table border=0 cellpadding=0 cellspacing=0 width="<?php echo $tablewidth?>" align="CENTER"><TR><td bgcolor="#FFFFFF">
@@ -328,7 +324,7 @@ In the example above, the BBCode automatically blockquotes the text you referenc
 </td></tr></table>
 </blockquote>
 <BR>
-You must not use both HTML and BBCode to do the same function.  Also note that the BBCode is not case-sensitive (thus, you could use <FONT COLOR="#FF0000">[URL]</FONT> or <FONT COLOR="#FF0000">[url]</FONT>).
+BBCode is not case-sensitive (thus, you may use either <FONT COLOR="#FF0000">[URL]</FONT> or <FONT COLOR="#FF0000">[url]</FONT>).
 <P>
 <FONT COLOR="silver">Incorrect BBCode Usage:</FONT>
 <P>
@@ -362,7 +358,7 @@ You must not use both HTML and BBCode to do the same function.  Also note that t
             a clear and purposefull topic. There are many members who still use
             28.8 and 56k modems that do not have the time to wade through useless
             and senseless topics. </p>
-          <p>Anyone who posts just to increase their <?php echo $sitename?> Forums stats or post topics out of
+          <p>Anyone who posts just to increase their <?php echo html_escape($sitename)?> Forums stats or post topics out of
 	    boredom risk having there topics closed, removed and/or membership revoked. </p>
           <p>Try to make the topic wording mirror what is inside the thread. Topics like "Check this out!" and
             "~~\\You have to see this!//~~" only attract members to a topic they
@@ -460,8 +456,7 @@ You must not use both HTML and BBCode to do the same function.  Also note that t
         signature&quot; option will not appear when you post a
         note, even if you have stored a signature. You may also
         change your signature at any time by changing your
-        profile. <p>Note: You may use HTML or <a href="#bbcode">BB Code</a> if the admin has enabled
-        these options.
+        profile. <p>Note: You may use <a href="#bbcode">BB Code</a> if the administrator has enabled it.
 	    </font>
         </p>
         </td>
@@ -477,8 +472,8 @@ You must not use both HTML and BBCode to do the same function.  Also note that t
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
 	For security reasons, you may not attach files to any posts. You may
-        cut and paste text into your post, however, or use HTML
-        and/or BB Code (if enabled) to provide hyperlinks to
+        cut and paste text into your post, however, or use BB Code
+        (if enabled) to provide hyperlinks to
         outside documents. File attachements will be included in a future version of phpBB.</font>
 	</td>
     </tr>
@@ -562,13 +557,13 @@ You must not use both HTML and BBCode to do the same function.  Also note that t
         <td>
 	<a name="ranks">
 	<font color="<?php echo $textcolor?>" size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-	<b>What are the ranks for the <?php echo $sitename?> Forums?</b></font></a>
+	<b>What are the ranks for the <?php echo html_escape($sitename)?> Forums?</b></font></a>
 	</td>
     </tr>
     <tr bgcolor="<?php echo $color2?>">
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	The <?php echo $sitename?> Forums have established
+	The <?php echo html_escape($sitename)?> Forums have established
 	methods to classify their users by activity through the number of posts.</p>
 	<br>
 	The current ranks are as follows:<br>
@@ -593,11 +588,11 @@ You must not use both HTML and BBCode to do the same function.  Also note that t
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

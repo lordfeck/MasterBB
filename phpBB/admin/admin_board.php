@@ -31,7 +31,7 @@ $submit = request_string('submit', '', 'post');
 $name = request_string('name', '', 'post');
 $from = request_string('from', '', 'post');
 $esig = request_string('esig', '', 'post');
-$html = request_int('html', 0, 'post');
+$html = 0;
 $bb = request_int('bb', 0, 'post');
 $sig = request_int('sig', 0, 'post');
 $hot = request_int('hot', 0, 'post');
@@ -62,7 +62,7 @@ if($login) {
 	       die("You have to enter your password. Go back and do so.");
       }
       if (!check_username($username, $db)) {
-	       die("Invalid username \"$username\". Go back and try again.");
+	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
       }
       if (!check_user_pw($username, $password, $db)) {
 	       die("Invalid password. Go back and try again.");
@@ -96,7 +96,7 @@ else if(!$user_logged_in) {
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <UL>
      <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
      <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
      <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
      </FORM>
@@ -142,11 +142,8 @@ switch($mode) {
 
 		}
 		else {
-		$html_yes = $html_no = $bb_yes = $bb_no = $sig_yes = $sig_no = "";
-		if($allow_html == 1)
-		     $html_yes = "CHECKED";
-		   else
-		     $html_no = "CHECKED";
+		$html_no = "CHECKED";
+		$bb_yes = $bb_no = $sig_yes = $sig_no = "";
 
 		   if($allow_bbcode == 1)
 		     $bb_yes = "CHECKED";
@@ -179,17 +176,17 @@ switch($mode) {
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Site Name:</FONT></TD>
-	<TD><INPUT TYPE="TEXT" NAME="name" SIZE="30" MAXLENGTH="100" VALUE="<?php echo stripslashes($sitename)?>"></TD>
+	<TD><INPUT TYPE="TEXT" NAME="name" SIZE="30" MAXLENGTH="100" VALUE="<?php echo html_escape(stripslashes($sitename))?>"></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Email From Address:</FONT><BR>
 	    <font face="<?php echo $FontFace?>" size="<?php echo $FontSize1?>" color="<?php echo $textcolor?>"><i>(This is the address that will appear on every email sent by the forums)</i></font></TD>
-	<TD><INPUT TYPE="TEXT" NAME="from" SIZE="30" MAXLENGTH="100" VALUE="<?php echo $email_from?>"></TD>
+	<TD><INPUT TYPE="TEXT" NAME="from" SIZE="30" MAXLENGTH="100" VALUE="<?php echo html_escape($email_from)?>"></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Email Signature:</FONT><BR>
 	    <font face="<?php echo $FontFace?>" size="<?php echo $FontSize1?>" color="<?php echo $textcolor?>"><i>(This is the signature that will appear on every email sent by the forums)</i></font></TD>
-	<TD><TEXTAREA NAME="esig" ROWS="5" COLS="20"><?php echo stripslashes($email_sig)?></TEXTAREA></TD>
+	<TD><TEXTAREA NAME="esig" ROWS="5" COLS="20"><?php echo html_escape(stripslashes($email_sig))?></TEXTAREA></TD>
 </TR>
 
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
@@ -202,8 +199,8 @@ switch($mode) {
         ?>
         </td>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
-	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Allow HTML:</FONT></TD>
-	<TD><INPUT TYPE="RADIO" NAME="html" VALUE="1" <?php echo $html_yes?>> Yes <INPUT TYPE="RADIO" NAME="html" VALUE="0" <?php echo $html_no?>> No</TD>
+	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Raw HTML:</FONT></TD>
+	<TD><INPUT TYPE="HIDDEN" NAME="html" VALUE="0">Disabled (use BBCode instead)</TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Allow BBCode:</FONT></TD>
@@ -282,27 +279,27 @@ switch($mode) {
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><B>Add Header/Meta/Footer Commands</B></FONT></TD>
+	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><B>Add Header/Meta/Footer Text</B></FONT></TD>
 </TR>
 
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
-	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Header Code:</FONT></TD>
-	<TD><TEXTAREA NAME="header" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo $currHeader?></TEXTAREA></TD>
+	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Header Text:</FONT></TD>
+	<TD><TEXTAREA NAME="header" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo html_escape($currHeader)?></TEXTAREA></TD>
 </TR>
 
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
-	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Meta Commands:</FONT></TD>
-	<TD><TEXTAREA NAME="metacode" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo $currMeta?></TEXTAREA></TD>
+	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Meta Description:</FONT></TD>
+	<TD><TEXTAREA NAME="metacode" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo html_escape($currMeta)?></TEXTAREA></TD>
 </TR>
 
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
-	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Footer Code:</FONT></TD>
-	<TD><TEXTAREA NAME="footer" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo $currFooter?></TEXTAREA></TD>
+	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Footer Text:</FONT></TD>
+	<TD><TEXTAREA NAME="footer" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo html_escape($currFooter)?></TEXTAREA></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
 	<TD ALIGN="CENTER" COLSPAN="2">
 		<INPUT TYPE="HIDDEN" NAME="mode" VALUE="headermetafooter">
-		<INPUT TYPE="SUBMIT" NAME="submit" VALUE="Add Code">&nbsp;&nbsp;
+		<INPUT TYPE="SUBMIT" NAME="submit" VALUE="Save Text">&nbsp;&nbsp;
 		<INPUT TYPE="RESET" VALUE="Clear">
 	</TD>
 </TR>
@@ -378,10 +375,10 @@ switch($mode) {
 		do {
 			echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
 			echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
-			echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"title\" VALUE=\"" . stripslashes($m[rank_title]) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+			echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"title\" VALUE=\"" . html_escape(stripslashes($m[rank_title])) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
 			echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"min_posts\" VALUE=\"$m[rank_min]\" MAXLENGTH=\"5\" SIZE=\"4\"></TD>\n";
 			echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"max_posts\" VALUE=\"$m[rank_max]\" MAXLENGTH=\"5\" SIZE=\"4\"></TD>\n";
-		        echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"image\" VALUE=\"$m[rank_image]\"  MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+		        echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"image\" VALUE=\"" . html_escape($m[rank_image]) . "\"  MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
 			echo "<TD><INPUT TYPE=\"HIDDEN\" NAME=\"id\" VALUE=\"$m[rank_id]\">\n";
 			echo "<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"$mode\">\n";
 			echo "<INPUT TYPE=\"SUBMIT\" NAME=\"edit\" VALUE=\"Edit\"></TD>\n";
@@ -410,10 +407,10 @@ switch($mode) {
                 do {
                         echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
                         echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
-                        echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"title\" VALUE=\"$m[rank_title]\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+				echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"title\" VALUE=\"" . html_escape($m[rank_title]) . "\" MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
                         echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"min_posts\" VALUE=\"$m[rank_min]\" MAXLENGTH=\"5\" SIZE=\"4\"></TD>\n";
                         echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"max_posts\" VALUE=\"$m[rank_max]\" MAXLENGTH=\"5\" SIZE=\"4\"></TD>\n";
-		        echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"image\" VALUE=\"$m[rank_image]\"  MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
+		        echo "<TD><INPUT TYPE=\"TEXT\" NAME=\"image\" VALUE=\"" . html_escape($m[rank_image]) . "\"  MAXLENGTH=\"50\" SIZE=\"25\"></TD>\n";
                         echo "<TD><INPUT TYPE=\"HIDDEN\" NAME=\"id\" VALUE=\"$m[rank_id]\">\n";
                         echo "<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"$mode\">\n";
 			echo "<INPUT TYPE=\"HIDDEN\" NAME=\"special\" VALUE=\"1\">\n";

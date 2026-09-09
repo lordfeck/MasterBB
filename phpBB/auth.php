@@ -91,7 +91,8 @@ $sql = "SELECT * FROM config WHERE selected = 1";
 if($result = db_query($sql, $db)) {
    if($myrow = db_fetch_array($result)) {
       $sitename = stripslashes($myrow["sitename"]);
-      $allow_html = $myrow["allow_html"];
+      // Raw user-authored HTML is intentionally unsupported in the hardened port.
+      $allow_html = 0;
       $allow_bbcode = $myrow["allow_bbcode"];
       $allow_sig = $myrow["allow_sig"];
       $allow_namechange = $myrow["allow_namechange"];
@@ -216,6 +217,7 @@ if($override_user_themes == 1 || !$theme)
    }
    if($theme = db_fetch_array($r))
    {
+	  $theme = sanitize_theme_for_html($theme);
       $bgcolor = $theme["bgcolor"];
       $table_bgcolor = $theme["table_bgcolor"];
       $textcolor = $theme["textcolor"];

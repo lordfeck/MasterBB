@@ -62,7 +62,7 @@ include('page_header.'.$phpEx);
           <a href="#pw">C'e' un modo di recuperare gli username/password?</a><br>
           <a href="#notify">Posso essere avvisato via email se qualcuno risponde a un mio topic?</a><br>
           <a href="#searchprivate">Posso leggere i forum privati?</a><br>
-          <a href="#ranks">Quali sono i Gradi nel forum di <?php echo $sitename?>?</a><br>
+          <a href="#ranks">Quali sono i Gradi nel forum di <?php echo html_escape($sitename)?>?</a><br>
           <a href="#rednumbers">Come mai alcune icone sono "infiammate" nella lista dei messaggi?</a></p></font>
 
         </td>
@@ -127,16 +127,16 @@ registrazione o nel proprio profilo. Puoi registrarti cliccando
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="50%">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="55">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -380,7 +380,7 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
 	    chiudere o cancellare messaggi che non abbiano un tema chiaro e 
 	    utile. Vi sono membri che usano ancora modem a 28.8 o 56k e non 
 	    hanno tempo per vagare fra topic inutili o senza senso.</p>
-	    <p>Chiunque invii messaggi solo per aumentare le sue statistiche sui Forum di <?php echo $sitename?> o mandi messaggi fuori sopportazione rischia di trovarsi i suoi topic chiusi, rimossi o la revoca della registrazione.</p>
+	    <p>Chiunque invii messaggi solo per aumentare le sue statistiche sui Forum di <?php echo html_escape($sitename)?> o mandi messaggi fuori sopportazione rischia di trovarsi i suoi topic chiusi, rimossi o la revoca della registrazione.</p>
           <p>Cerca invece di mantenere gli oggetti dei messaggi in linea con quello che &egrave; scritto all'interno. Oggetti come "Guarda questo" o
             "~~\\Non perderti questo!//~~" si limitano ad attrarre i membri verso messaggi che potrebbero non voler leggere.</font></p>
         </td>
@@ -583,13 +583,13 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
         <td>
 	<a name="ranks">
 	<font color="<?php echo $textcolor?>" size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-	<b>Quali sono i gradi per i Forum di <?php echo $sitename?>?</b></font></a>
+	<b>Quali sono i gradi per i Forum di <?php echo html_escape($sitename)?>?</b></font></a>
 	</td>
     </tr>
     <tr bgcolor="<?php echo $color2?>">
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	I Forum di <?php echo $sitename?> hanno un modo di classificare i loro
+	I Forum di <?php echo html_escape($sitename)?> hanno un modo di classificare i loro
 	utenti a seconda del numero di messaggi.
 	<br>
 	I gradi attuali sono quelli che seguono:<br>
@@ -614,11 +614,11 @@ stessa cosa. Nota anche che i BBCode non sono case-sensitive (cio&egrave; puoi u
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

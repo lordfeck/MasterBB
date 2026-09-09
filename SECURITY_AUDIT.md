@@ -66,7 +66,7 @@ and [modern cookie attributes](https://www.php.net/manual/en/function.setcookie.
 | Authentication and accounts | `login`, `logout`, registration, profile, preferences, password reset | Users, credentials, sessions, profile fields, cookies | Anonymous for registration/reset; owner for profile/preferences |
 | Posts and topics | `newtopic`, `reply`, `editpost`, `topicadmin` | Create/edit/delete posts; create/move/lock/delete topics | Forum posting rules, owner edit window, moderator/admin operations |
 | Private messages | `sendpmsg`, `viewpmsg`, `replypmsg`, `delpmsg` | Send/read-state/reply/delete messages | Authenticated sender or recipient as appropriate |
-| Administration | forum, board, theme, user, private-forum, and smile administration | Site configuration, executable header/footer content, roles, bans, forums, access lists, themes, ranks, words, smiles | Administrator only |
+| Administration | forum, board, theme, user, private-forum, and smile administration | Site configuration, display-only header/footer text, roles, bans, forums, access lists, themes, ranks, words, smiles | Administrator only |
 | Installation | `install.php` | Database/schema creation, administrator creation, config append, board configuration | Unauthenticated before one-time installation only |
 
 Several historical links perform mutations with GET, including theme
@@ -134,19 +134,31 @@ telemetry such as view counters, which should be documented separately.
 
 **Severity:** Critical
 
-**Status:** Open; black-box reproduced
+**Status:** Closed in Slice 3
 
-With the installed `allow_html` option enabled, a member can store a literal
-`script` element in a post and it is emitted by `viewtopic.php`. Numerous
-profile, search, PM, theme, rank, forum, and administration values are also
-placed into HTML text, attributes, or URLs without context-specific encoding.
-The administrator-controlled header/meta/footer facility can turn CSRF or an
-administrator compromise into script execution for every visitor.
+Raw HTML is now permanently disabled in both fresh installation and runtime
+configuration, including when an old client forges the historical HTML form
+field. A shared renderer first encodes user-authored source and then expands
+the retained BBCode and smilie subset. BBCode links, images, automatic links,
+profile websites, and email links are emitted through scheme-aware URL
+helpers; only HTTP(S) web URLs and validated mail addresses become active.
+Obsolete ICQ/AIM/Yahoo active integrations have been removed.
 
-Remove raw user HTML, store plain source text, preserve a narrowly reviewed
-BBCode renderer, and encode all other values at the final HTML/attribute/URL
-sink. Administrative header/footer content must no longer accept executable
-markup.
+Text and quoted-attribute sinks across topics, posts, profiles, member lists,
+private messages, search, forums, themes, ranks, smilies, and administration
+now use explicit contextual encoding. Signatures use the same constrained
+renderer as posts. The administrator header/footer facility is display text
+only, while its former arbitrary meta field is a safely encoded description.
+The default-language FAQ and installation/board settings now state that raw
+HTML is unavailable.
+
+Black-box tests confirm that stored script markup in posts, PMs, profiles,
+signatures, and site-wide header/footer text is inert; reflected administrator
+login input is encoded; unsafe profile and BBCode URL schemes are not active;
+and ordinary BBCode, safe links, and smilies still render. Validation of theme
+field formats and restriction of theme/rank assets to approved local paths
+remain part of SEC-010 and Slice 7; their current output is nevertheless
+attribute-encoded and rejects active non-web schemes.
 
 ### SEC-005 — Session identifiers and cookies are not modern
 
@@ -232,16 +244,17 @@ for HTTPS.
 
 **Severity:** Medium
 
-**Status:** Open; confirmed source finding
+**Status:** Open; URL output mitigated in Slice 3
 
 Email addresses, websites, languages, theme paths/colors, IP addresses,
-pagination, and several administrative numeric ranges lack consistent
-allowlists and length/range checks. User-controlled URL attributes can accept
-unsafe schemes, while old ICQ/AIM links load external or insecure resources.
+pagination, and several administrative numeric ranges still lack consistent
+allowlists and length/range checks. Slice 3 restricts active web URLs to HTTP
+and HTTPS, validates active email links, safely encodes URL attributes, and
+removes obsolete ICQ/AIM/Yahoo active resources.
 
-Add field-specific validation at request boundaries, allow only `http` and
-`https` profile URLs, encode URL components and attributes separately, and
-remove obsolete third-party active resources.
+Slice 7 must add field-specific validation at request boundaries and restrict
+theme and rank asset paths to approved local directories. The output boundary
+must remain in place as defense in depth.
 
 ### SEC-011 — Authentication abuse controls are absent
 
@@ -260,16 +273,19 @@ that do not log secrets.
 The security characterization suite currently verifies these blocked cases:
 
 - SQL-injection-shaped login input does not authenticate;
+- reflected input in administration login errors is encoded;
 - cross-user post edit and delete attempts fail;
 - a member cannot quote another recipient's private message;
 - a forged PM HTML option cannot store executable markup;
+- raw HTML in posts, profiles, signatures, and site-wide administrator text is
+  encoded while BBCode and smilies remain functional;
+- unsafe BBCode image/link and profile website schemes do not become active;
 - arbitrary search sort expressions are rejected; and
 - a member cannot enter administration pages.
 
 It also reproduces and labels these open findings:
 
 - numeric session identifiers with missing `HttpOnly`/`SameSite` attributes;
-- stored raw HTML execution in posts;
 - authenticated state changes without a CSRF token;
 - the installer endpoint remaining reachable and dependent on file mode after
   setup; and

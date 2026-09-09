@@ -73,12 +73,14 @@ if($mode) {
 	   if($userdata[user_level] == -1) {
 			error_die($l_userremoved);
 	   }
+	   $profile_email_url = html_email_url($userdata[user_email]);
+	   $profile_website_url = html_web_url($userdata[user_website]);
 ?>
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="<?php echo $TableWidth?>"><TR><TD  BGCOLOR="<?php echo  $table_bgcolor?>">
 	<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_username?>:</FONT></b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $userdata[username]?></FONT>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[username])?></FONT>
 	        <font size=-2>(<a href="search.<?php echo $phpEx?>?term=&addterms=any&forum=all&search_username=<?php echo rawurlencode($userdata[username])?>&sortby=p.post_time&searchboth=both&submit=Search"><?php echo $l_viewpostuser?></a>)
 			  &nbsp;&nbsp;(<a href="sendpmsg.<?php echo $phpEx?>?tousername=<?php echo rawurlencode($userdata[username])?>"><?php echo $l_sendpmsg?></a>)</font></TD>
 	</TR>
@@ -96,56 +98,48 @@ if($mode) {
 ?>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_emailaddress?>:<b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="mailto:<?php echo $userdata[user_email]?>"><?php echo $userdata[user_email]?></a></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="<?php echo $profile_email_url?>"><?php echo html_escape($userdata[user_email])?></a></TD>
 	</TR>
 <?php
 			}
 ?>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_icq . " " .$l_number?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $userdata[user_icq]?>
-		<?php if ($userdata[user_icq]!=""){ ?>
-		</FONT>&nbsp;&nbsp;<font size=-2>(<a href="http://wwp.icq.com/scripts/search.dll?to=<?php echo $userdata[user_icq]?>"><?php echo $l_icqadd?></a>)</font>&nbsp;&nbsp;<font size=-2>(<a href="http://wwp.mirabilis.com/<?php echo $userdata[user_icq]?>" TARGET="_blank"><?php echo $l_icqpager?></a>)</font>
-		<?php }
-		else
-		{
-			echo "&nbsp";
-		}
-		?>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[user_icq])?>&nbsp;
 		</TD>
 
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_aim?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="aim:goim?screenname=<?php echo $userdata[user_aim]?>&message=Hi+<?php echo $userdata[user_aim]?>.+Are+you+there?"><?php echo $userdata[user_aim]?></a></FONT>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[user_aim])?></FONT>&nbsp;</TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_yahoo?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="http://edit.yahoo.com/config/send_webmesg?.target=<?php echo $userdata[user_yim]?>&.src=pg"><?php echo $userdata[user_yim]?></a></FONT>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[user_yim])?></FONT>&nbsp;</TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_messenger?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $userdata[user_msnm]?>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[user_msnm])?>&nbsp;</TD>
 	</TR>
 
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_website?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="<?php echo $userdata[user_website]?>" target="_blank"><?php echo $userdata[user_website]?></a></FONT>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><a href="<?php echo $profile_website_url?>" target="_blank" rel="noopener noreferrer"><?php echo html_escape($userdata[user_website])?></a></FONT>&nbsp;</TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_location?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo stripslashes($userdata[user_from])?>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape(stripslashes($userdata[user_from]))?>&nbsp;</TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_occupation?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo stripslashes($userdata[user_occ])?>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape(stripslashes($userdata[user_occ]))?>&nbsp;</TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_interests?>: <b></TD>
 <?php
 	$userdata[user_intrest] = stripslashes($userdata[user_intrest]);
 ?>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $userdata[user_intrest]?>&nbsp;</TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape($userdata[user_intrest])?>&nbsp;</TD>
 	</TR>
 	</TABLE></TD></TR></TABLE>
 <?php
@@ -193,14 +187,13 @@ if($mode) {
 		    }
 		    $new_name = 1;
 		 }
-		 $sig = chop($sig); // Strip all trailing whitespace.
-		 $sig = str_replace("\n", "<BR>", $sig);
+		 $sig = rtrim($sig);
 		 $passwd = $md_pass;
 
 
 		 // Ensure the website URL starts with "http://".
 	    $website = trim($website);
-		 if(substr(strtolower($website), 0, 7) != "http://")
+		 if(!preg_match('#^https?://#i', $website))
 		   {
 		      $website = "http://" . $website;
 		   }
@@ -258,10 +251,10 @@ if($mode) {
 		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
 <?php
 		if($allow_namechange) {
-		   echo "<input type=\"text\" name=\"user_name\" size=\"35\" maxlength=\"40\" value=\"$userdata[username]\">";
+		   echo "<input type=\"text\" name=\"user_name\" size=\"35\" maxlength=\"40\" value=\"" . html_escape($userdata[username]) . "\">";
 		}
 		else {
-		   echo $userdata[username];
+		   echo html_escape($userdata[username]);
 		}
 ?>
 	       </FONT></TD>
@@ -281,39 +274,39 @@ if($mode) {
 
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_emailaddress?>: *<b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="email" SIZE="25" MAXLENGTH="80" VALUE="<?php echo $userdata[user_email]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="email" SIZE="25" MAXLENGTH="80" VALUE="<?php echo html_escape($userdata[user_email])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_icq . " ". $l_number?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="icq" SIZE="10" MAXLENGTH="20" VALUE="<?php echo $userdata[user_icq]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="icq" SIZE="10" MAXLENGTH="20" VALUE="<?php echo html_escape($userdata[user_icq])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_aim?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="aim" SIZE="25" MAXLENGTH="80" VALUE="<?php echo $userdata[user_aim]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="aim" SIZE="25" MAXLENGTH="80" VALUE="<?php echo html_escape($userdata[user_aim])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_yahoo?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="yim" SIZE="25" MAXLENGTH="80" VALUE="<?php echo $userdata[user_yim]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="yim" SIZE="25" MAXLENGTH="80" VALUE="<?php echo html_escape($userdata[user_yim])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo  $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_messenger?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="msnm" SIZE="25" MAXLENGTH="80" VALUE="<?php echo $userdata[user_msnm]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="msnm" SIZE="25" MAXLENGTH="80" VALUE="<?php echo html_escape($userdata[user_msnm])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_website?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="website" SIZE="25" MAXLENGTH="120" VALUE="<?php echo $userdata[user_website]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="website" SIZE="25" MAXLENGTH="120" VALUE="<?php echo html_escape($userdata[user_website])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_location?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="from" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[user_from]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="from" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[user_from])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_occupation?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="occ" SIZE="25" MAXLENGTH="255" VALUE="<?php echo $userdata[user_occ]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="occ" SIZE="25" MAXLENGTH="255" VALUE="<?php echo html_escape($userdata[user_occ])?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_interests?>: <b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="intrest" SIZE="25" MAXLENGTH="255" VALUE="<?php echo $userdata[user_intrest]?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="TEXT" NAME="intrest" SIZE="25" MAXLENGTH="255" VALUE="<?php echo html_escape($userdata[user_intrest])?>"></TD>
 	</TR>
 <?php
 	$sig = str_replace("<BR>", "\n", $userdata[user_sig]);
@@ -321,7 +314,7 @@ if($mode) {
 ?>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_signature?>:</b><br><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize1?>" COLOR="<?php echo $textcolor?>"><?php echo $l_sigexplain?></font></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><TEXTAREA NAME="sig" ROWS=6 COLS=45><?php echo $sig?></TEXTAREA></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><TEXTAREA NAME="sig" ROWS=6 COLS=45><?php echo html_escape($sig)?></TEXTAREA></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 <?php

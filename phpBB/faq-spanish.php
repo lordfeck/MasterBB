@@ -58,7 +58,7 @@ include('page_header.'.$phpEx);
           <a href="#pw">¿Existe un sistema de recuperación de nombre de usuario/clave?</a><br>
           <a href="#notify">¿Puedo ser notificado por email si alguien responde a mi tema?</a><br>
           <a href="#searchprivate">¿Puedo buscar en los foros privados?</a><br>
-          <a href="#ranks">¿Qué son los ránkings en los Foros <?php echo $sitename?>?</a><br>
+          <a href="#ranks">¿Qué son los ránkings en los Foros <?php echo html_escape($sitename)?>?</a><br>
           <a href="#rednumbers">¿Por qué hay iconos llameantes en la vista de temas?</a></p></font>
         </td>
     </tr>
@@ -134,16 +134,16 @@ include('page_header.'.$phpEx);
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="50%">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="55">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -366,7 +366,7 @@ No debes usar los dos sistemas (HTML y BBCode) para hacer la misma función. Fíja
 	    tema claro y acorde al topic. Hay muchos miembros que todavía usan
 	    módems de 28.8 y de 56k que no tienen tiempo para bucear a través
 	    de temas poco útiles y sin sentido. </p>
-          <p>Cualquiera que escriba para incrementar sus estadísticas en los Foros de <?php echo $sitename?> o escriba sobre temas fuera de lugar corren el riesgo de que se cierren sus temas, se eliminen y/o se cancele su pertenencia a los foros. </p>
+          <p>Cualquiera que escriba para incrementar sus estadísticas en los Foros de <?php echo html_escape($sitename)?> o escriba sobre temas fuera de lugar corren el riesgo de que se cierren sus temas, se eliminen y/o se cancele su pertenencia a los foros. </p>
           <p>Intente hacer que el tema sea un reflejo de lo que hay dentro del hilo. Temas como "Comprueba esto!" y ""~~\\¡Tienes que ver esto!//~~" sólo atraen a los miembros a un tema que puede que no quieran leer.</font></p>
         </td>
     </tr>
@@ -560,13 +560,13 @@ No debes usar los dos sistemas (HTML y BBCode) para hacer la misma función. Fíja
         <td>
 	<a name="ranks">
 	<font color="<?php echo $textcolor?>" size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-	<b>¿Qué son los rankings de los Foros de <?php echo $sitename?>?</b></font></a>
+	<b>¿Qué son los rankings de los Foros de <?php echo html_escape($sitename)?>?</b></font></a>
 	</td>
     </tr>
     <tr bgcolor="<?php echo $color2?>">
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	Los foros de <?php echo $sitename?> han establecido métodos para
+	Los foros de <?php echo html_escape($sitename)?> han establecido métodos para
 	clasificar a sus usuarios a través del número de mensajes escritos.</p>
 	<br>
 	El ranking actual es el siguiente:<br>
@@ -591,12 +591,12 @@ No debes usar los dos sistemas (HTML y BBCode) para hacer la misma función. Fíja
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	// The rank image has not been implemented at this time.
         if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

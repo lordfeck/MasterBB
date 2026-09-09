@@ -142,7 +142,7 @@ function print_login_status($user_logged_in, $username, $url_phpbb) {
 	global $l_loggedinas, $l_notloggedin, $l_logout, $l_login;
 	
 	if($user_logged_in) {
-		echo "<b>$l_loggedinas $username. <a href=\"$url_phpbb/logout.$phpEx\">$l_logout.</a></b><br>\n";
+		echo "<b>$l_loggedinas " . html_escape($username) . ". <a href=\"" . html_escape($url_phpbb) . "/logout.$phpEx\">$l_logout.</a></b><br>\n";
 	} else {
 		echo "<b>$l_notloggedin. <a href=\"$url_phpbb/login.$phpEx\">$l_login.</a></b><br>\n";
 	}
@@ -180,6 +180,65 @@ function get_total_topics($forum_id, $db) {
 	
 	return($myrow[total]);
 }
+
+/**
+ * Encode untrusted text at an HTML text or quoted-attribute sink.
+ *
+ * The historical application serves UTF-8 pages in the modern port.  Keeping
+ * this in one helper avoids PHP-version-dependent htmlspecialchars defaults.
+ */
+function html_escape($value) {
+	return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8');
+}
+
+/**
+ * Return a URL suitable for a quoted HTML attribute, or an inert fragment.
+ * Profile and BBCode links deliberately support only ordinary web URLs.
+ */
+function html_web_url($value, $allow_relative = false) {
+	$url = trim(html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML401, 'UTF-8'));
+	if ($url === '' || preg_match('/[\\x00-\\x1F\\x7F]/', $url)) {
+		return '#';
+	}
+
+	if ($allow_relative && !preg_match('#^[a-z][a-z0-9+.-]*:#i', $url) && !str_starts_with($url, '//')) {
+		return html_escape($url);
+	}
+
+	$parts = parse_url($url);
+	if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+		return '#';
+	}
+	if (!in_array(strtolower($parts['scheme']), array('http', 'https'), true)) {
+		return '#';
+	}
+
+	return html_escape($url);
+}
+
+function html_email_url($value) {
+	$email = html_entity_decode(trim((string) $value), ENT_QUOTES | ENT_HTML401, 'UTF-8');
+	if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		return '#';
+	}
+	return 'mailto:' . html_escape($email);
+}
+
+/**
+ * Convert plain user-authored source into the narrow markup accepted in posts
+ * and private messages. Raw HTML is always encoded before BBCode is expanded.
+ */
+function render_user_text($source, $enable_bbcode = true, $enable_smilies = true) {
+	$message = html_escape($source);
+	if ($enable_bbcode) {
+		$message = bbencode($message, true);
+	}
+	$message = make_clickable($message);
+	if ($enable_smilies) {
+		$message = smile($message);
+	}
+	return str_replace("\n", "<BR>", $message);
+}
 /*
  * Shows the 'header' data from the header/meta/footer table
  */
@@ -187,7 +246,7 @@ function showheader($db) {
         $sql = "SELECT header FROM headermetafooter";
         if($result = db_query($sql, $db)) {
 	        if($header = db_fetch_array($result)) {
-		        echo stripslashes($header[header]);
+		        echo nl2br(html_escape(stripslashes($header[header])));
 		}
 	}
 }
@@ -197,10 +256,11 @@ function showheader($db) {
 function showmeta($db) {
         $sql = "SELECT meta FROM headermetafooter";
         if($result = db_query($sql, $db)) {
-	        if($meta = db_fetch_array($result)) {
-	                echo stripslashes($meta[meta]);
+		        if($meta = db_fetch_array($result)) {
+	                return '<META NAME="description" CONTENT="' . html_escape(stripslashes($meta[meta])) . '">';
 		}
 	}
+	return '';
 }
 /*
  * Show the footer from the header/meta/footer table
@@ -209,7 +269,7 @@ function showfooter($db) {
         $sql = "SELECT footer FROM headermetafooter";
         if($result = db_query($sql, $db)) {
 	        if($footer = db_fetch_array($result)) {
-		        echo stripslashes($footer[footer]);
+		        echo nl2br(html_escape(stripslashes($footer[footer])));
 		}
 	}
 } 
@@ -301,7 +361,7 @@ function get_last_post($id, $db, $type) {
    if(!$myrow = db_fetch_array($result))
      return($l_noposts);
    if(($type != 'user') && ($type != 'time_fix'))
-     $val = sprintf("%s <br> %s %s", $myrow[post_time], $l_by, $myrow[username]);
+     $val = sprintf("%s <br> %s %s", html_escape($myrow[post_time]), html_escape($l_by), html_escape($myrow[username]));
    else
      $val = $myrow[post_time];
    
@@ -427,7 +487,27 @@ function setuptheme($theme, $db) {
 		return(0);
 	if(!$myrow = db_fetch_array($result))
 		return(0);
-	return($myrow);
+	return sanitize_theme_for_html($myrow);
+}
+
+function sanitize_theme_for_html($theme) {
+	$text_fields = array(
+		'theme_name', 'bgcolor', 'textcolor', 'color1', 'color2', 'table_bgcolor',
+		'linkcolor', 'vlinkcolor', 'fontface', 'fontsize1', 'fontsize2',
+		'fontsize3', 'fontsize4', 'tablewidth'
+	);
+	foreach ($text_fields as $field) {
+		if (isset($theme[$field])) {
+			$theme[$field] = html_escape($theme[$field]);
+		}
+	}
+	$url_fields = array('header_image', 'newtopic_image', 'reply_image', 'replylocked_image');
+	foreach ($url_fields as $field) {
+		if (isset($theme[$field])) {
+			$theme[$field] = html_web_url($theme[$field], true);
+		}
+	}
+	return $theme;
 }
 
 /*
@@ -487,7 +567,8 @@ function smile($message) {
       {
 			$smile_code = preg_quote($smiles[code]);
 			$smile_code = str_replace('/', '//', $smile_code);
-			$message = preg_replace("/([\n\\ \\.])$smile_code/si", '\1<IMG SRC="' . $url_smiles . '/' . $smiles[smile_url] . '">', $message);
+			$smile_url = html_web_url($url_smiles . '/' . $smiles[smile_url], true);
+			$message = preg_replace("/([\n\\ \\.])$smile_code/si", '\1<IMG SRC="' . $smile_url . '" ALT="smilie">', $message);
       }
    }
    
@@ -506,6 +587,9 @@ function desmile($message) {
    
    if ($getsmiles = db_query("SELECT * FROM smiles")){
       while ($smiles = db_fetch_array($getsmiles)) {
+	 $smile_url = html_web_url($url_smiles . '/' . $smiles[smile_url], true);
+	 $message = str_replace('<IMG SRC="' . $smile_url . '" ALT="smilie">', $smiles[code], $message);
+	 // Preserve editability of content stored before the hardened renderer.
 	 $message = str_replace("<IMG SRC=\"$url_smiles/$smiles[smile_url]\">", $smiles[code], $message);
       }
    }
@@ -553,34 +637,36 @@ function bbencode($message, $is_html_disabled) {
 	// [i] and [/i] for italicizing text.
 	$message = preg_replace("/\[i\](.*?)\[\/i\]/si", "<!-- BBCode Start --><I>\\1</I><!-- BBCode End -->", $message);
 	
-	// [img]image_url_here[/img] code..
-	$message = preg_replace("/\[img\](.*?)\[\/img\]/si", "<!-- BBCode Start --><IMG SRC=\"\\1\" BORDER=\"0\"><!-- BBCode End -->", $message);
+	// [img]image_url_here[/img] code. Only HTTP(S) resources are accepted.
+	$message = preg_replace_callback("/\[img\](.*?)\[\/img\]/si", function($matches) {
+		$url = html_web_url($matches[1]);
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return '<!-- BBCode Start --><IMG SRC="' . $url . '" BORDER="0" ALT=""><!-- BBCode End -->';
+	}, $message);
 	
 	// Patterns and replacements for URL and email tags..
-	$patterns = array();
-	$replacements = array();
-	
-	// [url]xxxx://www.phpbb.com[/url] code..
-	$patterns[0] = "#\[url\]([a-z]+?://){1}(.*?)\[/url\]#si";
-	$replacements[0] = '<!-- BBCode u1 Start --><A HREF="\1\2" TARGET="_blank">\1\2</A><!-- BBCode u1 End -->';
-	
-	// [url]www.phpbb.com[/url] code.. (no xxxx:// prefix).
-	$patterns[1] = "#\[url\](.*?)\[/url\]#si";
-	$replacements[1] = '<!-- BBCode u1 Start --><A HREF="http://\1" TARGET="_blank">\1</A><!-- BBCode u1 End -->';
-	
-	// [url=xxxx://www.phpbb.com]phpBB[/url] code.. 
-	$patterns[2] = "#\[url=([a-z]+?://){1}(.*?)\](.*?)\[/url\]#si";
-	$replacements[2] = '<!-- BBCode u2 Start --><A HREF="\1\2" TARGET="_blank">\3</A><!-- BBCode u2 End -->';
-	
-	// [url=www.phpbb.com]phpBB[/url] code.. (no xxxx:// prefix).
-	$patterns[3] = "#\[url=(.*?)\](.*?)\[/url\]#si";
-	$replacements[3] = '<!-- BBCode u2 Start --><A HREF="http://\1" TARGET="_blank">\2</A><!-- BBCode u2 End -->';
-	
-	// [email]user@domain.tld[/email] code..
-	$patterns[4] = "#\[email\](.*?)\[/email\]#si";
-	$replacements[4] = '<!-- BBCode Start --><A HREF="mailto:\1">\1</A><!-- BBCode End -->';
-						
-	$message = preg_replace($patterns, $replacements, $message);
+	$message = preg_replace_callback("#\[url(?:=(.*?))?\](.*?)\[/url\]#si", function($matches) {
+		$target = ($matches[1] ?? '') !== '' ? $matches[1] : $matches[2];
+		$decoded_target = html_entity_decode($target, ENT_QUOTES | ENT_HTML401, 'UTF-8');
+		if (!preg_match('#^https?://#i', $decoded_target)) {
+			$decoded_target = 'http://' . $decoded_target;
+		}
+		$url = html_web_url($decoded_target);
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return '<!-- BBCode URL Start --><A HREF="' . $url . '" TARGET="_blank" REL="noopener noreferrer">' . $matches[2] . '</A><!-- BBCode URL End -->';
+	}, $message);
+
+	$message = preg_replace_callback("#\[email\](.*?)\[/email\]#si", function($matches) {
+		$url = html_email_url($matches[1]);
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return '<!-- BBCode Start --><A HREF="' . $url . '">' . $matches[1] . '</A><!-- BBCode End -->';
+	}, $message);
 	
 	// Remove our padding from the string..
 	$message = substr($message, 1);
@@ -609,7 +695,7 @@ function bbdecode($message) {
 		$message = preg_replace("#<!-- BBCode Start --><I>(.*?)</I><!-- BBCode End -->#s", "[i]\\1[/i]", $message);
 		
 		// Undo [url] (long form)
-		$message = preg_replace("#<!-- BBCode u2 Start --><A HREF=\"([a-z]+?://)(.*?)\" TARGET=\"_blank\">(.*?)</A><!-- BBCode u2 End -->#s", "[url=\\1\\2]\\3[/url]", $message);
+		$message = preg_replace("#<!-- BBCode URL Start --><A HREF=\"(.*?)\" TARGET=\"_blank\" REL=\"noopener noreferrer\">(.*?)</A><!-- BBCode URL End -->#s", "[url=\\1]\\2[/url]", $message);
 		
 		// Undo [url] (short form)
 		$message = preg_replace("#<!-- BBCode u1 Start --><A HREF=\"([a-z]+?://)(.*?)\" TARGET=\"_blank\">(.*?)</A><!-- BBCode u1 End -->#s", "[url]\\3[/url]", $message);
@@ -618,7 +704,7 @@ function bbdecode($message) {
 		$message = preg_replace("#<!-- BBCode Start --><A HREF=\"mailto:(.*?)\">(.*?)</A><!-- BBCode End -->#s", "[email]\\1[/email]", $message);
 		
 		// Undo [img]
-		$message = preg_replace("#<!-- BBCode Start --><IMG SRC=\"(.*?)\" BORDER=\"0\"><!-- BBCode End -->#s", "[img]\\1[/img]", $message);
+		$message = preg_replace("#<!-- BBCode Start --><IMG SRC=\"(.*?)\" BORDER=\"0\" ALT=\"\"><!-- BBCode End -->#s", "[img]\\1[/img]", $message);
 		
 		// Undo lists (unordered/ordered)
 	
@@ -1066,7 +1152,13 @@ function make_clickable($text) {
 	// matches an "xxxx://yyyy" URL at the start of a line, or after a space.
 	// xxxx can only be alpha characters.
 	// yyyy is anything up to the first space, newline, or comma.
-	$ret = preg_replace("#([\n ])([a-z]+?)://([^, \n\r]+)#i", "\\1<!-- BBCode auto-link start --><a href=\"\\2://\\3\" target=\"_blank\">\\2://\\3</a><!-- BBCode auto-link end -->", $ret);
+	$ret = preg_replace_callback("#([\n ])(https?://[^, \n\r]+)#i", function($matches) {
+		$url = html_web_url($matches[2]);
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return $matches[1] . '<!-- BBCode auto-link start --><a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $matches[2] . '</a><!-- BBCode auto-link end -->';
+	}, $ret);
 	
 	// matches a "www.xxxx.yyyy[/zzzz]" kinda lazy URL thing
 	// Must contain at least 2 dots. xxxx contains either alphanum, or "-"
@@ -1074,12 +1166,24 @@ function make_clickable($text) {
 	// zzzz is optional.. will contain everything up to the first space, newline, or comma.
 	// This is slightly restrictive - it's not going to match stuff like "forums.foo.com"
 	// This is to keep it from getting annoying and matching stuff that's not meant to be a link.
-	$ret = preg_replace("#([\n ])www\.([a-z0-9\-]+)\.([a-z0-9\-.\~]+)((?:/[^, \n\r]*)?)#i", "\\1<!-- BBCode auto-link start --><a href=\"http://www.\\2.\\3\\4\" target=\"_blank\">www.\\2.\\3\\4</a><!-- BBCode auto-link end -->", $ret);
+	$ret = preg_replace_callback("#([\n ])(www\.[a-z0-9\-]+\.[a-z0-9\-.~]+(?:/[^, \n\r]*)?)#i", function($matches) {
+		$url = html_web_url('http://' . html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML401, 'UTF-8'));
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return $matches[1] . '<!-- BBCode auto-link start --><a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $matches[2] . '</a><!-- BBCode auto-link end -->';
+	}, $ret);
 	
 	// matches an email@domain type address at the start of a line, or after a space.
 	// Note: before the @ sign, the only valid characters are the alphanums and "-", "_", or ".".
 	// After the @ sign, we accept anything up to the first space, linebreak, or comma.
-	$ret = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([^, \n\r]+)#i", "\\1<!-- BBcode auto-mailto start --><a href=\"mailto:\\2@\\3\">\\2@\\3</a><!-- BBCode auto-mailto end -->", $ret);
+	$ret = preg_replace_callback("#([\n ])([a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,})#i", function($matches) {
+		$url = html_email_url($matches[2]);
+		if ($url === '#') {
+			return $matches[0];
+		}
+		return $matches[1] . '<!-- BBcode auto-mailto start --><a href="' . $url . '">' . $matches[2] . '</a><!-- BBCode auto-mailto end -->';
+	}, $ret);
 	
 	// Remove our padding..
 	$ret = substr($ret, 1);
@@ -1097,7 +1201,7 @@ function make_clickable($text) {
  
 function undo_make_clickable($text) {
 	
-	$text = preg_replace("#<!-- BBCode auto-link start --><a href=\"(.*?)\" target=\"_blank\">.*?</a><!-- BBCode auto-link end -->#i", "\\1", $text);
+	$text = preg_replace("#<!-- BBCode auto-link start --><a href=\"(.*?)\" target=\"_blank\" rel=\"noopener noreferrer\">.*?</a><!-- BBCode auto-link end -->#i", "\\1", $text);
 	$text = preg_replace("#<!-- BBcode auto-mailto start --><a href=\"mailto:(.*?)\">.*?</a><!-- BBCode auto-mailto end -->#i", "\\1", $text);
 	
 	return $text;
@@ -1282,14 +1386,14 @@ global $l_jumpto, $l_selectforum, $l_go;
 	   $myrow = db_fetch_array($result);
 	   do {
 	      echo "<OPTION VALUE=\"-1\">&nbsp;</OPTION>\n";
-	      echo "<OPTION VALUE=\"-1\">$myrow[cat_title]</OPTION>\n";
+	      echo '<OPTION VALUE="-1">' . html_escape($myrow[cat_title]) . "</OPTION>\n";
 	      echo "<OPTION VALUE=\"-1\">----------------</OPTION>\n";
 	      $sub_sql = "SELECT forum_id, forum_name FROM forums WHERE cat_id = ? ORDER BY forum_id";
 	      if($res = db_query_params($sub_sql, array((int) $myrow[cat_id]), $db)) {
 	    if($row = db_fetch_array($res)) {
 	       do {
 		  $name = stripslashes($row[forum_name]);
-		  echo "<OPTION VALUE=\"$row[forum_id]\">$name</OPTION>\n";
+		  echo '<OPTION VALUE="' . (int) $row[forum_id] . '">' . html_escape($name) . "</OPTION>\n";
 	       } while($row = db_fetch_array($res));
 	    }
 	    else {
@@ -1494,7 +1598,7 @@ function login_form(){
 			</FONT>
 		</TD>
 		<TD>
-			<INPUT TYPE="TEXT" NAME="user" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>">
+			<INPUT TYPE="TEXT" NAME="user" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>">
 		</TD>
 	</TR><TR BGCOLOR="<?php echo $color2?>">
 		<TD>

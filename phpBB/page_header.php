@@ -49,7 +49,7 @@ $login_logout_link = make_login_logout_link($user_logged_in, $url_phpbb);
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML>
 <HEAD>
-<TITLE><?php echo "$sitename $l_forums - $pagetitle" ?></TITLE>
+<TITLE><?php echo html_escape("$sitename $l_forums - $pagetitle") ?></TITLE>
 <?php
 if($l_special_meta !== '') {
 	echo $l_special_meta . "\n";
@@ -86,7 +86,7 @@ switch($pagetype) {
 ?>
 	<TD ALIGN="CENTER">
 		<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b>Post New Topic in:<BR>
-		<a href="<?php echo $url_phpbb?>/viewforum.<?php echo $phpEx ?>?forum=<?php echo $forum?>"><?php echo $forum_name?></a></b>
+		<a href="<?php echo $url_phpbb?>/viewforum.<?php echo $phpEx ?>?forum=<?php echo $forum?>"><?php echo html_escape($forum_name)?></a></b>
 		</font>
 	</TD>
 <?php
@@ -123,7 +123,7 @@ switch($pagetype) {
         default:
 ?>
 	<TD ALIGN="CENTER">
-		<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize4?>" COLOR="<?php echo $textcolor?>"><?php echo "$sitename $l_forums"?></font>
+		<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize4?>" COLOR="<?php echo $textcolor?>"><?php echo html_escape("$sitename $l_forums")?></font>
 	</TD>
 <?php
 	break;
@@ -208,7 +208,7 @@ switch($pagetype) {
 <TR>
 	<TD COLSPAN="2" ALIGN="LEFT">
 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		<b><?php echo $forum_name?></b>
+		<b><?php echo html_escape($forum_name)?></b>
 		<BR>
 		<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize1?>" COLOR="<?php echo $textcolor?>">
 			<?php echo $l_moderatedby?>:
@@ -219,7 +219,7 @@ $forum_moderators = get_moderators($forum, $db);
       foreach($mods as $mod_id => $mod_name) {
 	 if($count > 0)
 	   echo ", ";
-	 echo "<a href=\"bb_profile.$phpEx?mode=view&user=$mod_id\">".trim($mod_name)."</a>";
+	 echo "<a href=\"bb_profile.$phpEx?mode=view&user=$mod_id\">" . html_escape(trim($mod_name)) . "</a>";
 	 $count++;
       }
    }
@@ -233,14 +233,14 @@ $forum_moderators = get_moderators($forum, $db);
 <TR>
 	<TD COLSPAN="2" ALIGN="LEFT">
 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize1?>" COLOR="<?php echo $textcolor?>">
-		<a href="<?php echo $url_phpbb?>/index.<?php echo $phpEx ?>"><?php echo $sitename?> Forum Index</a>
+		<a href="<?php echo $url_phpbb?>/index.<?php echo $phpEx ?>"><?php echo html_escape($sitename)?> Forum Index</a>
 		<b><?php echo $l_separator?></b>
-		<a href="<?php echo "$url_phpbb/viewforum.$phpEx?forum=$forum&$total_forum"?>"><?php echo stripslashes($forum_name)?></a> 
+		<a href="<?php echo "$url_phpbb/viewforum.$phpEx?forum=$forum&$total_forum"?>"><?php echo html_escape(stripslashes($forum_name))?></a>
 <?php
         if($pagetype != "viewforum")
 		echo "<b>$l_separator</b>";
 ?>
-		<?php echo $topic_subject?>
+		<?php echo html_escape($topic_subject)?>
 	</TD>
 </TR>
 <?php

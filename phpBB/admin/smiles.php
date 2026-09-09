@@ -47,7 +47,7 @@ if($login) {
 	       die("You have to enter your password. Go back and do so.");
       }
       if (!check_username($username, $db)) {
-	       die("Invalid username \"$username\". Go back and try again.");
+	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
       }
       if (!check_user_pw($username, $password, $db)) {
 	       die("Invalid password. Go back and try again.");
@@ -81,7 +81,7 @@ else if(!$user_logged_in) {
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
           <UL>
           <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
      <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
           <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
           </FORM>
@@ -114,7 +114,7 @@ switch ($mode) {
       } else {
 	 echo "<table border=0 cellspacing=1 cellpadding=3><tr><td bgcolor=\"$color1\"><font face=\"$FontFace\" size=2>Code</font></td><td bgcolor='$color2'><font face=\"$FontFace\" size=2>Smile</font></td><td bgcolor='$color1'>&nbsp;</td><td bgcolor='$color2'>&nbsp;</td></tr>";
 	 while ($smiles = db_fetch_array($getsmiles)) {
-	    echo "<tr><td bgcolor='$color1'><font face=\"$FontFace\" size=2>$smiles[code]</font></td><td bgcolor='$color2'><img src=\"$url_smiles/$smiles[smile_url]\"></td><td bgcolor='$color1'><a href=\"$PHP_SELF?mode=edit&id=$smiles[id]\">Edit</a></td><td bgcolor='$color2'><a href=\"$PHP_SELF?mode=delete&id=$smiles[id]\">Delete</a></td></tr>";
+	    echo "<tr><td bgcolor='$color1'><font face=\"$FontFace\" size=2>" . html_escape($smiles[code]) . "</font></td><td bgcolor='$color2'><img src=\"" . html_web_url($url_smiles . '/' . $smiles[smile_url], true) . "\"></td><td bgcolor='$color1'><a href=\"$PHP_SELF?mode=edit&id=$smiles[id]\">Edit</a></td><td bgcolor='$color2'><a href=\"$PHP_SELF?mode=delete&id=$smiles[id]\">Delete</a></td></tr>";
 	 }
 	 echo "</table>";
       }
@@ -185,9 +185,9 @@ echo "<td align=\"center\" width=\"100%\" bgcolor=\"$color2\"><font face=\"$Font
 
 	 ?>
 	   <form method=post action="<?php echo $PHP_SELF?>">
-	   Smile Code: <input type="text" name="code" value="<?php echo $smiles[code]?>"><br>
-	   Smile URL: <input type="text" name="smile_url" value="<?php echo $smiles[smile_url]?>"><br>
-	   Smile Emotion: <input type="text" name="emotion" value="<?php echo $smiles[emotion]?>"><br>
+	   Smile Code: <input type="text" name="code" value="<?php echo html_escape($smiles[code])?>"><br>
+	   Smile URL: <input type="text" name="smile_url" value="<?php echo html_escape($smiles[smile_url])?>"><br>
+	   Smile Emotion: <input type="text" name="emotion" value="<?php echo html_escape($smiles[emotion])?>"><br>
 	   <input type="hidden" name="mode" value="edit">
 	   <input type="hidden" name="smile_id" value="<?php echo $smile?>">
 	   <input type="submit" name="submit" value="Submit Changes">
@@ -231,7 +231,7 @@ echo "</TR></table></TD></TR></TABLE>";
 	    echo "<form method=post action=\"$PHP_SELF\"><input type='hidden' name='mode' value='edit'>";
 	    while ($smiles = db_fetch_array($getsmiles)) {
 	       
-	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"$url_smiles/$smiles[smile_url]\">&nbsp;&nbsp;$smiles[code]&nbsp;&nbsp;&nbsp;&nbsp;\n"; 
+	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"" . html_web_url($url_smiles . '/' . $smiles[smile_url], true) . "\">&nbsp;&nbsp;" . html_escape($smiles[code]) . "&nbsp;&nbsp;&nbsp;&nbsp;\n";
 	       
 	       if (($count % "7") == "0") {
 		  echo "<br>\n";
@@ -265,7 +265,7 @@ echo "</TR></table></TD></TR></TABLE>";
 	    $count = 1;
 	    while ($smiles = db_fetch_array($getsmiles)) {
 	       
-	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"$url_smiles/$smiles[smile_url]\">&nbsp;&nbsp;$smiles[code]&nbsp;&nbsp;&nbsp;&nbsp;\n"; 
+	       echo "<input type=\"radio\" name=\"smile\" value=\"$smiles[id]\">&nbsp;&nbsp;<img src=\"" . html_web_url($url_smiles . '/' . $smiles[smile_url], true) . "\">&nbsp;&nbsp;" . html_escape($smiles[code]) . "&nbsp;&nbsp;&nbsp;&nbsp;\n";
 	       echo "<input type='hidden' name='smile_id' value='$smiles[id]'>";
 	       
 	       if (($count % "7") == "0") {

@@ -70,27 +70,10 @@ if($submit) {
 	
 	/* correct password or logged-in user, continuing with message send. */
 
-	$is_html_disabled = false;
-	if($allow_pmsg_html == 0 || $html) {
-		$message = htmlspecialchars($message);
-		$is_html_disabled = true;
-	}
-	
 	if($sig) {
-   	$message .= "<BR>__________________<BR>" . $fromuserdata[user_sig];
-   }
-   if($allow_pmsg_bbcode == 1 && !$bbcode) {
-		$message = bbencode($message, $is_html_disabled);
+		$message .= "\n__________________\n" . str_replace("<BR>", "\n", $fromuserdata[user_sig]);
 	}
-	
-	
-	// MUST do make_clickable() and smile() before changing \n into <br>.
-	$message = make_clickable($message);
-	if(!$smile) {
-		$message = smile($message);
-	}
-	
-	$message = str_replace("\n", "<BR>", $message);
+	$message = render_user_text($message, $allow_pmsg_bbcode == 1 && !$bbcode, !$smile);
 	$time = date("Y-m-d H:i");
 	
 	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text) VALUES (?, ?, ?, ?)";
@@ -139,9 +122,9 @@ if($submit) {
 			<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
 <?php
 	if ($user_logged_in) {
-		echo $userdata[username] . " \n";
+		echo html_escape($userdata[username]) . " \n";
 	} else {
-		echo "<INPUT TYPE=\"TEXT\" NAME=\"fromusername\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"$userdata[username]\"> \n";
+		echo "<INPUT TYPE=\"TEXT\" NAME=\"fromusername\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"" . html_escape($userdata[username]) . "\"> \n";
 	}
 ?>
 			</FONT>
@@ -162,7 +145,7 @@ if($submit) {
 			<b><?php echo $l_recptname?>:<b>
 			</FONT>
 		</TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="tousername" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $tousername?>"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="tousername" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($tousername)?>"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width=25%>

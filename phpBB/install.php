@@ -531,7 +531,7 @@ if($next) {
 	<TD COLSPAN="2"><b>phpBB Installer</b></TD>
 	</TR>
 	<TR BGCOLOR="#2E4460" ALIGN="LEFT">
-	<TD COLSPAN="2">Administrator user, <b><?php echo $username ?></b> has been created successfully. Next you must set some forum wide options.</TD>
+	<TD COLSPAN="2">Administrator user, <b><?php echo html_escape($username) ?></b> has been created successfully. Next you must set some forum wide options.</TD>
 	<TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD>Site Name:</TD>
 	<TD><INPUT TYPE="TEXT" NAME="name" SIZE="30" MAXLENGTH="100" VALUE="This Site"></TD>
@@ -547,8 +547,8 @@ if($next) {
 The Site Admin</TEXTAREA></TD>                                                    
 	</TR>  
 	<TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
-	<TD>Allow HTML:</TD>
-	<TD><INPUT TYPE="RADIO" NAME="html" VALUE="1" CHECKED> Yes <INPUT TYPE="RADIO" NAME="html" VALUE="0"> No</TD>
+	<TD>Raw HTML:</TD>
+	<TD><INPUT TYPE="HIDDEN" NAME="html" VALUE="0">Disabled (use BBCode instead)</TD>
 	</TR>
 	<TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD>Allow BBCode:</TD>
@@ -594,7 +594,7 @@ The Site Admin</TEXTAREA></TD>
       
       $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page, email_from, email_sig, selected, default_lang) ";
       $sql .= "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
-      $result = db_query_params($sql, array($name, $html, $bb, $sig, $hot, $ppp, $tpp, $email_from, $email_sig, $language), $db);
+      $result = db_query_params($sql, array($name, 0, $bb, $sig, $hot, $ppp, $tpp, $email_from, $email_sig, $language), $db);
       if (!$result) {
 	 echo db_error() . "<br>";
 	 die("Error - Cannot update the database.</FONT>");

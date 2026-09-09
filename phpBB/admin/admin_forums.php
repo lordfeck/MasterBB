@@ -61,7 +61,7 @@ if($login) {
 	       die("You have to enter your password. Go back and do so.");
       }
       if (!check_username($username, $db)) {
-	       die("Invalid username \"$username\". Go back and try again.");
+	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
       }
       if (!check_user_pw($username, $password, $db)) {
 	       die("Invalid password. Go back and try again.");
@@ -95,7 +95,7 @@ else if(!$user_logged_in) {
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <UL>
      <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
      <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
      <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
      </FORM>
@@ -224,11 +224,11 @@ switch($mode) {
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
         <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Forum Name:</FONT></TD>
-        <TD><INPUT TYPE="TEXT" NAME="name" SIZE="40" MAXLENGTH="150" VALUE="<?php echo $name?>"></TD>
+        <TD><INPUT TYPE="TEXT" NAME="name" SIZE="40" MAXLENGTH="150" VALUE="<?php echo html_escape($name)?>"></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
         <TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Forum Description:</FONT></TD>
-        <TD><TEXTAREA NAME="desc" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo $desc?></TEXTAREA></TD>
+        <TD><TEXTAREA NAME="desc" ROWS="15" COLS="45" WRAP="VIRTUAL"><?php echo html_escape(str_replace("<BR>", "\n", $desc))?></TEXTAREA></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
         <TD valign="top"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">Moderator(s):</FONT></TD>
@@ -239,7 +239,7 @@ switch($mode) {
 	die("Error connecting to the database.");
       if($row = db_fetch_array($r)) {
 	 do {
-	    echo "$row[username] (<input type=\"checkbox\" name=\"rem_mods[]\" value=\"$row[user_id]\"> Remove)<BR>";
+	    echo html_escape($row[username]) . " (<input type=\"checkbox\" name=\"rem_mods[]\" value=\"$row[user_id]\"> Remove)<BR>";
 	    $current_mods[] = $row[user_id];
 	 } while($row = db_fetch_array($r));
 	 echo "<BR>";
@@ -265,7 +265,7 @@ switch($mode) {
 	    $s = "";
 	    if($row[user_id] == $myrow[forum_moderator])
 	      $s = "SELECTED";
-	    echo "<OPTION VALUE=\"$row[user_id]\" $s>$row[username]</OPTION>\n";
+	    echo "<OPTION VALUE=\"$row[user_id]\" $s>" . html_escape($row[username]) . "</OPTION>\n";
 	 } while($row = db_fetch_array($r));
       }
       else {
@@ -286,7 +286,7 @@ switch($mode) {
 	    $s = "";
 	    if($row[cat_id] == $myrow[cat_id])
 						$s = "SELECTED";
-	    echo "<OPTION VALUE=\"$row[cat_id]\" $s>$row[cat_title]</OPTION>\n";
+	    echo "<OPTION VALUE=\"$row[cat_id]\" $s>" . html_escape($row[cat_title]) . "</OPTION>\n";
 	 } while($row = db_fetch_array($r));
       }
       else {
@@ -361,7 +361,7 @@ if($myrow[forum_access] == 3)
 		if($myrow = db_fetch_array($result)) {
 			do {
 				$name = stripslashes($myrow[forum_name]);
-				echo "<OPTION VALUE=\"$myrow[forum_id]\">$name</OPTION>\n";
+				echo "<OPTION VALUE=\"$myrow[forum_id]\">" . html_escape($name) . "</OPTION>\n";
 			} while($myrow = db_fetch_array($result));
 		}
 		else {
@@ -425,11 +425,11 @@ if($myrow[forum_access] == 3)
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><B>Editing Category: <?php echo $cat_title ?></B><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"></TD>
+	<TD ALIGN="CENTER" COLSPAN="2"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><B>Editing Category: <?php echo html_escape($cat_title) ?></B><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<td>Category Title:</td>
-	<td><input type="text" name="new_title" value="<?php echo $cat_title ?>" size="45" maxlength="100"></td>
+	<td><input type="text" name="new_title" value="<?php echo html_escape($cat_title) ?>" size="45" maxlength="100"></td>
 </tr>
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
 	<TD ALIGN="CENTER" COLSPAN="2">
@@ -461,7 +461,7 @@ if($myrow[forum_access] == 3)
 <?php
 			while($cat_data = db_fetch_array($result))
 			{
-				echo "<option value=\"".$cat_data["cat_id"]."\">".stripslashes($cat_data["cat_title"])."</option>\n";
+				echo "<option value=\"".$cat_data["cat_id"]."\">" . html_escape(stripslashes($cat_data["cat_title"])) . "</option>\n";
 			}
 ?>
 </select></td>
@@ -508,7 +508,7 @@ if($myrow[forum_access] == 3)
       if(!$r = db_query($sql, $db))
 	die("Error conencting to the database!");
       while($m = db_fetch_array($r)) {
-	 echo "<OPTION VALUE=\"$m[cat_id]\">".stripslashes($m[cat_title])."</OPTION>\n";
+	 echo "<OPTION VALUE=\"$m[cat_id]\">" . html_escape(stripslashes($m[cat_title])) . "</OPTION>\n";
       }
 ?>
 	</SELECT>
@@ -627,7 +627,7 @@ if($myrow[forum_access] == 3)
 	die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
       if($myrow = db_fetch_array($result)) {
 	 do {
-	    echo "<OPTION VALUE=\"$myrow[user_id]\">$myrow[username]</OPTION>\n";
+	    echo "<OPTION VALUE=\"$myrow[user_id]\">" . html_escape($myrow[username]) . "</OPTION>\n";
 	 } while($myrow = db_fetch_array($result));
       }
       else {
@@ -645,7 +645,7 @@ if($myrow[forum_access] == 3)
 				die("An Error Occurred<HR>Could not connect to the database. Please check the config file.");
 			if($myrow = db_fetch_array($result)) {
 				do {
-					echo "<OPTION VALUE=\"$myrow[cat_id]\">$myrow[cat_title]</OPTION>\n";
+					echo "<OPTION VALUE=\"$myrow[cat_id]\">" . html_escape($myrow[cat_title]) . "</OPTION>\n";
 				} while($myrow = db_fetch_array($result));
 			}
 			else {
@@ -744,7 +744,7 @@ if($myrow[forum_access] == 3)
       echo "<!-- New Row -->\n";
       echo "<FORM ACTION=\"$PHP_SELF\" METHOD=\"POST\">\n";
       echo "<tr bgcolor=\"$color2\" align=\"center\">\n";
-      echo "<td>".stripslashes($m[cat_title])."</TD>\n";
+      echo "<td>" . html_escape(stripslashes($m[cat_title])) . "</TD>\n";
       echo "<td><input type=\"hidden\" name=\"mode\" value=\"$mode\">\n";
       echo "<input type=\"hidden\" name=\"cat_id\" value=\"$m[cat_id]\">\n";
       echo "<input type=\"hidden\" name=\"last_id\" value=\"$last_id\">\n";

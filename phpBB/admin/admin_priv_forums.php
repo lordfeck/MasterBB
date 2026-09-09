@@ -46,7 +46,7 @@ if($login)
 	}
 	if (!check_username($username, $db)) 
 	{
-		die("Invalid username \"$username\". Go back and try again.");
+		die('Invalid username "' . html_escape($username) . '". Go back and try again.');
 	}
 	if (!check_user_pw($username, $password, $db))
 	{
@@ -83,7 +83,7 @@ else if(!$user_logged_in)
 							<i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
 						
 							<FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-								<b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+								<b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
 								<b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
 								<INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear">
 							</FORM>
@@ -137,7 +137,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 			do 
 			{
 				$name = stripslashes($myrow[forum_name]);
-				echo "<OPTION VALUE=\"$myrow[forum_id]\">$name</OPTION>\n";
+				echo "<OPTION VALUE=\"$myrow[forum_id]\">" . html_escape($name) . "</OPTION>\n";
 			} 
 			while($myrow = db_fetch_array($result));
 		}
@@ -258,7 +258,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 			<TD BGCOLOR="<?php echo $table_bgcolor?>">
 				<TABLE BORDER="0" CELLPADDING="1" CELLSPACING="1" WIDTH="100%">
 					<TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
-		     <td colspan="3" align="center"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">Editing Forum Permissions for: <b><?php echo $forum_name?></b></font></td>
+		     <td colspan="3" align="center"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">Editing Forum Permissions for: <b><?php echo html_escape($forum_name)?></b></font></td>
 		     </tr>
 		     <tr>
 		     <td bgcolor="<?php echo $color1?>" align="center" width="40%">
@@ -310,7 +310,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
       	while ($row = db_fetch_array($result))
       	{
 ?>      	
-	     <OPTION VALUE="<?php echo $row[user_id] ?>"> <?php echo $row[username] ?> </OPTION>
+	     <OPTION VALUE="<?php echo $row[user_id] ?>"> <?php echo html_escape($row[username]) ?> </OPTION>
 <?php      	
       	}
 ?>	
@@ -356,7 +356,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 								<TR>
 									<TD>
 			                                                <font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-										<b><?php echo $row[username]?></b>
+										<b><?php echo html_escape($row[username])?></b>
 									</font>
 			                                                </TD>
 			                                                

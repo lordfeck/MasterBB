@@ -135,7 +135,7 @@ if($submit || ($user_logged_in==1 && $mode=='viewip')) {
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD>User IP:</TD>
-	<TD><?php echo $m[poster_ip] . " ( $poster_host )"?></TD>
+	<TD><?php echo html_escape($m[poster_ip] . " ( $poster_host )")?></TD>
 </TR>
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
 	<TD COLSPAN="2" ALIGN="CENTER">Usernames of users that posted from this IP + post counts</TD>
@@ -150,7 +150,7 @@ if($submit || ($user_logged_in==1 && $mode=='viewip')) {
 
 	while ($row = db_fetch_array($r)){
 		print "<TR BGCOLOR=\"$color2\" ALIGN=\"LEFT\">\n";
-		print "	<TD><A HREF=\"bb_profile.php?mode=view&user=".$row[user_id]."\">".$row[username]."</A></TD>\n";
+		print "\t<TD><A HREF=\"bb_profile.php?mode=view&user=".$row[user_id]."\">" . html_escape($row[username]) . "</A></TD>\n";
 		print "	<TD>".$row[postcount]." posts</TD>\n";
 		print "</TR>\n";
 	}
@@ -204,7 +204,7 @@ else {  // No submit
 ?>
 <TR>
 	<TD BGCOLOR="<?php echo $color1?>">Username:</TD>
-	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="user" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="user" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"></TD>
 </TR>
 <TR>
 	<TD BGCOLOR="<?php echo $color1?>">Password:</TD>
@@ -222,7 +222,7 @@ else {  // No submit
 	if($result = db_query_params($sql, array($forum), $db)) {
 		if($myrow = db_fetch_array($result)) {
 			do {
-				echo "<OPTION VALUE=\"$myrow[forum_id]\">$myrow[forum_name]</OPTION>\n";
+				echo "<OPTION VALUE=\"$myrow[forum_id]\">" . html_escape($myrow[forum_name]) . "</OPTION>\n";
 			} while($myrow = db_fetch_array($result));
 		}
 		else {
@@ -291,8 +291,5 @@ else {  // No submit
 }
 include('page_tail.'.$phpEx);
 ?>
-
-
-
 
 

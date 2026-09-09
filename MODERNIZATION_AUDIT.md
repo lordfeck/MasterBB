@@ -144,7 +144,10 @@ Progress is tracked as focused, independently verified commits:
 - [x] Slice 2 — native prepared-statement API and complete value-bearing query
   conversion; legacy SQL escaping/filtering removed; smoke and security suites
   passing.
-- [ ] Slice 3 — contextual output encoding, safe URLs, and BBCode-only content.
+- [x] Slice 3 — contextual output encoding, safe URLs, and BBCode-only content;
+  raw HTML is permanently disabled, administrator header/meta/footer values are
+  display text, and the expanded negative suite reports four known-open
+  conditions.
 - [ ] Slice 4 — password hashing, reset tokens, sessions, cookies, HTTPS, and
   trusted proxies.
 - [ ] Slice 5 — CSRF tokens and POST-only state changes.

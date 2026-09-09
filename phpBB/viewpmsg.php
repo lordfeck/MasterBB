@@ -78,32 +78,24 @@ if (!$submit && !$user_logged_in) {
 
 		echo "<TR BGCOLOR=\"$color2\" ALIGN=\"LEFT\">\n";
 		$posterdata = get_userdata_from_id($myrow[from_userid], $db);
-		echo "<TD valign=top><b>$posterdata[username]</b><br>\n";
+		echo "<TD valign=top><b>" . html_escape($posterdata[username]) . "</b><br>\n";
 		$posts = $posterdata[user_posts];
 		if($posts < 15)
 			echo "<font size=-2>$rank1<BR>\n";
 		else
 			echo "<font size=-2>$rank2<br>\n";
 		echo "<br><font size=-2>$l_posts: $posts<br>\n";
-		echo "$l_location: $posterdata[user_from]<br></FONT></TD>\n";
+		echo "$l_location: " . html_escape($posterdata[user_from]) . "<br></FONT></TD>\n";
 		echo "<TD><img src=\"$posticon\"><font size=-1>$l_posted: $myrow[msg_time]&nbsp;&nbsp;&nbsp";
 		echo "<HR></font>\n";
 		$message = stripslashes($myrow[msg_text]);
 		echo $message . "<BR><BR>";
 		echo "<HR>\n";
-		echo "&nbsp;&nbsp<a href=\"bb_profile.$phpEx?mode=view&user=$posterdata[user_id]\"><img src=\"$profile_image\" border=0 alt=\"$l_profileof $myrow[poster_name]\"></a>\n";
-		if($posterdata["user_viewemail"] != 0) 
-			echo "&nbsp;&nbsp;<a href=\"mailto:$posterdata[user_email]\"><IMG SRC=\"$email_image\" BORDER=0 ALT=\"$l_emial $posterdata[username]\"></a>\n";
-		if($posterdata["user_web"] != '') {
-			if(strstr("http://", $posterdata["user_web"]))
-				$posterdata["user_web"] = "http://" . $posterdata["user_web"];
-				echo "&nbsp;&nbsp;<a href=\"$posterdata[user_web]\" TARGET=\"_blank\"><IMG SRC=\"$www_image\" BORDER=0 ALT=\"$l_viewsite $posterdata[username]\"></a>\n";
+		echo "&nbsp;&nbsp<a href=\"bb_profile.$phpEx?mode=view&user=$posterdata[user_id]\"><img src=\"$profile_image\" border=0 alt=\"$l_profileof " . html_escape($posterdata[username]) . "\"></a>\n";
+		if($posterdata["user_viewemail"] != 0) {
+			$email_url = html_email_url($posterdata[user_email]);
+			echo "&nbsp;&nbsp;<a href=\"$email_url\"><IMG SRC=\"$email_image\" BORDER=0 ALT=\"$l_email " . html_escape($posterdata[username]) . "\"></a>\n";
 		}
-		if($posterdata["user_icq"] != '')
-			echo "&nbsp;&nbsp;<a href=\"http://wwp.mirabilis.com/$posterdata[user_icq]\" TARGET=\"_blank\"><IMG SRC=\"http://wwp.icq.com/scripts/online.dll?icq=$posterdata[user_icq]&img=5\" BORDER=0\"></a>";
-	
-		if($posterdata["user_aim"] != '')
-     		echo "&nbsp;&nbsp;<a href=\"aim:goim?screenname=$posterdata[user_aim]&message=Hi+$posterdata[user_aim].+Are+you+there?\"><img src=\"$images_aim\" border=\"0\"></a>";
 	
 		echo "&nbsp;&nbsp;<IMG SRC=\"images/div.gif\">\n";
 		echo "&nbsp;&nbsp;<a href=\"replypmsg.$phpEx?msgid=$myrow[msg_id]&quote=1\"><IMG SRC=\"$reply_wquote_image\" BORDER=\"0\" alt=\"$l_replyquote\"></a>\n";

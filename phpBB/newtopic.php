@@ -119,25 +119,8 @@ if($submit) {
 	   }
 	}
 
-	$is_html_disabled = false;
-   if($allow_html == 0 || $html)
-   {
-     $message = htmlspecialchars($message);
-     $is_html_disabled = true;
-   }
-
-
-   if($allow_bbcode == 1 && !$bbcode)
-     $message = bbencode($message, $is_html_disabled);
-
-   // MUST do make_clickable() and smile() before changing \n into <br>.
-   $message = make_clickable($message);
-   if(!$smile) {
-      $message = smile($message);
-   }
-   $message = str_replace("\n", "<BR>", $message);
-
-   $message = censor_string($message, $db);
+	$message = censor_string($message, $db);
+	$message = render_user_text($message, $allow_bbcode == 1 && !$bbcode, !$smile);
    $subject = strip_tags($subject);
    $subject = censor_string($subject, $db);
    $poster_ip = $REMOTE_ADDR;
@@ -236,9 +219,9 @@ if($submit) {
 		<TD  BGCOLOR="<?php echo $color2?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
 <?php
 	if ($user_logged_in) {
-		echo $userdata[username] . " \n";
+		echo html_escape($userdata[username]) . " \n";
 	} else {
-		echo "<INPUT TYPE=\"TEXT\" NAME=\"username\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"$userdata[username]\"> \n";
+		echo "<INPUT TYPE=\"TEXT\" NAME=\"username\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"" . html_escape($userdata[username]) . "\"> \n";
 	}
 ?>
 		</font>

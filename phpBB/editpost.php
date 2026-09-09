@@ -104,30 +104,13 @@ if($submit) {
    }
    // IF we made it this far we are allowed to edit this message, yay!
     
-   $is_html_disabled = false;
-   if($allow_html == 0 || $html)
-   {
-     $message = htmlspecialchars($message);
-     $is_html_disabled = true;
-   }
-   if($allow_bbcode == 1 && !$bbcode)
-     $message = bbencode($message, $is_html_disabled);
-   if(!$smile) 
-     $message = smile($message);
-
-	// MUST do make_clickable() (and smile()) before changing \n into <br>.
-	$message = make_clickable($message);
-   $message = str_replace("\n", "<BR>", $message);
+	$message = censor_string($message, $db);
+	$message = render_user_text($message, $allow_bbcode == 1 && !$bbcode, !$smile);
    $edit_by = get_syslang_string($sys_lang, "l_editedby");
    $on_date = get_syslang_string($sys_lang, "l_ondate");
    
-   // If it's been edited more than once, there might be old "edited by" strings with
-   // escaped HTML code in them. We want to fix this up right here:
-   $message = preg_replace("#&lt;font\ size\=-1&gt;\[\ $edit_by(.*?)\ \]&lt;/font&gt;#si", '<font size=-1>[ ' . $edit_by . '\1 ]</font>', $message);
-   
-   $message .= "<BR><BR><font size=-1>[ $edit_by $username $on_date $date ]</font>";
-   $message = censor_string($message, $db);
-   
+	$message .= "<BR><BR><font size=-1>[ " . html_escape($edit_by) . " " . html_escape($username) . " " . html_escape($on_date) . " " . html_escape($date) . " ]</font>";
+
    if(!$delete) {
       $forward = 1;
       $topic = $topic_id;
@@ -249,7 +232,7 @@ else {
 							  <TR>
 							    <TD>
 							      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-							      <b><?php echo $l_username?>: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>">
+							      <b><?php echo $l_username?>: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>">
 							    </TD>
 							  </TR><TR>
 							    <TD>
@@ -347,7 +330,7 @@ else {
      $addsig = 1;
    else
      $addsig = 0;
-   $message = preg_replace("/\[addsig\]$/i", "\n_________________\n" . $myrow[user_sig], $message);   
+   $message = preg_replace("/\[addsig\]$/i", "", $message);
    $message = str_replace("<BR>", "\n", $message);
    $message = stripslashes($message);
    $message = desmile($message);
@@ -355,10 +338,7 @@ else {
    $message = undo_make_clickable($message);
    $message = undo_htmlspecialchars($message);
    
-   // Special handling for </textarea> tags in the message, which can break the editing form..
-   $message = preg_replace('#</textarea>#si', '&lt;/TEXTAREA&gt;', $message);
-   
-   list($day, $time) = explode(" ", $myrow[post_time]);
+	list($day, $time) = explode(" ", $myrow[post_time]);
 ?>
 <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
 <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="<?php echo $tablewidth?>"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -371,14 +351,14 @@ else {
 ?>
 <TR>
 	<TD BGCOLOR="<?php echo $color1?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><?php echo $l_username?>:</TD>
-	<TD BGCOLOR="<?php echo $color2?>"><input type="text" name="username" value="<?php echo $userdata[username]?>"></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><input type="text" name="username" value="<?php echo html_escape($userdata[username])?>"></TD>
 </TR>	  
 <?php
      }
    else {
 ?>
 	<TD BGCOLOR="<?php echo $color1?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><b><?php echo $l_username?></b>:</TD>
-	<TD BGCOLOR="<?php echo $color2?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><?php echo $userdata[username]?></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><?php echo html_escape($userdata[username])?></TD>
 <?php
    }
 	if (!$user_logged_in) {
@@ -393,7 +373,7 @@ else {
 ?>
 <TR>
 	<TD BGCOLOR="<?php echo $color1?>" width=25%><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><b><?php echo $l_subject?>:</b></TD>
-	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="subject"  SIZE="50" MAXLENGTH="100" VALUE="<?php echo stripslashes($myrow[topic_title])?>"></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="subject"  SIZE="50" MAXLENGTH="100" VALUE="<?php echo html_escape(stripslashes($myrow[topic_title]))?>"></TD>
 </TR>
 <?php
    }
@@ -414,7 +394,7 @@ else {
      echo "$l_off<BR>\n";
 ?>
      </font></TD>
-     <TD BGCOLOR="<?php echo $color2?>"><TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo $message?></TEXTAREA></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo html_escape($message)?></TEXTAREA></TD>
 </TR>
 <TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width=25%><font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>"><b><?php echo $l_options?>:</b></TD>
@@ -462,7 +442,7 @@ else {
 	<TD  BGCOLOR="<?php echo $color1?>" colspan=2 ALIGN="CENTER">
 <?php if($user_logged_in) {
 ?>
-     <INPUT TYPE="HIDDEN" NAME="username" VALUE="<?php echo $userdata[username]?>">
+     <INPUT TYPE="HIDDEN" NAME="username" VALUE="<?php echo html_escape($userdata[username])?>">
 <?php
 }
 ?>

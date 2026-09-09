@@ -64,7 +64,7 @@ if($login) {
       die("You have to enter your password. Go back and do so.");
    }
    if (!check_username($username, $db)) {
-      die("Invalid username \"$username\". Go back and try again.");
+      die('Invalid username "' . html_escape($username) . '". Go back and try again.');
    }
    if (!check_user_pw($username, $password, $db)) {
       die("Invalid password. Go back and try again.");
@@ -98,7 +98,7 @@ else if(!$user_logged_in) {
      <i>(NOTE: You MUST have cookies enabled in order to login to the administration section of this forum)</i><BR>
      <UL>
      <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
-     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"><BR>
+     <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
      <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
      <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
      </FORM>
@@ -330,7 +330,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 	    include('page_tail.'.$phpEx);
 	    exit();
 	 }
-	 $m = db_fetch_array($r);
+	 $m = sanitize_theme_for_html(db_fetch_array($r));
 ?>
            <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
 	   <TABLE BORDER="0" CELLPADDING="1" CELLSPACING="0" ALIGN="CENTER" VALIGN="TOP" WIDTH="95%"><TR><TD  BGCOLOR="<?php echo $table_bgcolor?>">
@@ -494,7 +494,7 @@ else {
    if($row = db_fetch_array($r)) {
       do {
 	 echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">\n";
-	 echo "<TD>".stripslashes($row[theme_name])."</TD>\n";
+	 echo "<TD>" . html_escape(stripslashes($row[theme_name])) . "</TD>\n";
 	 if($row[theme_default] == 1)
 	   echo "<TD>Yes</TD>";
 	 else

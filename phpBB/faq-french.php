@@ -60,7 +60,7 @@ include('page_header.'.$phpEx);
           <a href="#pw">Existe-t-il un système de récupération de mon nom d'utilisateur / mot de passe ?</a><br>
           <a href="#notify">Puis-je être notifié par e-mail si quelqu'un répond à mon sujet ?</a><br>
           <a href="#searchprivate">Puis-je faire une recherche sur les forums privés ?</a><br>
-          <a href="#ranks">Quels sont les "ranks" dans les forums <?php echo $sitename?></a><br>
+          <a href="#ranks">Quels sont les "ranks" dans les forums <?php echo html_escape($sitename)?></a><br>
           <a href="#rednumbers">Pourquoi y a-t-il des icônes en flamme parfois ?</a></p></font>
         </td>
     </tr>
@@ -127,16 +127,16 @@ include('page_header.'.$phpEx);
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="200" align="center">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="200" align="center">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="100" align="center">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -564,13 +564,13 @@ les crochets et le texte auquel vous appliquez le code.
         <td>
 	<a name="ranks">
 	<font color="<?php echo $textcolor?>" size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-	<b>Quels sont les rangs pour le forum <?php echo $sitename?> ?</b></font></a>
+	<b>Quels sont les rangs pour le forum <?php echo html_escape($sitename)?> ?</b></font></a>
 	</td>
     </tr>
     <tr bgcolor="<?php echo $color2?>">
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	The <?php echo $sitename?> Les forums établissent des méthodes pour classer leur utilisateurs à travers leur nombre de posts.</p>
+	The <?php echo html_escape($sitename)?> Les forums établissent des méthodes pour classer leur utilisateurs à travers leur nombre de posts.</p>
 	<br>
 	Les rangs actuels sont :<br>
 
@@ -594,11 +594,11 @@ les crochets et le texte auquel vous appliquez le code.
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

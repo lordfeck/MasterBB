@@ -145,32 +145,8 @@ if($submit) {
 
    $poster_ip = $REMOTE_ADDR;
 
-   $is_html_disabled = false;
-   if($allow_html == 0 || $html) {
-      $message = htmlspecialchars($message);
-      $is_html_disabled = true;
-
-      if ($quote)
-      {
-      	$edit_by = get_syslang_string($sys_lang, "l_editedby");
-
-		   // If it's been edited more than once, there might be old "edited by" strings with
-		   // escaped HTML code in them. We want to fix this up right here:
-		   $message = preg_replace("#&lt;font\ size\=-1&gt;\[\ $edit_by(.*?)\ \]&lt;/font&gt;#si", '<font size=-1>[ ' . $edit_by . '\1 ]</font>', $message);
-      }
-   }
-   if($allow_bbcode == 1 && !$bbcode) {
-      $message = bbencode($message, $is_html_disabled);
-   }
-
-	// MUST do make_clickable() and smile() before changing \n into <br>.
-   $message = make_clickable($message);
-   if(!$smile) {
-      $message = smile($message);
-   }
-
-	$message = str_replace("\n", "<BR>", $message);
-   $message = censor_string($message, $db);
+	$message = censor_string($message, $db);
+	$message = render_user_text($message, $allow_bbcode == 1 && !$bbcode, !$smile);
    $time = date("Y-m-d H:i");
 
    //to prevent [addsig] from getting in the way, let's put the sig insert down here.
@@ -257,7 +233,7 @@ if($submit) {
 								  <TR>
 								    <TD>
 								      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-								      <b><?php echo $l_username?>: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>">
+								      <b><?php echo $l_username?>: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>">
 								    </TD>
 								  </TR><TR>
 								    <TD>
@@ -356,9 +332,9 @@ if($submit) {
 
 <?php
      if ($user_logged_in) {
-	echo $userdata[username] . " \n";
+	echo html_escape($userdata[username]) . " \n";
      } else {
-	echo "<INPUT TYPE=\"TEXT\" NAME=\"username\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"$userdata[username]\"> \n";
+	echo "<INPUT TYPE=\"TEXT\" NAME=\"username\" SIZE=\"25\" MAXLENGTH=\"40\" VALUE=\"" . html_escape($userdata[username]) . "\"> \n";
      }
 ?>
 
@@ -399,6 +375,7 @@ if($submit) {
 				$text = stripslashes($text);
 				$text = bbdecode($text);
 				$text = undo_make_clickable($text);
+				$text = undo_htmlspecialchars($text);
 				$text = str_replace("[addsig]", "", $text);
 				$syslang_quotemsg = get_syslang_string($sys_lang, "l_quotemsg");
 				eval("\$reply = \"$syslang_quotemsg\";");
@@ -410,7 +387,7 @@ if($submit) {
 		?>
 		</font></TD>
 		<TD  BGCOLOR="<?php echo $color2?>">
-			<TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo $reply?></TEXTAREA>
+			<TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo html_escape($reply)?></TEXTAREA>
 		</TD>
 	</TR>
 	<TR ALIGN="LEFT">

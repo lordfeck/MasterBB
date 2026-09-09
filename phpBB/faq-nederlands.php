@@ -58,7 +58,7 @@ include('page_header.'.$phpEx);
 				<a href="#announce">Wat zijn aankondigingen?</a><br>
 				<a href="#pw">Is er een manier om mijn wachtwoord te achterhalen?</a><br>
 				<a href="#notify">Kan ik via mail worden bericht als er iemand op mijn bericht reageert?</a><br>
-				<a href="#ranks">Wat zijn de rangen op de <?php echo $sitename?> Forums?</a><br>
+				<a href="#ranks">Wat zijn de rangen op de <?php echo html_escape($sitename)?> Forums?</a><br>
 				<a href="#rednumbers">Waarom "branden" de iconen in het onderwerp overzicht?</a></p></font>
         </td>
     </tr>
@@ -127,16 +127,16 @@ include('page_header.'.$phpEx);
 		 <TR BGCOLOR="<?php echo $color2?>">
 		 <TD width="100">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-		 		<?php echo stripslashes($smile[code])?>
+				<?php echo html_escape(stripslashes($smile[code]))?>
 		 	</FONT>
 		 </td>
 		 <td width="50%">
 		 	<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-				<?php echo stripslashes($smile[emotion])?>&nbsp;
+				<?php echo html_escape(stripslashes($smile[emotion]))?>&nbsp;
 			</FONT>
 		</td>
 		<td width="55">
-			<IMG SRC="<?php echo "$url_smiles/$smile[smile_url]";?>">
+			<IMG SRC="<?php echo html_web_url("$url_smiles/$smile[smile_url]", true);?>">
 		</td></tr>
 <?php
 	     }
@@ -366,7 +366,7 @@ de tekst die je opmaakt.
 	         te blokkeren of te verwijderen. Er zijn nog steeds veel gebruikers die gebruik maken van
             28.8 en 56k modems die niet de tijd hebben om door zich door nutteloze en onzinnige discussies te
             worstelen. </p>
-          <p>Iemand die alleen berichten plaats om bovenaan te komen in de statistieken van de <?php echo $sitename?> Forums
+          <p>Iemand die alleen berichten plaats om bovenaan te komen in de statistieken van de <?php echo html_escape($sitename)?> Forums
           of berichten plaatst uit verveling loopt het risico dat zijn/haar berichten geblokkeerd of verwijderd worden of dat
           hij/zij als gebruiker wordt verwijderd. </p>
           <p>Probeer de bewoording van het onderwerp van je bericht in lijn te houden met onderwerp van de gaande
@@ -529,13 +529,13 @@ de tekst die je opmaakt.
         <td>
 	<a name="ranks">
 	<font color="<?php echo $textcolor?>" size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>">
-	<b>Wat zijn de rangen voor de <?php echo $sitename?> Forums?</b></font></a>
+	<b>Wat zijn de rangen voor de <?php echo html_escape($sitename)?> Forums?</b></font></a>
 	</td>
     </tr>
     <tr bgcolor="<?php echo $color2?>">
         <td>
 	<font size="<?php echo $FontSize2?>" face="<?php echo $FontFace?>" color="<?php echo $textcolor?>">
-	De <?php echo $sitename?> Forums hebben methoden vastgesteld om hun gebruikers
+	De <?php echo html_escape($sitename)?> Forums hebben methoden vastgesteld om hun gebruikers
 	te onderscheiden naar activiteit door het aantal geplaatste berichten.</p>
 	<br>
 	De huidigen rangen zijn als volgt:<br>
@@ -560,12 +560,12 @@ de tekst die je opmaakt.
 	if($m = db_fetch_array($r)) {
 	do {
 	echo "<TR BGCOLOR=\"$color2\" ALIGN=\"CENTER\">";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_title]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_min]</font></TD>";
-	echo "<TD><font face=\"<?php echo $FontFace?>\" size=\"2\" color=\"$textcolor\">$m[rank_max]</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . html_escape($m[rank_title]) . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_min] . "</font></TD>";
+	echo "<TD><font face=\"$FontFace\" size=\"2\" color=\"$textcolor\">" . (int) $m[rank_max] . "</font></TD>";
 	// The rank image has not been implemented at this time.
         if($m[rank_image] != '')
-	   echo "<TD><img src=\"$url_images/$m[rank_image]\"></TD>";
+	   echo '<TD><img src="' . html_web_url($url_images . '/' . $m[rank_image], true) . '"></TD>';
 	else
 	   echo "<TD>&nbsp;</TD>";
 	echo "</TR>";

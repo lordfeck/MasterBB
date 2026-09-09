@@ -69,14 +69,13 @@ if($submit) {
       error_die($l_mismatch);
    }
   
-   $sig = chop($sig); // Strip all trailing whitespace.
-   $sig = str_replace("\n", "<BR>", $sig);
+   $sig = rtrim($sig);
    $passwd = md5($password);
    $regdate = date("M d, Y");
    
    // Ensure the website URL starts with "http://".
 	$website = trim($website);
-	if(substr(strtolower($website), 0, 7) != "http://")
+	if(!preg_match('#^https?://#i', $website))
 	{
 		$website = "http://" . $website;
 	}

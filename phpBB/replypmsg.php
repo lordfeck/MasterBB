@@ -70,34 +70,10 @@ if($submit) {
 	
 	/* correct password or logged-in user, continuing with message send. */
 
-	$is_html_disabled = false;
-	if($allow_pmsg_html == 0 || $html) {
-		$message = htmlspecialchars($message);
-		$is_html_disabled = true;
-		if ($quote)
-      {
-      	$edit_by = get_syslang_string($sys_lang, "l_editedby");
-   
-		   // If it's been edited more than once, there might be old "edited by" strings with
-		   // escaped HTML code in them. We want to fix this up right here:
-		   $message = preg_replace("#&lt;font\ size\=-1&gt;\[\ $edit_by(.*?)\ \]&lt;/font&gt;#si", '<font size=-1>[ ' . $edit_by . '\1 ]</font>', $message);	
-      }
-	}
-	
 	if($sig) {
-		$message .= "<BR>_________________<BR>" . $fromuserdata[user_sig];
+		$message .= "\n_________________\n" . str_replace("<BR>", "\n", $fromuserdata[user_sig]);
 	}
-	if($allow_pmsg_bbcode == 1 && !$bbcode) {
-		$message = bbencode($message, $is_html_disabled);
-	}
-	
-	// MUST do make_clickable() and smile() before changing \n into <br>.
-	$message = make_clickable($message);
-	if(!$smile) {
-		$message = smile($message);
-	}
-	
-	$message = str_replace("\n", "<BR>", $message);
+	$message = render_user_text($message, $allow_pmsg_bbcode == 1 && !$bbcode, !$smile);
 	$time = date("Y-m-d H:i");
 	$poster_ip = $REMOTE_ADDR;
 	$sql = "SELECT from_userid FROM priv_msgs WHERE msg_id = ?";
@@ -161,9 +137,9 @@ if($submit) {
 			<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
 <?php
 	if ($user_logged_in) {
-		echo "$userdata[username] \n";
+		echo html_escape($userdata[username]) . " \n";
 	} else {
-		echo "$touserdata[username] \n";
+		echo html_escape($touserdata[username]) . " \n";
 	}
 ?>
 			</FONT>
@@ -186,7 +162,7 @@ if($submit) {
 		</TD>
 		<TD  BGCOLOR="<?php echo $color2?>">
 			<FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-			<?php echo $fromuserdata[username]?>
+			<?php echo html_escape($fromuserdata[username])?>
 			</FONT>
 		</TD>
 	</TR>
@@ -220,6 +196,7 @@ if($submit) {
 				$text = stripslashes($text);
 				$text = bbdecode($text);
 				$text = undo_make_clickable($text);
+				$text = undo_htmlspecialchars($text);
 				$text = str_replace("[addsig]", "", $text);
 				$syslang_quotemsg = get_syslang_string($sys_lang, "l_quotemsg");
 				eval("\$reply = \"$syslang_quotemsg\";");
@@ -230,7 +207,7 @@ if($submit) {
 		}				
 		?>		
 		</font></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo $reply?></TEXTAREA></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><TEXTAREA NAME="message" ROWS=10 COLS=45 WRAP="VIRTUAL"><?php echo html_escape($reply)?></TEXTAREA></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width=25%>

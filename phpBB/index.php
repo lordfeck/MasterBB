@@ -86,12 +86,12 @@ for($i = 0; $i < $total_categories; $i++) {
    if($viewcat != -1) {
       if($categories[$i][cat_id] != $viewcat) {
 	$title = stripslashes($categories[$i][cat_title]);
-	echo "<TR ALIGN=\"LEFT\" VALIGN=\"TOP\"><TD COLSPAN=6 BGCOLOR=\"$color1\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><B><a href=\"$PHP_SELF?viewcat=".$categories[$i]["cat_id"]."\">$title</a></B></FONT></TD></TR>";
+	echo "<TR ALIGN=\"LEFT\" VALIGN=\"TOP\"><TD COLSPAN=6 BGCOLOR=\"$color1\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><B><a href=\"$PHP_SELF?viewcat=".$categories[$i]["cat_id"]."\">" . html_escape($title) . "</a></B></FONT></TD></TR>";
 	continue;
      }
    }
    $title = stripslashes($categories[$i][cat_title]);
-   echo "<TR ALIGN=\"LEFT\" VALIGN=\"TOP\"><TD COLSPAN=6 BGCOLOR=\"$color1\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><B><a href=\"$PHP_SELF?viewcat=".$categories[$i]["cat_id"]."\">$title</a></B></FONT></TD></TR>";
+   echo "<TR ALIGN=\"LEFT\" VALIGN=\"TOP\"><TD COLSPAN=6 BGCOLOR=\"$color1\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><B><a href=\"$PHP_SELF?viewcat=".$categories[$i]["cat_id"]."\">" . html_escape($title) . "</a></B></FONT></TD></TR>";
    @reset($forum_row);
    for($x = 0; $x < count($forum_row); $x++)
      {
@@ -100,7 +100,7 @@ for($i = 0; $i < $total_categories; $i++) {
 	 //$last_post = $last_posts[$forum_row[$x]["forum_id"]];
 	 if($forum_row[$x]["post_time"])
 	 {
-	 	$last_post = $forum_row[$x]["post_time"] . "<br>$l_by " . $forum_row[$x]["username"];
+		$last_post = html_escape($forum_row[$x]["post_time"]) . "<br>$l_by " . html_escape($forum_row[$x]["username"]);
 	 }
 	 $last_post_datetime = $forum_row[$x]["post_time"];
 
@@ -138,8 +138,8 @@ for($i = 0; $i < $total_categories; $i++) {
 		$total_topics = $forum_row[$x]["forum_topics"];
 		$desc = stripslashes($forum_row[$x][forum_desc]);
 
-	 	echo "<TD BGCOLOR=\"$color2\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"viewforum.$phpEx?forum=".$forum_row[$x]["forum_id"]."&$total_posts\">$name</a></font>\n";
-	 	echo "<br><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$desc</font></TD>\n";
+		echo "<TD BGCOLOR=\"$color2\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"viewforum.$phpEx?forum=".$forum_row[$x]["forum_id"]."&$total_posts\">" . html_escape($name) . "</a></font>\n";
+		echo "<br><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">" . nl2br(html_escape(str_replace("<BR>", "\n", $desc))) . "</font></TD>\n";
 	 	echo "<TD BGCOLOR=\"$color1\" WIDTH=5% ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\">$total_topics</font></TD>\n";
 	 	echo "<TD BGCOLOR=\"$color2\" WIDTH=5% ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\">$total_posts</font></TD>\n";
 	 	echo "<TD BGCOLOR=\"$color1\" WIDTH=15% ALIGN=\"CENTER\" VALIGN=\"MIDDLE\"><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$last_post</font></TD>\n";
@@ -153,7 +153,7 @@ for($i = 0; $i < $total_categories; $i++) {
 		 echo ", ";
 	       if(!($count % 2) && $count != 0)
 		 echo "<BR>";
-	       echo "<a href=\"bb_profile.$phpEx?mode=view&user=$mod_id\">$mod_name</a>";
+	       echo "<a href=\"bb_profile.$phpEx?mode=view&user=$mod_id\">" . html_escape($mod_name) . "</a>";
 	       $count++;
 	    }
 	 }

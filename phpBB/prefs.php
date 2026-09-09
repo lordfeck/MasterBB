@@ -152,7 +152,7 @@ if($submit || $user_logged_in) {
 </TR>
 <TR BGCOLOR="<?php echo $color2?>" ALIGN="LEFT">
 	<TD><?php echo $l_username?>:</TD>
-	<TD><?php echo $userdata[username]?></TD>
+	<TD><?php echo html_escape($userdata[username])?></TD>
 </TR>
 <?php
 	if (!$user_logged_in) {
@@ -206,7 +206,7 @@ if($submit || $user_logged_in) {
 		   unset($s);
 		   if($myrow[theme_id] == $userdata["user_theme"])
 		     $s = "SELECTED";
-		   echo "<OPTION VALUE=\"$myrow[theme_id]\" $s>$myrow[theme_name]</OPTION>\n";
+		   echo "<OPTION VALUE=\"$myrow[theme_id]\" $s>" . html_escape($myrow[theme_name]) . "</OPTION>\n";
 		} while($myrow = db_fetch_array($result));
 	}
 	else {

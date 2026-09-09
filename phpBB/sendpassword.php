@@ -113,7 +113,7 @@ else {
      </TR>
      <TR ALIGN="LEFT">
        <TD BGCOLOR="<?php echo $color1?>"><?php echo $l_username?>:</TD>
-       <TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="user" VALUE="<?php echo $userdata[username]?>" SIZE="35" MAXLENGHT="50"></TD>
+       <TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="TEXT" NAME="user" VALUE="<?php echo html_escape($userdata[username])?>" SIZE="35" MAXLENGHT="50"></TD>
      </TR>
      <TR ALIGN="LEFT">
        <TD BGCOLOR="<?php echo $color1?>"><?php echo $l_emailaddress?>:</TD>

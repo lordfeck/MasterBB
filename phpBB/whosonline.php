@@ -48,7 +48,7 @@ if($myrow = db_fetch_array($result)) {
 		echo "<TR BGCOLOR=$color2 ALIGN=LEFT>\n";
 		if(!stristr($myrow[username], get_syslang_string($sys_lang, "l_guest"))) {
 			$thisuser = get_userdata($myrow[username], $db);
-			echo "<TD><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$thisuser[user_id]\">$thisuser[username]</a></FONT></TD>\n";
+			echo "<TD><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$thisuser[user_id]\">" . html_escape($thisuser[username]) . "</a></FONT></TD>\n";
 		}
 		else {
 			echo "<TD><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\">Guest</FONT></TD>\n";
@@ -58,7 +58,7 @@ if($myrow = db_fetch_array($result)) {
 		}
 		else {
 			$forum = get_forum_name($myrow[forum], $db);
-			echo "<TD><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"$url_phpbb/viewforum.$phpEx?forum=$myrow[forum]\">$forum</a></FONT>";
+			echo "<TD><FONT FACE=\"$FontFace\" SIZE=\"$FontSize2\" COLOR=\"$textcolor\"><a href=\"$url_phpbb/viewforum.$phpEx?forum=" . (int) $myrow[forum] . '\">' . html_escape($forum) . "</a></FONT>";
 		}
 		echo "</TR>\n";
 	} while($myrow = db_fetch_array($result));

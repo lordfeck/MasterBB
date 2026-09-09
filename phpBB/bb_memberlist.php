@@ -152,32 +152,32 @@ if (!$row) {
 
 	do {
 		if ($row[user_viewemail]) {
-			$email = "<a href=\"mailto:$row[user_email]\"><img src=\"$email_image\" width=\"33\" height=\"17\" border=\"0\" alt=\"Email $row[username]\"></a>";
+			$email = "<a href=\"" . html_email_url($row[user_email]) . "\"><img src=\"$email_image\" width=\"33\" height=\"17\" border=\"0\" alt=\"Email " . html_escape($row[username]) . "\"></a>";
 		} else {
 			$email = "&nbsp;";
 		}
 		if ($row[user_website]) {
-			$www = "<a href=\"$row[user_website]\"><img src=\"$www_image\" width=\"34\" height=\"17\" border=\"0\" alt=\"Visit $row[username]'s Web Site\"></a>";
+			$www = "<a href=\"" . html_web_url($row[user_website]) . "\" rel=\"noopener noreferrer\"><img src=\"$www_image\" width=\"34\" height=\"17\" border=\"0\" alt=\"Visit " . html_escape($row[username]) . "'s Web Site\"></a>";
 		} else {
 			$www = "&nbsp;";
 		}
 		if ($row[user_icq]) {
-			$icq = "<a href=\"http://wwp.icq.com/scripts/search.dll?to=$row[user_icq]\"><img src=\"$icq_add_image\" width=\"32\" height=\"17\" border=\"0\" alt=\"Add $row[username]\"></a>";
+			$icq = html_escape($row[user_icq]);
 		} else {
 			$icq = "&nbsp;";
 		}
 		if ($row[user_aim]) {
-			$aim = "<a href=\"aim:goim?screenname=$row[user_aim]&message=Hi+$row[user_aim].+Are+you+there?\"><img src=\"$images_aim\" width=\"30\" height=\"17\" border=\"0\" alt=\"AIM $row[user_aim]\"></a></TD>";
+			$aim = html_escape($row[user_aim]);
 		} else {
 			$aim = "&nbsp;";
 		}
 		if ($row[user_yim]) {
-			$yim = "<a href=\"http://edit.yahoo.com/config/send_webmesg?.target=$row[user_yim]&.src=pg\"><img src=\"$images_yim\" width=\"16\" height=\"16\" border=\"0\" alt=\"YIM $row[user_yim]\"></a>";
+			$yim = html_escape($row[user_yim]);
 		} else {
 			$yim = "&nbsp;";
 		}
 		if ($row[user_msnm]) {
-			$msnm = "<a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$row[user_id]\"><img src=\"$images_msnm\" width=\"16\" height=\"16\" border=\"0\" alt=\"MSNM $row[user_msnm]\"></a>";
+			$msnm = html_escape($row[user_msnm]);
 		} else {
 			$msnm = "&nbsp;";
 		}
@@ -188,8 +188,8 @@ if (!$row) {
 ?>
 	<TR>
 		<td bgcolor="<?php echo $color2?>" nowrap align="center"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">&nbsp;<?php echo ++$ranking?>&nbsp;</font></TD>
-		<td bgcolor="<?php echo $color2?>" width="25%" height="30" nowrap><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">&nbsp;<a href="<?php echo $url_phpbb?>/bb_profile.<?php echo $phpEx?>?mode=view&user=<?php echo $row[user_id]?>"><?php echo $row[username]?></a></font></TD>
-		<td bgcolor="<?php echo $color1?>" width="30%" height="30"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">&nbsp;<?php echo stripslashes($row[user_from])?></font></TD>
+		<td bgcolor="<?php echo $color2?>" width="25%" height="30" nowrap><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">&nbsp;<a href="<?php echo $url_phpbb?>/bb_profile.<?php echo $phpEx?>?mode=view&user=<?php echo $row[user_id]?>"><?php echo html_escape($row[username])?></a></font></TD>
+		<td bgcolor="<?php echo $color1?>" width="30%" height="30"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">&nbsp;<?php echo html_escape(stripslashes($row[user_from]))?></font></TD>
 		<td bgcolor="<?php echo $color2?>" width="8%" height="30" nowrap align="center"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"> <?php echo $regdate?> </font></td>
 		<td bgcolor="<?php echo $color1?>" width="8%" height="30" nowrap align="center"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"> <?php echo $row[user_posts]?> </font></td>
 		<td bgcolor="<?php echo $color2?>" width="8%" height="30" nowrap align="center"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"> <?php echo $email?> </font></TD>

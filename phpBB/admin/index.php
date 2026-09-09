@@ -35,7 +35,7 @@ if($login) {
       die("You have to enter your password. Go back and do so.");
    }
    if (!check_username($username, $db)) {
-      die("Invalid username \"$username\". Go back and try again.");
+      die('Invalid username "' . html_escape($username) . '". Go back and try again.');
    }
    if (!check_user_pw($username, $password, $db)) {
       die("Invalid password. Go back and try again.");
@@ -72,7 +72,7 @@ else if(!$user_logged_in) {
      <table>
      <tr>
        <td><b>User Name: </b></td>
-       <td><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>"></td>
+       <td><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"></td>
      </tr><tr>
        <td><b>Password: </b></td>
        <td><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br></td>

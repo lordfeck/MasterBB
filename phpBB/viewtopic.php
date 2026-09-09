@@ -57,7 +57,7 @@ if(($myrow[forum_type] == 1) && !$user_logged_in && !$logging_in)
 							  <TR>
 							    <TD>
 							      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-							      <b>User Name: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo $userdata[username]?>">
+							      <b>User Name: &nbsp;</b></font></TD><TD><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>">
 							    </TD>
 							  </TR><TR>
 							    <TD>
@@ -182,7 +182,7 @@ if($total > $posts_per_page) {
 <TABLE BORDER="0" CELLPADDING="3" CELLSPACING="1" WIDTH="100%">
 <TR BGCOLOR="<?php echo $color1?>" ALIGN="LEFT">
 	<TD WIDTH="20%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><?php echo $l_author?></FONT></TD>
-	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2 ?>"COLOR="<?php echo $textcolor?>"><?php echo $topic_subject?></FONT></TD>
+	<TD><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2 ?>"COLOR="<?php echo $textcolor?>"><?php echo html_escape($topic_subject)?></FONT></TD>
 </TR>
 <?php
 $sql = "SELECT p.*, pt.post_text FROM posts p, posts_text pt
@@ -206,7 +206,7 @@ do {
 	}
    else
      $posterdata = array("user_id" => -1, "username" => $l_anonymous, "user_posts" => "0", "user_rank" => -1);
-   echo "<TD valign=top><FONT FACE=\"$FontFace\" COLOR=\"$textcolor\"><b>$posterdata[username]</b></FONT>";
+   echo "<TD valign=top><FONT FACE=\"$FontFace\" COLOR=\"$textcolor\"><b>" . html_escape($posterdata[username]) . "</b></FONT>";
    $posts = $posterdata[user_posts];
    if($posterdata[user_id] != -1) {
       if($posterdata[user_rank] != 0) {
@@ -220,13 +220,13 @@ do {
       if(!$rank_result = db_query_params($sql, $rank_params, $db))
 	error_die("Error connecting to the database!");
       list($rank, $rank_image) = db_fetch_array($rank_result);
-      echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\"><B>" . own_stripslashes($rank) . "</B></font>";
+      echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\"><B>" . html_escape(own_stripslashes($rank)) . "</B></font>";
       if($rank_image != '')
-	echo "<BR><IMG SRC=\"$url_images/$rank_image\" BORDER=\"0\">";
+	echo '<BR><IMG SRC="' . html_web_url($url_images . '/' . $rank_image, true) . '" BORDER="0">';
       echo "<BR><BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$l_joined: $posterdata[user_regdate]</FONT>";
       echo "<br><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$l_posts: $posts</FONT>";
       if ($posterdata[user_from] != ''){
-        echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$l_location: $posterdata[user_from]<br></FONT>";
+        echo "<BR><FONT FACE=\"$FontFace\" SIZE=\"$FontSize1\" COLOR=\"$textcolor\">$l_location: " . html_escape($posterdata[user_from]) . "<br></FONT>";
       }
       echo "</td>";
    }
@@ -237,38 +237,24 @@ do {
    echo "<HR></font>\n";
    $message = own_stripslashes($myrow[post_text]);
 
-   // Before we insert the sig, we have to strip its HTML if HTML is disabled by the admin.
-   // We do this _before_ bbencode(), otherwise we'd kill the bbcode's html.
-   $sig = $posterdata[user_sig];
-   if (!$allow_html)
-   {
-		$sig = htmlspecialchars($sig);
-		$sig = preg_replace("#&lt;br&gt;#is", "<BR>", $sig);
-   }
-
-   $message = preg_replace("/\[addsig\]$/i", "<BR>_________________<BR>" . own_stripslashes(bbencode($sig, $allow_html)), $message);
+   $sig = str_replace("<BR>", "\n", own_stripslashes($posterdata[user_sig]));
+   $rendered_sig = render_user_text($sig, $allow_bbcode == 1, true);
+   $message = preg_replace("/\[addsig\]$/i", "<BR>_________________<BR>" . $rendered_sig, $message);
 
    echo "\n<FONT COLOR=\"$textcolor\" face=\"$FontFace\">" . $message . "</FONT><BR>";
    echo "\n<HR>";
    if ($posterdata[user_id] != -1)
    {
-   	echo "&nbsp;&nbsp<a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$posterdata[user_id]\"><img src=\"$profile_image\" border=0 alt=\"$l_profileof $posterdata[username]\"></a>\n";
+		echo "&nbsp;&nbsp<a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$posterdata[user_id]\"><img src=\"$profile_image\" border=0 alt=\"$l_profileof " . html_escape($posterdata[username]) . "\"></a>\n";
 
-	   if($posterdata["user_viewemail"] != 0)
-	     echo "&nbsp;&nbsp;<a href=\"mailto:$posterdata[user_email]\"><IMG SRC=\"$email_image\" BORDER=0 ALT=\"$l_email $posterdata[username]\"></a>\n";
-	   if($posterdata["user_website"] != '') {
-	      if(strstr("http://", $posterdata["user_website"]))
-		$posterdata["user_website"] = "http://" . $posterdata["user_website"];
-	      echo "&nbsp;&nbsp;<a href=\"$posterdata[user_website]\" TARGET=\"_blank\"><IMG SRC=\"$www_image\" BORDER=0 ALT=\"$l_viewsite $posterdata[username]\"></a>\n";
+	   if($posterdata["user_viewemail"] != 0) {
+	     $email_url = html_email_url($posterdata[user_email]);
+	     echo "&nbsp;&nbsp;<a href=\"$email_url\"><IMG SRC=\"$email_image\" BORDER=0 ALT=\"$l_email " . html_escape($posterdata[username]) . "\"></a>\n";
 	   }
-	   if($posterdata["user_icq"] != '')
-	     echo "&nbsp;&nbsp;<a href=\"http://wwp.icq.com/$posterdata[user_icq]#pager\" target=\"_blank\"><img src=\"http://online.mirabilis.com/scripts/online.dll?icq=$posterdata[user_icq]&img=5\" alt=\"$l_icqstatus\" border=\"0\"></a>&nbsp;&nbsp;<a href=\"http://wwp.icq.com/scripts/search.dll?to=$posterdata[user_icq]\"><img src=\"$icq_add_image\" border=\"0\"></a>";
-
-	   if($posterdata["user_aim"] != '')
-	     echo "&nbsp;&nbsp;<a href=\"aim:goim?screenname=$posterdata[user_aim]&message=Hi+$posterdata[user_aim].+Are+you+there?\"><img src=\"$images_aim\" border=\"0\"></a>";
-
-	   if($posterdata["user_yim"] != '')
-	     echo "&nbsp;&nbsp;<a href=\"http://edit.yahoo.com/config/send_webmesg?.target=$posterdata[user_yim]&.src=pg\"><img src=\"$images_yim\" border=\"0\"></a>";
+	   if($posterdata["user_website"] != '') {
+	      $website_url = html_web_url($posterdata[user_website]);
+	      echo "&nbsp;&nbsp;<a href=\"$website_url\" TARGET=\"_blank\" REL=\"noopener noreferrer\"><IMG SRC=\"$www_image\" BORDER=0 ALT=\"$l_viewsite " . html_escape($posterdata[username]) . "\"></a>\n";
+	   }
 
 	   if($posterdata["user_msnm"] != '')
 	     echo "&nbsp;&nbsp;<a href=\"$url_phpbb/bb_profile.$phpEx?mode=view&user=$posterdata[user_id]\"><img src=\"$images_msnm\" border=\"0\"></a>";
