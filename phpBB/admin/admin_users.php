@@ -99,7 +99,7 @@ else if(!$user_logged_in) {
           <UL>
           <FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">
      <b>User Name: </b><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"><BR>
-     <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br><br>
+     <b>Password: </b><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255"><br><br>
           <INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit">&nbsp;&nbsp;&nbsp;<INPUT TYPE="RESET" VALUE="Clear"></ul>
           </FORM>
           </TD></TR></TABLE></TD></TR></TABLE>

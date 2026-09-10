@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import time
 
 from smoke import (
     ADMIN_NAME,
@@ -32,7 +33,7 @@ def known_vulnerability(step: str) -> None:
     print(f"known vulnerable - {step}", flush=True)
 
 
-def characterize(base_url: str) -> None:
+def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     known_findings = 0
     anonymous = Browser(base_url)
     user = Browser(base_url)
@@ -60,6 +61,20 @@ def characterize(base_url: str) -> None:
     )
     secure("administration login errors encode reflected input")
 
+    page = Browser(base_url).request(
+        "bb_register.php",
+        {
+            "submit": "Submit",
+            "username": "ShortPasswordUser",
+            "password": "too-short",
+            "password_rep": "too-short",
+            "email": "short-password@example.test",
+            "website": "http://",
+        },
+    )
+    require(page, "at least 12 characters", "registration password policy")
+    secure("new account passwords enforce the modern length boundary")
+
     page = attacker.request(
         "bb_register.php",
         {
@@ -82,17 +97,43 @@ def characterize(base_url: str) -> None:
     if len(session_cookies) != 1:
         raise SmokeFailure("session characterization: expected one session cookie")
     session_cookie = session_cookies[0]
-    if not session_cookie.value.isdigit():
-        raise SmokeFailure("session characterization: expected a legacy numeric token")
+    if re.fullmatch(r"[a-f0-9]{64}", session_cookie.value) is None:
+        raise SmokeFailure("session security: expected a 256-bit hexadecimal token")
     cookie_attributes = {key.lower() for key in session_cookie._rest}
-    if "httponly" in cookie_attributes or "samesite" in cookie_attributes:
+    if "httponly" not in cookie_attributes or "samesite" not in cookie_attributes:
         raise SmokeFailure(
-            "session characterization: expected missing HttpOnly and SameSite attributes"
+            "session security: expected HttpOnly and SameSite attributes"
         )
-    known_vulnerability(
-        "session identifiers are small numeric values and the cookie lacks HttpOnly/SameSite"
+    if session_cookie.secure:
+        raise SmokeFailure("session security: HTTP baseline unexpectedly set Secure")
+    initial_session_token = session_cookie.value
+    secure("sessions use opaque random tokens with HttpOnly and SameSite=Lax")
+
+    fixed = Browser(base_url)
+    fixed.set_cookie("phpBBsession", "a" * 64)
+    page = login(fixed, ATTACKER_NAME, ATTACKER_PASSWORD)
+    require(page, f"Logged in as Smoke O&#039;Brien", "session fixation login")
+    fixed_cookie = fixed.cookie("phpBBsession")
+    if fixed_cookie is None or fixed_cookie.value == "a" * 64:
+        raise SmokeFailure("session fixation: authentication did not rotate the token")
+    secure("successful authentication replaces a caller-supplied session token")
+
+    invalid = Browser(base_url)
+    invalid.set_cookie("phpBBsession", "b" * 64)
+    page = invalid.request("index.php")
+    reject(page, "Logged in as", "invalid session rejection")
+    secure("unknown session tokens do not authenticate")
+
+    spoofed_https = Browser(base_url)
+    spoofed_https.request(
+        "login.php",
+        {"submit": "Submit", "user": ATTACKER_NAME, "passwd": ATTACKER_PASSWORD},
+        {"X-Forwarded-Proto": "https"},
     )
-    known_findings += 1
+    spoofed_cookie = spoofed_https.cookie("phpBBsession")
+    if spoofed_cookie is None or spoofed_cookie.secure:
+        raise SmokeFailure("trusted-proxy boundary: untrusted forwarded scheme was accepted")
+    secure("untrusted X-Forwarded-Proto values cannot force proxy scheme detection")
 
     page = attacker.request("admin/admin_board.php?mode=setoptions")
     require(page, "do not have acess to this area", "member administration boundary")
@@ -223,6 +264,14 @@ def characterize(base_url: str) -> None:
         },
     )
     require(page, "Your Information has been updated", "profile XSS fixture")
+    rotated_cookie = attacker.cookie("phpBBsession")
+    if rotated_cookie is None or rotated_cookie.value == initial_session_token:
+        raise SmokeFailure("session rotation: profile re-authentication retained its token")
+    stale = Browser(base_url)
+    stale.set_cookie("phpBBsession", initial_session_token)
+    page = stale.request("index.php")
+    reject(page, f"Logged in as Smoke O&#039;Brien", "retired session token")
+    secure("credential re-authentication rotates and retires the prior session token")
     page = attacker.request(f"bb_profile.php?mode=view&user={attacker_user_id}")
     reject(page, profile_marker, "profile HTML escaping")
     require(
@@ -332,6 +381,61 @@ def characterize(base_url: str) -> None:
     known_vulnerability("baseline browser security headers are absent")
     known_findings += 1
 
+    reset_unknown = anonymous.request(
+        "sendpassword.php",
+        {"submit": "Send Password", "user": "Definitely Missing", "email": "missing@example.test"},
+    )
+    reset_known = anonymous.request(
+        "sendpassword.php",
+        {"submit": "Send Password", "user": USER_NAME, "email": "user@example.test"},
+    )
+    reset_message = "If the supplied details match an account, a password reset link has been sent."
+    require(reset_unknown, reset_message, "unknown-account reset response")
+    require(reset_known, reset_message, "known-account reset response")
+    if re.search(r"token=[a-f0-9]{64}", reset_known):
+        raise SmokeFailure("password reset: raw token appeared in the HTTP response")
+    secure("password reset requests do not disclose whether an account exists")
+
+    first = Browser(base_url)
+    second = Browser(base_url)
+    require(login(first, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "first parallel login")
+    require(login(second, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "second parallel login")
+    first.request("logout.php")
+    reject(first.request("index.php"), "Logged in as Smoke O&#039;Brien", "logged-out session")
+    require(second.request("index.php"), "Logged in as Smoke O&#039;Brien", "parallel session preservation")
+    secure("logout terminates only the current browser session")
+
+    if idle_timeout_test_seconds:
+        expiring = Browser(base_url)
+        require(login(expiring, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "expiry login")
+        time.sleep(idle_timeout_test_seconds)
+        reject(expiring.request("index.php"), "Logged in as Smoke O&#039;Brien", "idle session expiry")
+        secure("idle sessions expire server-side")
+
+    changer = Browser(base_url)
+    change_peer = Browser(base_url)
+    require(login(changer, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "password-change login")
+    require(login(change_peer, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "password-change peer login")
+    page = changer.request(
+        "bb_profile.php",
+        {
+            "submit": "Submit",
+            "mode": "edit",
+            "save": "1",
+            "user_id": attacker_user_id,
+            "password": ATTACKER_PASSWORD,
+            "new_password": "smoke-attacker-new-pass",
+            "password2": "smoke-attacker-new-pass",
+            "email": "attacker@example.test",
+            "website": "http://",
+        },
+    )
+    require(page, "Your Information has been updated", "profile password change")
+    require(changer.request("index.php"), "Logged in as Smoke O&#039;Brien", "replacement password-change session")
+    reject(change_peer.request("index.php"), "Logged in as Smoke O&#039;Brien", "password-change peer revocation")
+    reject(login(Browser(base_url), ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as Smoke O&#039;Brien", "old changed password")
+    secure("profile password changes revoke other sessions and rotate the current one")
+
     print(
         f"Security characterization completed with {known_findings} known open findings.",
         flush=True,
@@ -341,13 +445,14 @@ def characterize(base_url: str) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True)
+    parser.add_argument("--idle-timeout-test-seconds", type=int, default=0)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     try:
-        characterize(args.base_url)
+        characterize(args.base_url, args.idle_timeout_test_seconds)
     except SmokeFailure as error:
         print(f"not ok - {error}", file=sys.stderr)
         return 1

@@ -68,9 +68,13 @@ if($submit) {
       include('page_header.'.$phpEx);
       error_die($l_mismatch);
    }
+   if($password_error = forum_password_error($password)) {
+      include('page_header.'.$phpEx);
+      error_die($password_error . ' ' . $l_tryagain);
+   }
   
    $sig = rtrim($sig);
-   $passwd = md5($password);
+   $passwd = forum_hash_password($password);
    $regdate = date("M d, Y");
    
    // Ensure the website URL starts with "http://".
@@ -110,7 +114,7 @@ if($submit) {
 
    if($cookie_username) {
       $time = (time() + 3600 * 24 * 30 * 12);
-      setcookie($cookiename, $total, $time, $cookiepath, $cookiedomain, $cookiesecure);
+      set_forum_cookie($cookiename, $username, $time, $cookiepath, $cookiedomain, $cookiesecure);
    }
    include('page_header.'.$phpEx);
    
@@ -118,12 +122,10 @@ if($submit) {
    $message  .= "Your account information is as follows:\n";
    $message .= "----------------------------\n";
 	$message .= "Username: $username\n";
-   $message .= "Password: $password\n";
-   $message .="\nPlease do not forget your password as it has been encrypted in our database and we cannot retrive it for you.";
-   $message .= " However, should you forget your password we provide an easy to use script to generate and email a new, random, password.\nThank you for registering.";
+	$message .= "\nYour password was not included in this email. If you forget it, use the password-reset link on the login page.\nThank you for registering.";
    $message .= "\r\n$email_sig";
 		 
-   mail($email, $l_welcomesubj, $l_welcomemail, "From: $email_from");
+	forum_send_mail($email, $l_welcomesubj, $message, $email_from);
    echo "<p>$l_beenadded<p>$l_click <a href=\"$url_phpbb/index.$phpEx\">$l_here</a> $l_returnindex<br>$l_thankregister<p><br>";
 }
 else {
@@ -138,11 +140,11 @@ else {
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_password?>: *</b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo "$l_confirm $l_password"?>: *</b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password_rep" SIZE="25" MAXLENGTH="25"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password_rep" SIZE="25" MAXLENGTH="255"></TD>
 	</TR>
 
 	<TR ALIGN="LEFT">

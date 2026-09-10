@@ -38,7 +38,7 @@ $url_smiles = "$url_images/smiles";
 $url_phpbb_index = $url_phpbb . '/index.' . $phpEx;
 $url_admin_index = $url_admin . '/index.' . $phpEx;
 
-/* -- Cookie settings (lastvisit, userid) -- */
+/* -- Cookie settings (last visit and optional saved login name) -- */
 // Most likely you can leave this be, however if you have problems
 // logging into the forum set this to your domain name, without
 // the http://
@@ -51,7 +51,8 @@ $cookiedomain = "";
 $cookiename = "phpBB";
 // It should be safe to leave these alone as well.
 $cookiepath = $url_phpbb;
-$cookiesecure = false;
+$cookiesecure = forum_request_is_https();
+$REMOTE_ADDR = forum_client_ip($REMOTE_ADDR);
 
 /* -- Cookie settings (sessions) -- */
 // This is the cookie name for the sessions cookie, you shouldn't have to change it
@@ -59,7 +60,10 @@ $sesscookiename = "phpBBsession";
 // This is the number of seconds that a session lasts for, 3600 == 1 hour.
 // The session will exprire if the user dosan't view a page on the forum within
 // this amount of time.
-$sesscookietime = 3600;
+$sesscookietime = forum_env_int('MASTERBB_SESSION_IDLE_SECONDS', 3600, 1);
+// Sessions also expire even while active, limiting the life of a stolen token.
+$sessabsolute = forum_env_int('MASTERBB_SESSION_ABSOLUTE_SECONDS', 86400, $sesscookietime);
+$password_reset_lifetime = forum_env_int('MASTERBB_PASSWORD_RESET_SECONDS', 3600, 300);
 
 /**
  * This setting is only for people running Microsoft IIS.

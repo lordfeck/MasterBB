@@ -73,19 +73,18 @@ if($submit) {
       if(is_banned($userdata[user_id], "username", $db)){
 			error_die($l_banned);
 		}
-      $md_passwd = md5($passwd);
       if($posterdata[user_id] == $userdata[user_id]) {
-	 		if($md_passwd != $posterdata[user_password]) {
+		if(!forum_verify_password($passwd, $posterdata[user_password])) {
 	    		$die = 1;
 	 		}
       }
       else if($userdata[user_level] == 2 && is_moderator($forum_id, $userdata[user_id], $db)) {
-	 		if($md_passwd != $userdata[user_password]) {
+		if(!forum_verify_password($passwd, $userdata[user_password])) {
 	 	   	$die = 1;
 	 		}
       }
       else if($userdata[user_level] > 2) {
-	 		if($md_passwd != $userdata[user_password]) {
+		if(!forum_verify_password($passwd, $userdata[user_password])) {
 	    		$die = 1;
 	 		}
       }
@@ -237,7 +236,7 @@ else {
 							  </TR><TR>
 							    <TD>
 							      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-							      <b><?php echo $l_password?>: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25">
+							      <b><?php echo $l_password?>: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255">
 							    </TD>
 							  </TR>
 							</TABLE>

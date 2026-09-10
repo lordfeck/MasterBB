@@ -102,17 +102,27 @@ an apostrophe to verify that legitimate data survives the parameter boundary.
 
 **Severity:** Critical
 
-**Status:** Open; confirmed source finding
+**Status:** Closed in Slice 4
 
-The fresh schema limits password fields to 32 characters and registration,
-login, posting fallbacks, profiles, and installation use unsalted MD5.
-Password reset creates an eight-character value with `rand()`, stores its MD5,
-and derives the activation key deterministically from that hash. Reset
-activation is a state-changing GET.
+Before Slice 4, the fresh schema limited password fields to 32 characters and
+registration, login, posting fallbacks, profiles, and installation used
+unsalted MD5. Password reset created an eight-character value with `rand()`,
+stored its MD5, and derived the activation key deterministically from that
+hash. Reset activation was a state-changing GET.
 
-Use Argon2id when available with a documented fallback to `PASSWORD_DEFAULT`,
-store hashes in `varchar(255)`, centralize verification, and replace reset with
-a single-use, expiring, randomly generated token whose digest is stored.
+Fresh installs now use Argon2id when available, with `PASSWORD_DEFAULT` as the
+runtime fallback, through centralized hashing and verification helpers. The
+schema allows 255-character hashes and all credential creation and comparison
+paths use the shared primitives. Password creation enforces a 12-to-255-byte
+length boundary.
+
+Password reset now returns the same response for matching and non-matching
+account details, generates a 256-bit random one-time token, stores only its
+SHA-256 digest and expiry, and changes the password only through POST. Viewing
+the link is non-destructive. Successful reset atomically consumes the token and
+revokes all sessions for the account; successful profile password changes also
+revoke existing sessions. Registration email no longer contains the supplied
+password.
 
 ### SEC-003 — CSRF protection and safe-method discipline are absent
 
@@ -164,20 +174,30 @@ attribute-encoded and rejects active non-web schemes.
 
 **Severity:** High
 
-**Status:** Open; source-confirmed and black-box characterized
+**Status:** Closed in Slice 4
 
-`new_session()` reseeds and calls `mt_rand()`, producing a small numeric token
-stored in plaintext. Session cookies lack `HttpOnly` and `SameSite`; `Secure`
-is a static configuration boolean. Sessions are bound to the apparent client
-IP, which is unreliable behind proxies and can harm users whose address
-changes. Authentication logic is duplicated across many pages, and logging
-out deletes every session for the user rather than the current session.
+Before Slice 4, `new_session()` reseeded and called `mt_rand()`, producing a
+small numeric token stored in plaintext. Session cookies lacked `HttpOnly` and
+`SameSite`; `Secure` was a static configuration boolean. Sessions were bound
+to the apparent client IP, which is unreliable behind proxies and can harm
+users whose address changes. Authentication logic was duplicated across many
+pages, and logging out deleted every session for the user rather than the
+current session.
 
-Use `random_bytes()`, store a token digest, rotate at authentication, enforce
-idle and absolute expiry, revoke only the current session on logout, and set
-`HttpOnly`, `SameSite=Lax`, and `Secure` whenever the explicitly trusted
-request scheme is HTTPS. Do not trust forwarding headers unless the immediate
-proxy is configured as trusted.
+Sessions now use 256-bit `random_bytes()` tokens while only SHA-256 digests are
+stored. Authentication and credential re-authentication rotate the current
+token; sessions enforce configurable idle and absolute lifetimes; logout
+revokes only the presented session. Password changes and reset remain the
+intentional account-wide revocation cases. Session identity is no longer bound
+to a changing client IP.
+
+All application cookies use `HttpOnly`, `SameSite=Lax`, a scoped path, and
+`Secure` whenever the trusted request scheme is HTTPS. Direct TLS is detected
+without forwarding headers. `X-Forwarded-Proto` and `X-Forwarded-For` are used
+only when the immediate peer matches an explicitly configured IP or CIDR. The
+negative suite confirms token shape, cookie attributes, fixation resistance,
+rotation, current-session logout, idle expiry, and rejection of forwarding
+headers from an untrusted peer.
 
 ### SEC-006 — Authorization is distributed and incomplete as a system
 
@@ -228,17 +248,19 @@ installer credentials. Replace browser-facing database detail with stable
 generic messages and log structured diagnostics server-side without passwords,
 session tokens, reset tokens, or CSRF values.
 
-### SEC-009 — Security headers and trusted HTTPS detection are absent
+### SEC-009 — Baseline browser security headers are absent
 
 **Severity:** Medium
 
-**Status:** Open; black-box reproduced
+**Status:** Partially remediated in Slice 4; response headers remain open
 
-Responses lack a CSP, MIME-sniffing protection, framing protection, and a
-referrer policy. There is no explicit reverse-proxy trust model. Introduce
-headers centrally, begin CSP in report-only mode if the legacy markup requires
-adjustment, and emit HSTS only when the application is deliberately configured
-for HTTPS.
+Responses still lack a CSP, MIME-sniffing protection, and framing protection;
+the password-reset response alone now carries a no-referrer and no-store
+policy. Slice 4 added explicit direct-TLS detection and an allowlisted
+reverse-proxy trust model used for client address and HTTPS detection. Slice 7
+must introduce the remaining headers centrally, begin CSP in report-only mode
+if the legacy markup requires adjustment, and emit HSTS only when the
+application is deliberately configured for HTTPS.
 
 ### SEC-010 — Validation and URL handling are inconsistent
 
@@ -260,13 +282,12 @@ must remain in place as defense in depth.
 
 **Severity:** Medium
 
-**Status:** Open; confirmed source finding
+**Status:** Partially remediated in Slice 4; throttling and audit events remain open
 
-Login and password-reset attempts have no throttling, reset responses can
-distinguish account details, and password policy is limited by historical
-field lengths. Add per-account and per-network throttling with bounded storage,
-uniform reset responses, sensible password length limits, and audit events
-that do not log secrets.
+Password reset responses are now uniform and password creation enforces a
+12-to-255-byte boundary. Login and password-reset attempts still have no
+throttling. Slice 7 must add per-account and per-network throttling with
+bounded storage and audit events that do not log secrets.
 
 ## Existing automated evidence
 
@@ -280,12 +301,16 @@ The security characterization suite currently verifies these blocked cases:
 - raw HTML in posts, profiles, signatures, and site-wide administrator text is
   encoded while BBCode and smilies remain functional;
 - unsafe BBCode image/link and profile website schemes do not become active;
-- arbitrary search sort expressions are rejected; and
-- a member cannot enter administration pages.
+- arbitrary search sort expressions are rejected;
+- a member cannot enter administration pages;
+- passwords use the shared modern hashing and verification path;
+- password-reset tokens are expiring, one-time, non-destructive on GET, and
+  revoke existing sessions when consumed; and
+- sessions resist fixation, rotate on credential authentication, expire when
+  idle, isolate per-browser logout, and carry modern cookie attributes.
 
 It also reproduces and labels these open findings:
 
-- numeric session identifiers with missing `HttpOnly`/`SameSite` attributes;
 - authenticated state changes without a CSRF token;
 - the installer endpoint remaining reachable and dependent on file mode after
   setup; and

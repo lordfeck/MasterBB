@@ -54,7 +54,7 @@ if(!is_moderator($forum, $mod_data[user_id], $db) && $mod_data[user_level] <= 2)
 	error_die("You are not the moderator of this forum therefore you cannot perform this function.");
 
 if($submit || ($user_logged_in==1 && $mode=='viewip')) {
-   if( $user_logged_in != 1 && ($mod_data[user_password] != md5($passwd)) )
+   if( $user_logged_in != 1 && !forum_verify_password($passwd, $mod_data[user_password]) )
      error_die("Error - You did not enter the correct password, please go back and try again.");
 
    switch($mode) {
@@ -208,7 +208,7 @@ else {  // No submit
 </TR>
 <TR>
 	<TD BGCOLOR="<?php echo $color1?>">Password:</TD>
-	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="passwd" SIZE="25" MAXLENGTH="25"></TD>
+	<TD BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="passwd" SIZE="25" MAXLENGTH="255"></TD>
 </TR>
 <?php
 	}
@@ -291,5 +291,3 @@ else {  // No submit
 }
 include('page_tail.'.$phpEx);
 ?>
-
-

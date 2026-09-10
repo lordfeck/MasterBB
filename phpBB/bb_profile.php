@@ -160,18 +160,24 @@ if($mode) {
 		    include('page_header.'.$phpEx);
 		    error_die("$l_enterpassword $l_tryagain");
 		 }
-		 $md_pass = md5($password);
-		 if ($md_pass != $userdata[user_password]) {
+		 if (!forum_verify_password($password, $userdata[user_password])) {
 		    include('page_header.'.$phpEx);
 		    error_die("$l_wrongpass $l_tryagain");
 		 }
 
+		 $md_pass = $userdata[user_password];
+		 $password_changed = false;
 		 if ($new_password != '') {
 		    if ($new_password != $password2)  {
 		       include('page_header.'.$phpEx);
 		       error_die("$l_mismatch $l_tryagain");
 		    }
-		    $md_pass = md5($new_password);
+		    if($password_error = forum_password_error($new_password)) {
+		       include('page_header.'.$phpEx);
+		       error_die($password_error . ' ' . $l_tryagain);
+		    }
+		    $md_pass = forum_hash_password($new_password);
+		    $password_changed = true;
 		 }
 		 // whatever the case, $md_pass contains the password for the DB.
 		 // ready to save, they've authed just fine..
@@ -217,6 +223,9 @@ if($mode) {
 		 if(!$result = db_query_params($sql, $profile_params, $db)) {
 		    error_die("Could not update userinfo in database.<br>$sql");
 		 }
+		 if($password_changed) {
+		    end_all_user_sessions($userdata[user_id], $db);
+		 }
 		 // They have authed, log them in.
 		 $sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
 		 set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
@@ -229,11 +238,10 @@ if($mode) {
 		    if($user == '' || $passwd == '') {
 		       error_die("$l_userpass $l_tryagain");
 		    }
-		    $md_pass = md5($passwd);
 		    $userdata = get_userdata($user, $db);
 		    if(is_banned($userdata[user_id], "username", $db))
 		      error_die("$l_banned");
-		    if($md_pass != $userdata["user_password"]) {
+		    if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
 		       error_die("$l_wrongpass $l_tryagain");
 		    }
 		    // They have authed succecfully, log them in.
@@ -261,15 +269,15 @@ if($mode) {
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_password?>: *</FONT></b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255"></TD>
 	</TR>
 		<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_new ." " .$l_password?>: </FONT></b></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="new_password" SIZE="25" MAXLENGTH="25"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="new_password" SIZE="25" MAXLENGTH="255"></TD>
 	</TR>
 	<TR ALIGN="LEFT">
 		<TD  BGCOLOR="<?php echo $color1?>" width="25%"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><b><?php echo $l_confirm . " " . $l_password?>:</b></FONT><br><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize1?>" COLOR="<?php echo $textcolor?>">(<?php echo $l_onlyreq?>)</FONT></TD>
-		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="password2" SIZE="25" MAXLENGTH="25"></TD>
+		<TD  BGCOLOR="<?php echo $color2?>"><FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>"><INPUT TYPE="PASSWORD" NAME="password2" SIZE="25" MAXLENGTH="255"></TD>
 	</TR>
 
 	<TR ALIGN="LEFT">

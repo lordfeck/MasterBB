@@ -104,9 +104,8 @@ if($submit) {
 	 error_die($l_userremoved);
       }
       if($userdata[user_id] != -1) {
-	 $md_pass = md5($password);
 	 $userdata = get_userdata($username, $db);
-	 if($md_pass != $userdata["user_password"]) {
+	 if(!forum_verify_password($password, $userdata["user_password"] ?? '')) {
 	    include('page_header.'.$phpEx);
 	    error_die($l_wrongpass);
 	 }
@@ -238,7 +237,7 @@ if($submit) {
 								  </TR><TR>
 								    <TD>
 								      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-								      <b><?php echo $l_password?>: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25">
+								      <b><?php echo $l_password?>: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255">
 								    </TD>
 								  </TR>
 								</TABLE>

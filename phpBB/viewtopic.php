@@ -62,7 +62,7 @@ if(($myrow[forum_type] == 1) && !$user_logged_in && !$logging_in)
 							  </TR><TR>
 							    <TD>
 							      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize2?>" COLOR="<?php echo $textcolor?>">
-							      <b>Password: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25">
+							      <b>Password: </b></TD><TD><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255">
 							    </TD>
 							  </TR>
 							</TABLE>

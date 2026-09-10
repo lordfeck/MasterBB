@@ -74,13 +74,12 @@ if($submit) {
 	     {
 		error_die("$l_userpass $l_tryagain");
 	     }
-	   $md_pass = md5($password);
 	   $userdata = get_userdata($username, $db);
 	   if($userdata[user_level] == -1)
 	     {
 		error_die($l_userremoved);
 	     }
-	   if($md_pass != $userdata["user_password"])
+	   if(!forum_verify_password($password, $userdata["user_password"] ?? ''))
 	     {
 		error_die("$l_wrongpass $l_tryagain");
 	     }

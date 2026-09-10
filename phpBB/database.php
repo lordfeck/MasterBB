@@ -155,6 +155,11 @@ function db_num_rows($result)
     return $result ? $result->rowCount() : 0;
 }
 
+function db_affected_rows($result)
+{
+    return $result ? $result->rowCount() : 0;
+}
+
 function db_insert_id($connection = null)
 {
     global $db_default_connection;

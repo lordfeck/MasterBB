@@ -148,8 +148,11 @@ Progress is tracked as focused, independently verified commits:
   raw HTML is permanently disabled, administrator header/meta/footer values are
   display text, and the expanded negative suite reports four known-open
   conditions.
-- [ ] Slice 4 — password hashing, reset tokens, sessions, cookies, HTTPS, and
-  trusted proxies.
+- [x] Slice 4 — Argon2id/`PASSWORD_DEFAULT` password hashing; one-time,
+  expiring reset-token digests; random server-digested sessions with rotation,
+  idle/absolute expiry and per-browser logout; modern cookie attributes; and
+  explicit HTTPS/trusted-proxy handling. Fresh-install smoke and expanded
+  negative authentication tests pass.
 - [ ] Slice 5 — CSRF tokens and POST-only state changes.
 - [ ] Slice 6 — centralized authorization and full role/ownership coverage.
 - [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,

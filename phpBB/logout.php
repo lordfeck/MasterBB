@@ -33,8 +33,9 @@ $pagetype = "logout";
 /* Note: page_header.php is included later on, because this page needs to be able to send a cookie. */
 
 if ($user_logged_in) {
-	end_user_session($userdata[user_id], $db);
+	end_user_session($sessid, $db);
 }
+clear_forum_cookie($sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
 
 	header("Location: $url_phpbb/index.$phpEx");
 require('page_tail.'.$phpEx);

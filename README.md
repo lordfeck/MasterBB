@@ -85,8 +85,11 @@ checks the current boundaries around:
 - SQL-injection-shaped login input;
 - cross-user post editing and deletion;
 - unauthorized private-message access;
-- forged private-message HTML options and stored script markup; and
-- arbitrary SQL sort expressions in search.
+- forged private-message HTML options and stored script markup;
+- arbitrary SQL sort expressions in search;
+- password hashing and one-time reset behavior; and
+- session entropy, rotation, expiry, logout isolation, cookie attributes, and
+  trusted-proxy boundaries.
 
 It also deliberately verifies and reports the known open CSRF finding, so a
 passing run does not imply that the application is ready for an untrusted
@@ -100,6 +103,29 @@ The script uses port `18081` by default and removes its isolated Compose
 project and database volume afterward. `MASTERBB_SECURITY_PORT` and
 `KEEP_SECURITY_STACK=1` provide the same overrides as the smoke runner.
 
+## HTTPS, proxies, sessions, and mail
+
+For an HTTPS deployment, set `MASTERBB_PUBLIC_URL` to the externally visible
+forum base URL, for example `https://forums.example.test/phpBB`. This is used
+to construct password-reset links. Configure a working PHP `mail()` transport
+in the production image; `MASTERBB_TEST_MAIL_LOG` is only a test-suite mail
+sink and must not be set in production.
+
+`MASTERBB_HTTPS_MODE` defaults to `auto`. In that mode direct TLS is detected
+normally, while `X-Forwarded-Proto` and `X-Forwarded-For` are ignored unless
+the immediate peer is listed in `MASTERBB_TRUSTED_PROXIES`. The proxy list is a
+comma-separated set of exact IPv4/IPv6 addresses or CIDRs. List only reverse
+proxies you control; do not use a broad private-network range merely for
+convenience. `MASTERBB_HTTPS_MODE=on` can force Secure cookies when every
+external request is guaranteed to use HTTPS, and `off` is intended only for a
+deliberate HTTP development environment.
+
+The defaults are a one-hour idle session lifetime, a 24-hour absolute session
+lifetime, and a one-hour password-reset lifetime. They can be changed with
+`MASTERBB_SESSION_IDLE_SECONDS`, `MASTERBB_SESSION_ABSOLUTE_SECONDS`, and
+`MASTERBB_PASSWORD_RESET_SECONDS`; the absolute lifetime is never allowed to
+be shorter than the idle lifetime.
+
 ## Reset everything
 
 To discard the development database and start with a fresh installation:
@@ -111,12 +137,11 @@ docker compose up --build
 
 ## Security status
 
-The runtime compatibility work is intentionally separate from comprehensive
-security hardening. Request values are no longer promoted into arbitrary
-globals, and focused checks now cover several authorization and input-boundary
-regressions. Interpolated SQL, MD5 passwords, session design, CSRF, output
-handling, and other legacy assumptions have not yet been made safe for an
-untrusted network.
+Security hardening is in progress. SQL values are parameterized, rendered
+content is constrained and encoded, passwords and resets use modern
+primitives, and session/cookie handling has been replaced. CSRF protection,
+complete centralized authorization, installer locking, safe error handling,
+security headers, validation, and abuse controls remain open.
 
 Do not expose this stack directly to the public Internet. See
 [MODERNIZATION_AUDIT.md](MODERNIZATION_AUDIT.md) for the current status and the

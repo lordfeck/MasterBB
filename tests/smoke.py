@@ -32,13 +32,16 @@ class Browser:
         )
 
     def request(
-        self, path: str, fields: dict[str, str | list[str]] | None = None
+        self,
+        path: str,
+        fields: dict[str, str | list[str]] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> str:
         url = f"{self.base_url}/{path.lstrip('/')}"
         data = None
         if fields is not None:
             data = urllib.parse.urlencode(fields, doseq=True).encode("ascii")
-        request = urllib.request.Request(url, data=data)
+        request = urllib.request.Request(url, data=data, headers=headers or {})
         try:
             with self.opener.open(request, timeout=45) as response:
                 self.last_headers = response.headers
@@ -46,6 +49,33 @@ class Browser:
         except (OSError, urllib.error.URLError) as error:
             raise SmokeFailure(f"Request failed for {url}: {error}") from error
         return payload.decode("latin-1", errors="replace")
+
+    def set_cookie(self, name: str, value: str, path: str = "/phpBB") -> None:
+        host = urllib.parse.urlparse(self.base_url).hostname or "localhost"
+        self.cookies.set_cookie(
+            http.cookiejar.Cookie(
+                version=0,
+                name=name,
+                value=value,
+                port=None,
+                port_specified=False,
+                domain=host,
+                domain_specified=False,
+                domain_initial_dot=False,
+                path=path,
+                path_specified=True,
+                secure=False,
+                expires=None,
+                discard=True,
+                comment=None,
+                comment_url=None,
+                rest={},
+                rfc2109=False,
+            )
+        )
+
+    def cookie(self, name: str):
+        return next((cookie for cookie in self.cookies if cookie.name == name), None)
 
 
 def require(page: str, text: str, step: str) -> None:

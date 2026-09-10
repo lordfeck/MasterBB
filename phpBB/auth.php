@@ -159,51 +159,25 @@ if(isset($HTTP_COOKIE_VARS[$sesscookiename])) {
 	   // Use the language the user has choosen
 	   if($userdata["user_lang"] != '')
 	     $default_lang = $userdata["user_lang"];
+	} else {
+		clear_forum_cookie($sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
 	} // if
 
 }
 
 
-// Old code for the permanent userid cookie..
-// We only need to run this if the user's not logged in.
-
+// The optional permanent cookie is only a login-name convenience. It never
+// selects a user profile, theme, language, or authenticated identity.
 if (!$user_logged_in)
 {
 	if(isset($HTTP_COOKIE_VARS[$cookiename]))
 	{
-	   $userdata = get_userdata_from_id($HTTP_COOKIE_VARS["$cookiename"], $db);
-	   if(is_banned($userdata[user_id], "username", $db))
-	   {
-	     die($l_banned);
+		$saved_username = (string) $HTTP_COOKIE_VARS[$cookiename];
+		if (strlen($saved_username) <= 40 && preg_match('/^[^\x00-\x1F\x7F]*$/D', $saved_username)) {
+			$userdata['username'] = $saved_username;
+		} else {
+			clear_forum_cookie($cookiename, $cookiepath, $cookiedomain, $cookiesecure);
 		}
-	   $theme = setuptheme($userdata["user_theme"], $db);
-	   if($theme)
-	  	{
-	      $bgcolor = $theme["bgcolor"];
-	      $table_bgcolor = $theme["table_bgcolor"];
-	      $textcolor = $theme["textcolor"];
-	      $color1 = $theme["color1"];
-	      $color2 = $theme["color2"];
-	      $header_image = $theme["header_image"];
-	      $newtopic_image = $theme["newtopic_image"];
-	      $reply_image = $theme["reply_image"];
-	      $linkcolor = $theme["linkcolor"];
-	      $vlinkcolor = $theme["vlinkcolor"];
-	      $FontFace = $theme["fontface"];
-	      $FontSize1 = $theme["fontsize1"];
-	      $FontSize2 = $theme["fontsize2"];
-	      $FontSize3 = $theme["fontsize3"];
-	      $FontSize4 = $theme["fontsize4"];
-	      $tablewidth = $theme["tablewidth"];
-	      $TableWidth = $tablewidth;
-	      $reply_locked_image = $theme["replylocked_image"];
-	   }
-
-	   // Use the language the user has choosen.
-	   if($userdata["user_lang"] != '')
-	   {
-	     $default_lang = $userdata["user_lang"];
-	   }
 	}
 }
 // Setup the default theme
@@ -245,7 +219,7 @@ $expiredate1 = time() + 3600 * 24 * 365;
 $expiredate2 = time() + 600;
 
 // update LastVisit cookie. This cookie is updated each time auth.php runs
-setcookie("LastVisit", time(), $expiredate1,  $cookiepath, $cookiedomain, $cookiesecure);
+set_forum_cookie("LastVisit", (string) time(), $expiredate1, $cookiepath, $cookiedomain, $cookiesecure);
 
 // set LastVisitTemp cookie, which only gets the time from the LastVisit
 // cookie if it does not exist yet
@@ -256,9 +230,13 @@ if (!isset($HTTP_COOKIE_VARS["LastVisitTemp"])) {
 else {
 	$temptime = $HTTP_COOKIE_VARS["LastVisitTemp"];
 }
+$temptime = (int) $temptime;
+if ($temptime < 0 || $temptime > time()) {
+	$temptime = time();
+}
 
 // set cookie.
-setcookie("LastVisitTemp", $temptime ,$expiredate2, $cookiepath, $cookiedomain, $cookiesecure);
+set_forum_cookie("LastVisitTemp", (string) $temptime, $expiredate2, $cookiepath, $cookiedomain, $cookiesecure);
 
 // set vars for all scripts
 $now_time = time();

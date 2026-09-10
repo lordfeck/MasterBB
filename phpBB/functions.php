@@ -25,30 +25,201 @@ require_once __DIR__ . '/database.php';
  * Start session-management functions - Nathan Codding, July 21, 2000.
  */
 
+function forum_password_algorithm() {
+	return defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT;
+}
+
+function forum_hash_password($password) {
+	$hash = password_hash($password, forum_password_algorithm());
+	if ($hash === false) {
+		die('Unable to protect the password.');
+	}
+	return $hash;
+}
+
+function forum_verify_password($password, $hash) {
+	return is_string($hash) && $hash !== '' && password_verify($password, $hash);
+}
+
+function forum_password_error($password) {
+	$length = strlen($password);
+	if ($length < 12) {
+		return 'Passwords must contain at least 12 characters.';
+	}
+	if ($length > 255) {
+		return 'Passwords may not contain more than 255 characters.';
+	}
+	return '';
+}
+
+function forum_env_int($name, $default, $minimum) {
+	$value = getenv($name);
+	if ($value === false || !preg_match('/^[0-9]+$/', $value)) {
+		return $default;
+	}
+	return max($minimum, (int) $value);
+}
+
+function forum_ip_in_range($ip, $range) {
+	$parts = explode('/', trim($range), 2);
+	$network = inet_pton($parts[0]);
+	$address = inet_pton($ip);
+	if ($network === false || $address === false || strlen($network) !== strlen($address)) {
+		return false;
+	}
+
+	$bits = isset($parts[1]) ? filter_var($parts[1], FILTER_VALIDATE_INT) : strlen($network) * 8;
+	if ($bits === false || $bits < 0 || $bits > strlen($network) * 8) {
+		return false;
+	}
+	$bytes = intdiv($bits, 8);
+	$remainder = $bits % 8;
+	if ($bytes && substr($network, 0, $bytes) !== substr($address, 0, $bytes)) {
+		return false;
+	}
+	if (!$remainder) {
+		return true;
+	}
+	$mask = (0xFF << (8 - $remainder)) & 0xFF;
+	return (ord($network[$bytes]) & $mask) === (ord($address[$bytes]) & $mask);
+}
+
+function forum_is_trusted_proxy($ip) {
+	$ranges = getenv('MASTERBB_TRUSTED_PROXIES');
+	if ($ranges === false || trim($ranges) === '') {
+		return false;
+	}
+	foreach (explode(',', $ranges) as $range) {
+		if (forum_ip_in_range($ip, $range)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function forum_request_is_https() {
+	$mode = strtolower(trim((string) (getenv('MASTERBB_HTTPS_MODE') ?: 'auto')));
+	if ($mode === 'on') {
+		return true;
+	}
+	if ($mode === 'off') {
+		return false;
+	}
+	$https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+	if ($https === 'on' || $https === '1') {
+		return true;
+	}
+	$remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+	if (!forum_is_trusted_proxy($remote)) {
+		return false;
+	}
+	$values = explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+	$proto = strtolower(trim((string) end($values)));
+	return $proto === 'https';
+}
+
+function forum_client_ip($fallback = '') {
+	$remote = (string) ($_SERVER['REMOTE_ADDR'] ?? $fallback);
+	if (!forum_is_trusted_proxy($remote)) {
+		return filter_var($remote, FILTER_VALIDATE_IP) ? $remote : $fallback;
+	}
+	$forwarded = array_map('trim', explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')));
+	$forwarded[] = $remote;
+	for ($index = count($forwarded) - 1; $index >= 0; --$index) {
+		$candidate = $forwarded[$index];
+		if (!filter_var($candidate, FILTER_VALIDATE_IP)) {
+			continue;
+		}
+		if (!forum_is_trusted_proxy($candidate)) {
+			return $candidate;
+		}
+	}
+	return $remote;
+}
+
+function forum_public_url($path = '') {
+	global $url_phpbb;
+	$configured = trim((string) (getenv('MASTERBB_PUBLIC_URL') ?: ''));
+	$scheme = strtolower((string) parse_url($configured, PHP_URL_SCHEME));
+	if ($configured !== '' && filter_var($configured, FILTER_VALIDATE_URL) && ($scheme === 'http' || $scheme === 'https')) {
+		$base = rtrim($configured, '/');
+	} else {
+		$host = (string) ($_SERVER['SERVER_NAME'] ?? 'localhost');
+		if (preg_match('/^[A-Za-z0-9.-]+$/D', $host) !== 1) {
+			$host = 'localhost';
+		}
+		$base = (forum_request_is_https() ? 'https://' : 'http://') . $host . $url_phpbb;
+	}
+	return $base . '/' . ltrim($path, '/');
+}
+
+function forum_send_mail($to, $subject, $message, $from) {
+	if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+		return false;
+	}
+	$subject = str_replace(array("\r", "\n"), '', $subject);
+	$test_log = getenv('MASTERBB_TEST_MAIL_LOG');
+	if ($test_log !== false && $test_log !== '') {
+		$record = json_encode(array('to' => $to, 'subject' => $subject, 'message' => $message), JSON_UNESCAPED_SLASHES);
+		return file_put_contents($test_log, $record . "\n", FILE_APPEND | LOCK_EX) !== false;
+	}
+	$from = str_replace(array("\r", "\n"), '', $from);
+	return mail($to, $subject, $message, 'From: ' . $from);
+}
+
+function forum_cookie_options($expires, $path, $domain, $secure, $http_only = true) {
+	$options = array(
+		'expires' => (int) $expires,
+		'path' => $path ?: '/',
+		'secure' => (bool) $secure,
+		'httponly' => (bool) $http_only,
+		'samesite' => 'Lax',
+	);
+	if ($domain !== '') {
+		$options['domain'] = $domain;
+	}
+	return $options;
+}
+
+function set_forum_cookie($name, $value, $expires, $path, $domain, $secure, $http_only = true) {
+	return setcookie($name, $value, forum_cookie_options($expires, $path, $domain, $secure, $http_only));
+}
+
+function clear_forum_cookie($name, $path, $domain, $secure) {
+	unset($_COOKIE[$name], $GLOBALS['HTTP_COOKIE_VARS'][$name]);
+	return set_forum_cookie($name, '', time() - 3600, $path, $domain, $secure);
+}
+
+function forum_session_digest($sessid) {
+	if (!is_string($sessid) || preg_match('/^[a-f0-9]{64}$/D', $sessid) !== 1) {
+		return false;
+	}
+	return hash('sha256', $sessid);
+}
+
 /**
  * new_session()
  * Adds a new session to the database for the given userid.
  * Returns the new session ID.
- * Also deletes all expired sessions from the database, based on the given session lifespan.
+ * Stores only a digest of the random token and removes expired sessions.
  */
 function new_session($userid, $remote_ip, $lifespan, $db) {
-
-	mt_srand((double)microtime()*1000000);
-	$sessid = mt_rand();
-      
-	$currtime = (string) (time());
-	$expirytime = (string) (time() - $lifespan);
-
-	$deleteSQL = "DELETE FROM sessions WHERE (start_time < ?)";
-	$delresult = db_query_params($deleteSQL, array((int) $expirytime), $db);
+	global $HTTP_COOKIE_VARS, $sesscookiename, $sessabsolute;
+	$currtime = time();
+	$absolute = isset($sessabsolute) ? (int) $sessabsolute : 86400;
+	$deleteSQL = "DELETE FROM sessions WHERE last_seen_at < ? OR created_at < ?";
+	$delresult = db_query_params($deleteSQL, array($currtime - (int) $lifespan, $currtime - $absolute), $db);
 
 	if (!$delresult) {
 		die("Delete failed in new_session()");
 	}
 
-	$sql = "INSERT INTO sessions (sess_id, user_id, start_time, remote_ip) VALUES (?, ?, ?, ?)";
-	
-	$result = db_query_params($sql, array($sessid, (int) $userid, (int) $currtime, $remote_ip), $db);
+	if (isset($HTTP_COOKIE_VARS[$sesscookiename])) {
+		end_user_session($HTTP_COOKIE_VARS[$sesscookiename], $db);
+	}
+	$sessid = bin2hex(random_bytes(32));
+	$sql = "INSERT INTO sessions (sess_id, user_id, created_at, last_seen_at) VALUES (?, ?, ?, ?)";
+	$result = db_query_params($sql, array(hash('sha256', $sessid), (int) $userid, $currtime, $currtime), $db);
 	
 	if ($result) {
 		return $sessid;
@@ -68,24 +239,26 @@ function new_session($userid, $remote_ip, $lifespan, $db) {
  * it with anything else.)
  */
 function set_session_cookie($sessid, $cookietime, $cookiename, $cookiepath, $cookiedomain, $cookiesecure) {
-
-	// This sets a cookie that will persist until the user closes their browser window.
-	// since session expiry is handled on the server-side, cookie expiry time isn't a big deal.
-	setcookie($cookiename,$sessid,0,$cookiepath,$cookiedomain,$cookiesecure);
+	set_forum_cookie($cookiename, $sessid, 0, $cookiepath, $cookiedomain, $cookiesecure);
 
 } // set_session_cookie()
 
 
 /**
- * Returns the userID associated with the given session, based on
- * the given session lifespan $cookietime and the given remote IP
- * address. If no match found, returns 0.
+ * Returns the userID associated with a non-expired session. The remote-address
+ * parameter is retained for caller compatibility but is deliberately ignored.
  */
 function get_userid_from_session($sessid, $cookietime, $remote_ip, $db) {
-
-	$mintime = time() - $cookietime;
-	$sql = "SELECT user_id FROM sessions WHERE (sess_id = ?) AND (start_time > ?) AND (remote_ip = ?)";
-	$result = db_query_params($sql, array((int) $sessid, $mintime, $remote_ip), $db);
+	global $sessabsolute;
+	$digest = forum_session_digest($sessid);
+	if ($digest === false) {
+		return 0;
+	}
+	$now = time();
+	$mintime = $now - $cookietime;
+	$absolute = isset($sessabsolute) ? (int) $sessabsolute : 86400;
+	$sql = "SELECT user_id FROM sessions WHERE sess_id = ? AND last_seen_at >= ? AND created_at >= ?";
+	$result = db_query_params($sql, array($digest, $mintime, $now - $absolute), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Error doing DB query in get_userid_from_session()");
@@ -101,14 +274,16 @@ function get_userid_from_session($sessid, $cookietime, $remote_ip, $db) {
 } // get_userid_from_session()
 
 /**
- * Refresh the start_time of the given session in the database.
+ * Refresh the last activity time of the given session in the database.
  * This is called whenever a page is hit by a user with a valid session.
  */
 function update_session_time($sessid, $db) {
-	
-	$newtime = (string) time();
-	$sql = "UPDATE sessions SET start_time = ? WHERE (sess_id = ?)";
-	$result = db_query_params($sql, array((int) $newtime, (int) $sessid), $db);
+	$digest = forum_session_digest($sessid);
+	if ($digest === false) {
+		return 0;
+	}
+	$sql = "UPDATE sessions SET last_seen_at = ? WHERE sess_id = ?";
+	$result = db_query_params($sql, array(time(), $digest), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Error doing DB update in update_session_time()");
@@ -120,10 +295,13 @@ function update_session_time($sessid, $db) {
 /**
  * Delete the given session from the database. Used by the logout page.
  */
-function end_user_session($userid, $db) {
-
-	$sql = "DELETE FROM sessions WHERE (user_id = ?)";
-	$result = db_query_params($sql, array((int) $userid), $db);
+function end_user_session($sessid, $db) {
+	$digest = forum_session_digest($sessid);
+	if ($digest === false) {
+		return 1;
+	}
+	$sql = "DELETE FROM sessions WHERE sess_id = ?";
+	$result = db_query_params($sql, array($digest), $db);
 	if (!$result) {
 		echo db_error() . "<br>\n";
 		die("Delete failed in end_user_session()");
@@ -131,6 +309,14 @@ function end_user_session($userid, $db) {
 	return 1;
 	
 } // end_session()
+
+function end_all_user_sessions($userid, $db) {
+	$result = db_query_params("DELETE FROM sessions WHERE user_id = ?", array((int) $userid), $db);
+	if (!$result) {
+		die("Delete failed in end_all_user_sessions()");
+	}
+	return 1;
+}
 
 /**
  * Prints either "logged in as [username]. Log out." or 
@@ -404,14 +590,20 @@ function is_moderator($forum_id, $user_id, $db) {
  * Checks the given password against the DB for the given username. Returns true if good, false if not.
  */
 function check_user_pw($username, $password, $db) {
-	$password = md5($password);
-	$sql = "SELECT user_id FROM users WHERE (username = ?) AND (user_password = ?)";
-	$resultID = db_query_params($sql, array($username, $password), $db);
+	$sql = "SELECT user_id, user_password FROM users WHERE username = ?";
+	$resultID = db_query_params($sql, array($username), $db);
 	if (!$resultID) {
 		echo db_error() . "<br>";
 		die("Error doing DB query in check_user_pw()");
 	}
-	return db_num_rows($resultID);
+	$row = db_fetch_array($resultID);
+	if (!$row || !forum_verify_password($password, $row['user_password'])) {
+		return false;
+	}
+	if (password_needs_rehash($row['user_password'], forum_password_algorithm())) {
+		db_query_params("UPDATE users SET user_password = ? WHERE user_id = ?", array(forum_hash_password($password), (int) $row['user_id']), $db);
+	}
+	return true;
 } // check_user_pw()
 
 
@@ -1606,7 +1798,7 @@ function login_form(){
 			<b><?php echo $l_password?>: </b>
 			</FONT>
 		</TD><TD>
-			<INPUT TYPE="PASSWORD" NAME="passwd" SIZE="25" MAXLENGTH="25">
+			<INPUT TYPE="PASSWORD" NAME="passwd" SIZE="25" MAXLENGTH="255">
 		</TD>
 	</TR><TR BGCOLOR="<?php echo $color2?>">
 		<TD COLSPAN="2" ALIGN="CENTER">

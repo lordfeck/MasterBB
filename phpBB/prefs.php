@@ -46,9 +46,8 @@ if($submit || $user_logged_in) {
 	 if($user == '' || $passwd == '') {
 	    error_die("$l_userpass $l_tryagain");
 	 }
-	 $md_pass = md5($passwd);
 	 $userdata = get_userdata($user, $db);
-	 if($md_pass != $userdata["user_password"]) {
+	 if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
 	    error_die("$l_wrongpass $l_tryagain");
 	 }
 	 if(is_banned($userdata[user_id], "username", $db))
@@ -60,7 +59,9 @@ if($submit || $user_logged_in) {
 
       if($savecookie == 1) {
 	 $time = (time() + 3600 * 24 * 30 * 12);
-	 setcookie($cookiename, $userdata[user_id], $time, $cookiepath, $cookiedomain, $cookiesecure);
+	 set_forum_cookie($cookiename, $userdata['username'], $time, $cookiepath, $cookiedomain, $cookiesecure);
+	  } else {
+	     clear_forum_cookie($cookiename, $cookiepath, $cookiedomain, $cookiesecure);
       }
       include('page_header.'.$phpEx);
       //
@@ -97,9 +98,8 @@ if($submit || $user_logged_in) {
 	 if($user == '' || $passwd == '') {
 	    error_die("$l_userpass $l_tryagain");
 	 }
-	 $md_pass = md5($passwd);
 	 $userdata = get_userdata($user, $db);
-	 if($md_pass != $userdata["user_password"]) {
+	 if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
 	    include('page_header.'.$phpEx);
 	    error_die("$l_wrongpass $l_tryagain");
 	 }

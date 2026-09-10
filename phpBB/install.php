@@ -158,7 +158,7 @@ if($next) {
 							  forum_id int(10) DEFAULT '0' NOT NULL,
 							  poster_id int(10) NOT NULL,
 							  post_time varchar(20),
-							  poster_ip varchar(16),
+							  poster_ip varchar(45),
 							  KEY(post_id),
  							  KEY(forum_id),
 							  KEY(topic_id),
@@ -175,7 +175,7 @@ if($next) {
 							     from_userid int(10) DEFAULT '0' NOT NULL,
 							     to_userid int(10) DEFAULT '0' NOT NULL,
 							     msg_time varchar(20),
-							     poster_ip varchar(16),
+							     poster_ip varchar(45),
 							     msg_status int(10) DEFAULT '0',
 							     msg_text text, 
 							     PRIMARY KEY (msg_id),
@@ -183,14 +183,14 @@ if($next) {
 							     KEY to_userid (to_userid)
 							     )",
 			  "sessions" => "CREATE TABLE sessions (
-								sess_id int(10) unsigned DEFAULT '0' NOT NULL,
+								sess_id char(64) NOT NULL,
 								user_id int(10) DEFAULT '0' NOT NULL,
-								start_time int(10) unsigned DEFAULT '0' NOT NULL,
-								remote_ip varchar(15) DEFAULT '' NOT NULL,
+								created_at bigint unsigned NOT NULL,
+								last_seen_at bigint unsigned NOT NULL,
 								PRIMARY KEY (sess_id),
-								KEY sess_id (sess_id),
-								KEY start_time (start_time),
-								KEY remote_ip (remote_ip)
+								KEY user_id (user_id),
+								KEY last_seen_at (last_seen_at),
+								KEY created_at (created_at)
 								)",
 			  "themes" => "CREATE TABLE themes (
 							    theme_id int(10) NOT NULL auto_increment,
@@ -235,7 +235,7 @@ if($next) {
 							  user_id int(10) NOT NULL auto_increment,
 							  username varchar(40) DEFAULT '' NOT NULL,
 							  user_regdate varchar(20) NOT NULL,
-							  user_password varchar(32) DEFAULT '' NOT NULL,
+							  user_password varchar(255) DEFAULT '' NOT NULL,
 							  user_email varchar(50),
 							  user_icq varchar(15),
 							  user_website varchar(100),
@@ -256,8 +256,8 @@ if($next) {
 							  user_rank int(10) DEFAULT '0',
 							  user_level int(10) DEFAULT '1',
 							  user_lang varchar(255),
-							  user_actkey varchar(32),
-							  user_newpasswd varchar(32),
+							  user_reset_token char(64),
+							  user_reset_expires bigint unsigned,
 							  PRIMARY KEY (user_id)
 							  )",
 			  "online" => "CREATE TABLE whosonline (
@@ -291,7 +291,7 @@ if($next) {
 			  "banlist" => "CREATE TABLE banlist(
 							     ban_id int(10) NOT NULL AUTO_INCREMENT,
 							     ban_userid int(10),
-							     ban_ip varchar(16),
+							     ban_ip varchar(45),
 							     ban_start int(32),
 							     ban_end int(50),
 							     ban_time_type int(10),
@@ -417,11 +417,11 @@ if($next) {
 	   </TR>
 	   <TR ALIGN="LEFT">
 	   <TD  BGCOLOR="<?php echo $color1?>" width=25%><b>Password: *</b></TD>
-	   <TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"></TD>
+	   <TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255"></TD>
 	   </TR>
 	   <TR ALIGN="LEFT">
 	   <TD  BGCOLOR="<?php echo $color1?>" width=25%><b>Retype Password: *</b></TD>
-	   <TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password_rep" SIZE="25" MAXLENGTH="25"></TD>
+	   <TD  BGCOLOR="<?php echo $color2?>"><INPUT TYPE="PASSWORD" NAME="password_rep" SIZE="25" MAXLENGTH="255"></TD>
 	   </TR>
 	   <TR ALIGN="LEFT">
 	   <TD  BGCOLOR="<?php echo $color1?>"  width=25%><b>Email Address: *<b></TD>
@@ -497,8 +497,10 @@ if($next) {
       
       if($password != $password_rep)
 	die("The passwords you entered do not match. Please go back and try again");
+	  if($password_error = forum_password_error($password))
+	die($password_error . " Please go back and try again.");
       $sig = str_replace("\n", "<BR>", $sig);
-      $passwd = md5($password);   
+      $passwd = forum_hash_password($password);
       $regdate = date("M d, Y");
       
       if(trim($website) == "http://")

@@ -54,9 +54,7 @@ if($submit) {
 			die("$l_userpass $l_tryagain");
 		}
 	
-		$md_pass = md5($password);
-		
-		if($md_pass != $fromuserdata["user_password"]) {
+		if(!forum_verify_password($password, $fromuserdata["user_password"] ?? '')) {
 			die("$l_wrongpass $l_tryagain");
 		}
 	} else {

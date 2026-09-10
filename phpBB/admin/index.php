@@ -75,7 +75,7 @@ else if(!$user_logged_in) {
        <td><INPUT TYPE="TEXT" NAME="username" SIZE="25" MAXLENGTH="40" VALUE="<?php echo html_escape($userdata[username])?>"></td>
      </tr><tr>
        <td><b>Password: </b></td>
-       <td><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="25"><br></td>
+       <td><INPUT TYPE="PASSWORD" NAME="password" SIZE="25" MAXLENGTH="255"><br></td>
      </tr><tr>
        <td>&nbsp;</td>
        <td><INPUT TYPE="SUBMIT" NAME="login" VALUE="Submit"></td>
