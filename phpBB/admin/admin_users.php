@@ -107,7 +107,7 @@ else if(!$user_logged_in) {
           include('../page_tail.'.$phpEx);
         exit();
 }
-else if($user_logged_in && $userdata[user_level] == 4) {
+else if(forum_user_is_admin($userdata, $user_logged_in)) {
 
 $pagetitle = "Forum Administration";
 $pagetype = "admin";
@@ -764,6 +764,7 @@ switch($mode) {
 }
 }
 else {
+      http_response_code(403);
       $pagetype = "admin";
       $pagetitle = "Access Denied!";
 

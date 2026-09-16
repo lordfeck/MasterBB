@@ -160,7 +160,12 @@ Progress is tracked as focused, independently verified commits:
   GET mutations. Fresh-install smoke and expanded negative suites pass, with
   intentional read-side counters, message read-state, session activity, and
   online-presence housekeeping documented separately.
-- [ ] Slice 6 — centralized authorization and full role/ownership coverage.
+- [x] Slice 6 — shared authorization predicates and an explicit operation
+  matrix for anonymous users, members, forum moderators, global moderators,
+  and administrators; object-bound post, profile, PM, private-forum, topic,
+  and administration checks; HTTP 403 denials; and horizontal/vertical tests
+  including forged forum identifiers and cross-forum moves. Fresh-install
+  smoke and the expanded security suite pass.
 - [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,
   deployment guidance, and final residual-risk review.
 

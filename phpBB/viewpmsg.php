@@ -53,6 +53,12 @@ if (!$submit && !$user_logged_in) {
 	   $userdata = get_userdata($user, $db);
 	   if(is_banned($userdata[user_id], "username", $db))
 	     error_die($l_banned);
+	   $sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
+	   set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+	   $user_logged_in = 1;
+	}
+	if (!forum_user_is_authenticated($userdata, $user_logged_in)) {
+		forum_authorization_denied();
 	}
 
 	$sql = "SELECT * FROM priv_msgs WHERE to_userid = ? ORDER BY msg_time DESC";

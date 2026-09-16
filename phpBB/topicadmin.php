@@ -37,21 +37,35 @@ $pagetitle = "Topic Administration";
 $pagetype = "bbcode_ref";
 include('page_header.'.$phpEx);
 
-if ($user_supplied)
+if ($user_supplied || !forum_user_is_authenticated($userdata, $user_logged_in))
 {
-	error_die("Error - You did not enter the correct password, please go back and try again.");
+	forum_authorization_denied();
 }
-else if(isset($userdata[username]))
+$mod_data = $userdata;
+
+if ($mode == 'viewip')
 {
-	$mod_data = get_userdata($userdata[username], $db);
+	$authorization_result = db_query_params('SELECT forum_id FROM posts WHERE post_id = ?', array($post), $db);
 }
 else
 {
-	error_die("Error - You must be signed in to perform this function.  Please go back and try again.");
+	$authorization_result = db_query_params('SELECT forum_id FROM topics WHERE topic_id = ?', array($topic), $db);
+}
+$authorization_object = $authorization_result ? db_fetch_array($authorization_result) : false;
+if (!$authorization_object)
+{
+	error_die('The requested topic or post does not exist.');
+}
+$forum = (int) $authorization_object['forum_id'];
+if (!forum_user_can_moderate($userdata, $forum, $db, $user_logged_in))
+{
+	forum_authorization_denied();
 }
 
-if(!is_moderator($forum, $mod_data[user_id], $db) && $mod_data[user_level] <= 2)
-	error_die("You are not the moderator of this forum therefore you cannot perform this function.");
+if ($submit && $mode == 'move' && (!does_exists($newforum, $db, 'forum') || !forum_user_can_moderate($userdata, $newforum, $db, $user_logged_in)))
+{
+	forum_authorization_denied('You are not authorized to move topics to that forum.');
+}
 
 if($submit || ($user_logged_in==1 && $mode=='viewip')) {
    if( $user_logged_in != 1 && !forum_verify_password($passwd, $mod_data[user_password]) )

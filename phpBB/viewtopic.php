@@ -31,7 +31,7 @@ $password = request_string('password', '', 'post');
 $pagetitle = $l_topictitle;
 $pagetype = "viewtopic";
 
-$sql = "SELECT f.forum_type, f.forum_name FROM forums f, topics t WHERE f.forum_id = ? AND t.topic_id = ? AND t.forum_id = f.forum_id";
+$sql = "SELECT f.forum_id, f.forum_type, f.forum_name FROM forums f, topics t WHERE f.forum_id = ? AND t.topic_id = ? AND t.forum_id = f.forum_id";
 if(!$result = db_query_params($sql, array($forum, $topic), $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
 if(!$myrow = db_fetch_array($result))
@@ -108,23 +108,16 @@ else
 	$sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
 
 	set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+	$user_logged_in = 1;
 
      }
 
 
 
-   if ($myrow[forum_type] == 1)
+   if (!forum_user_can_read_forum($userdata, $myrow, $db, $user_logged_in))
      {
-	// To get here, we have a logged-in user. So, check whether that user is allowed to view
-	// this private forum.
-
-	if (!check_priv_forum_auth($userdata[user_id], $forum, FALSE, $db))
-	  {
-	     include('page_header.'.$phpEx);
-	     error_die("$l_privateforum $l_noread");
-	  }
-
-	// Ok, looks like we're good.
+	include('page_header.'.$phpEx);
+	forum_authorization_denied("$l_privateforum $l_noread");
      }
 
 
@@ -270,7 +263,7 @@ do {
    echo "&nbsp;&nbsp;<a href=\"$url_phpbb/editpost.$phpEx?post_id=$myrow[post_id]&topic=$topic&forum=$forum\"><img src=\"$edit_image\" border=0 alt=\"$l_editdelete\"></a>\n";
 
    echo "&nbsp;&nbsp;<a href=\"$url_phpbb/reply.$phpEx?topic=$topic&forum=$forum&post=$myrow[post_id]&quote=1\"><IMG SRC=\"$reply_wquote_image\" BORDER=\"0\" alt=\"$l_replyquote\"></a>\n";
-   if(is_moderator($forum, $userdata["user_id"], $db) || $userdata[user_level] > 2) {
+   if(forum_user_can_moderate($userdata, $forum, $db, $user_logged_in)) {
       echo "&nbsp;&nbsp;<IMG SRC=\"images/div.gif\">\n";
       echo "&nbsp;&nbsp;<a href=\"$url_phpbb/topicadmin.$phpEx?mode=viewip&post=$myrow[post_id]&forum=$forum\"><IMG SRC=\"$ip_image\" BORDER=0 ALT=\"$l_viewip\"></a>\n";
    }

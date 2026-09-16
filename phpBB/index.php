@@ -97,6 +97,9 @@ for($i = 0; $i < $total_categories; $i++) {
      {
       unset($last_post);
       if($forum_row[$x]["cat_id"] == $categories[$i]["cat_id"]) {
+	 if (!forum_user_can_read_forum($userdata, $forum_row[$x], $db, $user_logged_in)) {
+	    continue;
+	 }
 	 //$last_post = $last_posts[$forum_row[$x]["forum_id"]];
 	 if($forum_row[$x]["post_time"])
 	 {

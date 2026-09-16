@@ -255,6 +255,282 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     if user_id_match is None:
         raise SmokeFailure("profile XSS fixture: could not identify attacker user")
     attacker_user_id = user_id_match.group(1)
+
+    require(login(user, USER_NAME, USER_PASSWORD), f"Logged in as {USER_NAME}", "authorization member login")
+    member_profile = user.request("bb_profile.php?mode=edit")
+    member_id_match = re.search(r'NAME="user_id" VALUE="([0-9]+)"', member_profile)
+    if member_id_match is None:
+        raise SmokeFailure("authorization fixture: could not identify member user")
+    member_user_id = member_id_match.group(1)
+
+    page = admin.request(
+        "admin/admin_forums.php",
+        {
+            "mode": "addforum",
+            "submit": "Create Forum",
+            "name": "Authorization Private Forum",
+            "desc": "Private authorization fixture",
+            "mods[]": ["1"],
+            "cat": "1",
+            "forum_access": "1",
+            "type": "1",
+        },
+    )
+    require(page, "Forum Created", "private-forum authorization fixture")
+    page = admin.request(
+        "admin/admin_forums.php",
+        {
+            "mode": "addforum",
+            "submit": "Create Forum",
+            "name": "Authorization Moderator Forum",
+            "desc": "Scoped moderator fixture",
+            "mods[]": [attacker_user_id],
+            "cat": "1",
+            "forum_access": "3",
+            "type": "0",
+        },
+    )
+    require(page, "Forum Created", "moderator authorization fixture")
+    forum_select = admin.request("admin/admin_forums.php?mode=editforum")
+    private_match = re.search(
+        r'<OPTION VALUE="([0-9]+)">Authorization Private Forum</OPTION>',
+        forum_select,
+    )
+    moderator_match = re.search(
+        r'<OPTION VALUE="([0-9]+)">Authorization Moderator Forum</OPTION>',
+        forum_select,
+    )
+    if private_match is None or moderator_match is None:
+        raise SmokeFailure("authorization fixture: forum ids not found")
+    private_forum_id = private_match.group(1)
+    moderator_forum_id = moderator_match.group(1)
+
+    page = admin.request(
+        "admin/admin_priv_forums.php",
+        {
+            "forum": private_forum_id,
+            "op": "adduser",
+            "userids[]": [member_user_id],
+            "submit": "Add Users -->",
+        },
+    )
+    require(page, USER_NAME, "private-forum member grant")
+    admin.request(
+        "admin/admin_priv_forums.php",
+        {"forum": private_forum_id, "op": f"grantuserpost:{member_user_id}"},
+    )
+
+    private_body = "Private authorization body"
+    page = user.request(
+        "newtopic.php",
+        {
+            "submit": "Submit",
+            "forum": private_forum_id,
+            "subject": "Private Authorization Topic",
+            "message": private_body,
+        },
+    )
+    require(page, "Your Message has been stored", "authorized private-forum post")
+    page = user.request(f"viewforum.php?forum={private_forum_id}")
+    private_topic_match = re.search(
+        rf'viewtopic\.php\?topic=([0-9]+)&forum={private_forum_id}[^>]*>Private Authorization Topic',
+        page,
+    )
+    if private_topic_match is None:
+        raise SmokeFailure("authorization fixture: private topic id not found")
+    private_topic_id = private_topic_match.group(1)
+
+    anonymous_edit = Browser(base_url)
+    page = anonymous_edit.request("editpost.php?post_id=1&topic=1&forum=1")
+    if anonymous_edit.last_status != 403:
+        raise SmokeFailure("anonymous post edit: expected HTTP 403")
+    reject(page, "Edited smoke body", "anonymous post-source disclosure")
+
+    page = attacker.request("index.php")
+    reject(page, "Authorization Private Forum", "private-forum index visibility")
+    private_anonymous = Browser(base_url)
+    page = private_anonymous.request(
+        f"viewtopic.php?topic={private_topic_id}&forum={private_forum_id}"
+    )
+    require(page, "Private Forum", "anonymous private-forum login boundary")
+    reject(page, private_body, "anonymous private-forum body disclosure")
+    page = attacker.request(
+        f"viewtopic.php?topic={private_topic_id}&forum={private_forum_id}"
+    )
+    if attacker.last_status != 403:
+        raise SmokeFailure("private-forum read: expected HTTP 403")
+    reject(page, private_body, "private-forum body disclosure")
+    page = attacker.request(
+        "reply.php",
+        {
+            "submit": "Submit",
+            "forum": private_forum_id,
+            "topic": private_topic_id,
+            "message": "Unauthorized private reply",
+        },
+    )
+    if attacker.last_status != 403:
+        raise SmokeFailure("private-forum post: expected HTTP 403")
+    page = user.request(f"viewtopic.php?topic={private_topic_id}&forum={private_forum_id}")
+    reject(page, "Unauthorized private reply", "private-forum post persistence")
+    require(page, private_body, "authorized private-forum read")
+    page = admin.request(f"viewtopic.php?topic={private_topic_id}&forum={private_forum_id}")
+    require(page, private_body, "administrator private-forum read")
+    secure("private forums enforce read and post grants while administrators retain oversight")
+
+    page = attacker.request(
+        "newtopic.php",
+        {
+            "submit": "Submit",
+            "forum": moderator_forum_id,
+            "subject": "Scoped Moderator Topic",
+            "message": "Scoped moderator body",
+        },
+    )
+    require(page, "Your Message has been stored", "scoped moderator post")
+    page = attacker.request(f"viewforum.php?forum={moderator_forum_id}")
+    moderator_topic_match = re.search(
+        rf'viewtopic\.php\?topic=([0-9]+)&forum={moderator_forum_id}[^>]*>Scoped Moderator Topic',
+        page,
+    )
+    if moderator_topic_match is None:
+        raise SmokeFailure("authorization fixture: moderator topic id not found")
+    moderator_topic_id = moderator_topic_match.group(1)
+
+    page = attacker.request(
+        "topicadmin.php",
+        {
+            "submit": "Lock Topic",
+            "mode": "lock",
+            "topic": "1",
+            "forum": moderator_forum_id,
+        },
+    )
+    if attacker.last_status != 403:
+        raise SmokeFailure("cross-forum moderation: expected HTTP 403")
+    page = attacker.request(
+        "reply.php",
+        {
+            "submit": "Submit",
+            "forum": "1",
+            "topic": "1",
+            "message": "Cross-forum spoof did not lock this topic",
+        },
+    )
+    require(page, "Your Message has been stored", "cross-forum moderation preservation")
+    page = attacker.request(
+        "topicadmin.php",
+        {
+            "submit": "Lock Topic",
+            "mode": "lock",
+            "topic": moderator_topic_id,
+            "forum": moderator_forum_id,
+        },
+    )
+    require(page, "topic has been locked", "forum moderator own-scope moderation")
+    page = attacker.request(
+        "topicadmin.php",
+        {
+            "submit": "Move Topic",
+            "mode": "move",
+            "topic": moderator_topic_id,
+            "forum": moderator_forum_id,
+            "newforum": "1",
+        },
+    )
+    if attacker.last_status != 403:
+        raise SmokeFailure("cross-forum topic move: expected HTTP 403")
+    page = attacker.request(f"viewforum.php?forum={moderator_forum_id}")
+    require(page, "Scoped Moderator Topic", "cross-forum topic move preservation")
+    secure("forum moderators are confined to the actual source and destination forums")
+
+    page = attacker.request("delpmsg.php?msgid=1")
+    if attacker.last_status != 403:
+        raise SmokeFailure("cross-user private-message delete GET: expected HTTP 403")
+    page = attacker.request("delpmsg.php", {"msgid": "1", "submit": "Delete"})
+    if attacker.last_status != 403:
+        raise SmokeFailure("cross-user private-message delete POST: expected HTTP 403")
+    require(admin.request("viewpmsg.php"), "Smoke private message", "private-message delete preservation")
+    secure("private-message reply and deletion require recipient ownership")
+
+    page = attacker.request(
+        "bb_profile.php",
+        {
+            "submit": "Submit",
+            "mode": "edit",
+            "save": "1",
+            "user_id": member_user_id,
+            "password": ATTACKER_PASSWORD,
+            "email": "hijacked@example.test",
+            "from": "Unauthorized profile overwrite",
+            "website": "http://",
+        },
+    )
+    if attacker.last_status != 403:
+        raise SmokeFailure("cross-user profile edit: expected HTTP 403")
+    page = user.request(f"bb_profile.php?mode=view&user={member_user_id}")
+    reject(page, "Unauthorized profile overwrite", "cross-user profile preservation")
+    secure("post source and profile mutations require authenticated object ownership")
+
+    page = admin.request(
+        "admin/admin_users.php",
+        {
+            "mode": "moduser",
+            "submit": "Modify User",
+            "edit_user_id": member_user_id,
+            "edit_username": USER_NAME,
+            "email": "user@example.test",
+            "rank": "0",
+            "level": "3",
+        },
+    )
+    require(page, "User Information Updated", "global moderator fixture")
+    page = user.request(
+        "topicadmin.php",
+        {
+            "submit": "Lock Topic",
+            "mode": "lock",
+            "topic": "1",
+            "forum": "1",
+        },
+    )
+    require(page, "topic has been locked", "global moderator lock")
+    page = user.request(
+        "topicadmin.php",
+        {
+            "submit": "Unlock Topic",
+            "mode": "unlock",
+            "topic": "1",
+            "forum": "1",
+        },
+    )
+    require(page, "topic has been unlocked", "global moderator unlock")
+    admin.request(
+        "admin/admin_priv_forums.php",
+        {"forum": private_forum_id, "op": f"deluser:{member_user_id}"},
+    )
+    page = user.request(f"viewtopic.php?topic={private_topic_id}&forum={private_forum_id}")
+    require(page, private_body, "global moderator private-forum oversight")
+    user.request("admin/index.php")
+    if user.last_status != 403:
+        raise SmokeFailure("global moderator administration boundary: expected HTTP 403")
+    secure("global moderators can moderate all forums but do not gain administration access")
+
+    admin_paths = (
+        "admin/index.php",
+        "admin/admin_board.php?mode=setoptions",
+        "admin/admin_forums.php?mode=addforum",
+        "admin/admin_users.php?mode=moduser",
+        "admin/admin_priv_forums.php",
+        "admin/admin_themes.php",
+        "admin/smiles.php",
+    )
+    for path in admin_paths:
+        attacker.request(path)
+        if attacker.last_status != 403:
+            raise SmokeFailure(f"administrator role boundary {path}: expected HTTP 403")
+    secure("member and moderator roles cannot enter any administration surface")
+
     profile_marker = '<script id="masterbb-profile-xss">alert(1)</script>'
     page = attacker.request(
         "bb_profile.php",

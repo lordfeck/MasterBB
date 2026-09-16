@@ -62,9 +62,15 @@ if($submit) {
 		if(!forum_verify_password($password, $fromuserdata["user_password"] ?? '')) {
 			error_die("$l_wrongpass $l_tryagain");
 		}
+		$sessid = new_session($fromuserdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
+		set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+		$user_logged_in = 1;
 	} else {
 		// we have a valid session..
 		$fromuserdata = $userdata; // fromuser = current user.
+	}
+	if (!forum_user_is_authenticated($fromuserdata, $user_logged_in)) {
+		forum_authorization_denied();
 	}
 	
 	/* correct password or logged-in user, continuing with message send. */

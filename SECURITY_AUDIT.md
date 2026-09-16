@@ -216,19 +216,44 @@ headers from an untrusted peer.
 
 **Severity:** High
 
-**Status:** Open audit; selected controls currently pass
+**Status:** Closed in Slice 6
 
-Current negative tests confirm that an ordinary member cannot edit or delete
-another member's post, quote another recipient's PM, or enter administration
-pages. Those results do not establish complete authorization: checks are
-repeated inside page scripts and sometimes occur after object data is loaded.
-Private-forum reads/writes, topic moderation, PM deletion/reply, profile
-changes, user/rank changes, and all predictable identifiers require explicit
-owner/role tests.
+Role, forum-scope, and ownership decisions now live in shared predicates in
+`functions.php`. Page scripts still load their own legacy records, but pass the
+loaded object—not a caller-supplied owner or forum ID—to that policy boundary.
+Denied object operations return HTTP 403. Administration pages use the same
+exact administrator predicate, and every administration surface rejects
+members and both moderator classes.
 
-Create shared authorization predicates and an operation-by-role matrix, then
-add horizontal and vertical tests for every object operation before declaring
-this finding closed.
+The enforced operation matrix is:
+
+| Operation | Anonymous | Member | Forum moderator | Global moderator | Administrator |
+| --- | --- | --- | --- | --- | --- |
+| Read public forum | Yes | Yes | Yes | Yes | Yes |
+| Post to public forum | Only where anonymous posting is configured | Where members may post | Where members may post | Where members may post | Yes |
+| Read private forum | No | Explicit grant | Assigned forum | All forums | All forums |
+| Post to private forum | No | Explicit posting grant | Assigned forum | All forums | All forums |
+| Edit/delete a post | No | Own post, subject to delete window | Own or assigned forum | All forums | All forums |
+| Moderate topic/view poster IP | No | No | Assigned forum | All forums | All forums |
+| Move topic between forums | No | No | Must moderate source and destination | Yes | Yes |
+| Read/reply/delete private message | No | Recipient only | Recipient only | Recipient only | Recipient only |
+| Edit profile/preferences | No | Self only | Self only | Self only | Self; separate admin user tools for others |
+| Administration | No | No | No | No | Yes |
+
+Private forums are omitted from the index for unauthorized viewers. Their
+topic bodies and posting routes independently enforce access, while assigned
+forum moderators and global staff retain the intended oversight. PM reply and
+delete routes authorize the recipient before rendering source or confirmation
+data. Profile saves require the active session to own the target user ID.
+Post editing no longer exposes source to anonymous visitors or accepts inline
+credentials as a substitute for object ownership.
+
+The expanded black-box suite provisions private and moderator-only forums and
+tests anonymous, member, assigned moderator, global moderator, and
+administrator behavior. It covers cross-user post/profile/PM attempts,
+private-forum reads and writes, all administration entry points, legitimate
+scoped moderation, cross-forum moves, and forged forum IDs on topic moderation.
+Fresh-install smoke and full security suites pass.
 
 ### SEC-007 — The installer is reusable and handles secrets unsafely
 
@@ -316,15 +341,23 @@ The security characterization suite currently verifies these blocked cases:
 - unsafe BBCode image/link and profile website schemes do not become active;
 - arbitrary search sort expressions are rejected;
 - a member cannot enter administration pages;
+- anonymous users cannot retrieve post-edit source;
+- profile updates require current-session ownership;
+- PM reply and deletion require recipient ownership;
+- private-forum reads and posts require the appropriate grant;
+- forum moderators cannot act outside their assigned forum or move topics to
+  a forum they do not moderate;
+- global moderators can moderate all forums without entering administration;
+- every administration entry point requires the administrator role;
+- missing CSRF tokens are rejected and former GET mutations are read-only;
 - passwords use the shared modern hashing and verification path;
 - password-reset tokens are expiring, one-time, non-destructive on GET, and
   revoke existing sessions when consumed; and
 - sessions resist fixation, rotate on credential authentication, expire when
   idle, isolate per-browser logout, and carry modern cookie attributes.
 
-It also reproduces and labels these open findings:
+It reproduces and labels these remaining open findings:
 
-- authenticated state changes without a CSRF token;
 - the installer endpoint remaining reachable and dependent on file mode after
   setup; and
 - missing baseline browser security headers.

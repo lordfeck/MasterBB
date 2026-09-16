@@ -646,6 +646,110 @@ function is_moderator($forum_id, $user_id, $db) {
      return("0");
 }
 
+/*
+ * Central authorization policy.  Historical access levels are:
+ * -1 removed, 1 member, 2 forum moderator, 3 global moderator, 4 administrator.
+ * Object lookup remains in the page scripts, while every role/ownership
+ * decision is made here.
+ */
+function forum_user_is_authenticated($userdata, $user_logged_in = null) {
+	if ($user_logged_in === null) {
+		$user_logged_in = $GLOBALS['user_logged_in'] ?? false;
+	}
+	return (bool) $user_logged_in
+		&& (int) ($userdata['user_id'] ?? 0) > 0
+		&& (int) ($userdata['user_level'] ?? -1) >= 1;
+}
+
+function forum_user_is_admin($userdata, $user_logged_in = null) {
+	return forum_user_is_authenticated($userdata, $user_logged_in)
+		&& (int) ($userdata['user_level'] ?? 0) === 4;
+}
+
+function forum_user_can_moderate($userdata, $forum_id, $db, $user_logged_in = null) {
+	if (!forum_user_is_authenticated($userdata, $user_logged_in)) {
+		return false;
+	}
+	if (in_array((int) ($userdata['user_level'] ?? 0), array(3, 4), true)) {
+		return true;
+	}
+	return (int) ($userdata['user_level'] ?? 0) === 2
+		&& (bool) is_moderator((int) $forum_id, (int) $userdata['user_id'], $db);
+}
+
+function forum_user_has_private_forum_access($userdata, $forum_id, $is_posting, $db, $user_logged_in = null) {
+	if (!forum_user_is_authenticated($userdata, $user_logged_in)) {
+		return false;
+	}
+	if (forum_user_can_moderate($userdata, $forum_id, $db, true)) {
+		return true;
+	}
+	$sql = 'SELECT can_post FROM forum_access WHERE user_id = ? AND forum_id = ?';
+	$result = db_query_params($sql, array((int) $userdata['user_id'], (int) $forum_id), $db);
+	$row = $result ? db_fetch_array($result) : false;
+	return (bool) $row && (!$is_posting || (int) $row['can_post'] === 1);
+}
+
+function forum_user_can_read_forum($userdata, $forum, $db, $user_logged_in = null) {
+	if ((int) ($forum['forum_type'] ?? 0) !== 1) {
+		return true;
+	}
+	return forum_user_has_private_forum_access(
+		$userdata,
+		(int) ($forum['forum_id'] ?? 0),
+		false,
+		$db,
+		$user_logged_in
+	);
+}
+
+function forum_user_can_post_forum($userdata, $forum, $db, $user_logged_in = null) {
+	$authenticated = forum_user_is_authenticated($userdata, $user_logged_in);
+	$access = (int) ($forum['forum_access'] ?? 1);
+	if (!in_array($access, array(1, 2, 3), true)) {
+		return false;
+	}
+	if ($access === 1 && !$authenticated) {
+		return false;
+	}
+	if ($access === 3 && !forum_user_can_moderate($userdata, (int) ($forum['forum_id'] ?? 0), $db, $user_logged_in)) {
+		return false;
+	}
+	if ((int) ($forum['forum_type'] ?? 0) === 1) {
+		return forum_user_has_private_forum_access(
+			$userdata,
+			(int) ($forum['forum_id'] ?? 0),
+			true,
+			$db,
+			$user_logged_in
+		);
+	}
+	return $access === 2 || $authenticated;
+}
+
+function forum_user_can_edit_post($userdata, $post, $db, $user_logged_in = null) {
+	if (!forum_user_is_authenticated($userdata, $user_logged_in)) {
+		return false;
+	}
+	return (int) ($post['poster_id'] ?? 0) === (int) $userdata['user_id']
+		|| forum_user_can_moderate($userdata, (int) ($post['forum_id'] ?? 0), $db, true);
+}
+
+function forum_user_can_access_message($userdata, $message, $user_logged_in = null) {
+	return forum_user_is_authenticated($userdata, $user_logged_in)
+		&& (int) ($message['to_userid'] ?? 0) === (int) $userdata['user_id'];
+}
+
+function forum_user_can_edit_profile($userdata, $target_user_id, $user_logged_in = null) {
+	return forum_user_is_authenticated($userdata, $user_logged_in)
+		&& (int) $target_user_id === (int) $userdata['user_id'];
+}
+
+function forum_authorization_denied($message = 'You are not authorized to perform this action.') {
+	http_response_code(403);
+	error_die($message);
+}
+
 /**
  * Nathan Codding - July 19, 2000
  * Checks the given password against the DB for the given username. Returns true if good, false if not.
@@ -1572,31 +1676,14 @@ function is_banned($ipuser, $type, $db) {
  */
 function check_priv_forum_auth($userid, $forumid, $is_posting, $db)
 {
-	$sql = "SELECT count(*) AS user_count FROM forum_access WHERE (user_id = ?) AND (forum_id = ?) ";
-	
-	if ($is_posting)
-	{
-		$sql .= "AND (can_post = 1)";
-	}
-	
-	if (!$result = db_query_params($sql, array((int) $userid, (int) $forumid), $db))
-	{
-		// no good..
-		return FALSE;
-	}
-	
-	if(!$row = db_fetch_array($result))
-	{
-		return FALSE;
-	}
-   
-  	if ($row[user_count] <= 0)
-  	{
-  		return FALSE;
-  	}
-  	
-  	return TRUE;
-
+	$private_userdata = get_userdata_from_id((int) $userid, $db);
+	return forum_user_has_private_forum_access(
+		$private_userdata,
+		(int) $forumid,
+		(bool) $is_posting,
+		$db,
+		(int) ($private_userdata['user_id'] ?? 0) > 0
+	);
 }
 
 /**

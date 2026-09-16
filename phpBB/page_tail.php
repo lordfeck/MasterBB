@@ -16,7 +16,7 @@
  *   the Free Software Foundation; either version 2 of the License, or	    	 
  *   (at your option) any later version. * 
  ***************************************************************************/
-if($user_logged_in && $userdata[user_level] == 4) {
+if(forum_user_is_admin($userdata, $user_logged_in)) {
 	
 ?>
      <FONT FACE="<?php echo $FontFace?>" SIZE="<?php echo $FontSize3?>" COLOR="<?php echo $textcolor?>">

@@ -42,7 +42,7 @@ $sig = request_present('sig', 'post');
 $notify = request_present('notify', 'post');
 $pagetitle = "New Topic";
 $pagetype = "newtopic";
-$sql = "SELECT forum_name, forum_access, forum_type FROM forums WHERE forum_id = ?";
+$sql = "SELECT forum_id, forum_name, forum_access, forum_type FROM forums WHERE forum_id = ?";
 if(!$result = db_query_params($sql, array($forum), $db))
 	error_die("Can't get forum data.");
 $myrow = db_fetch_array($result);
@@ -83,10 +83,6 @@ if($submit) {
 	     {
 		error_die("$l_wrongpass $l_tryagain");
 	     }
-	   if($forum_access == 3 && $userdata[user_level] < 2)
-	     {
-		error_die($l_nopost);
-	     }
 	   if(is_banned($userdata[user_id], "username", $db))
 	     {
 		error_die($l_banned);
@@ -97,26 +93,13 @@ if($submit) {
 	   // You've entered your password and username, we log you in.
 	   $sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
 	   set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+	   $user_logged_in = 1;
 	}
    }
-   else
-     {
-	if($forum_access == 3 && $userdata[user_level] < 2)
-	  {
-	     error_die($l_nopost);
-	  }
-
-     }
-   // Either valid user/pass, or valid session. continue with post.. but first:
-   // Check that, if this is a private forum, the current user can post here.
-
-   if ($forum_type == 1)
+   if (!forum_user_can_post_forum($userdata, $myrow, $db, $user_logged_in))
    {
-	   if (!check_priv_forum_auth($userdata[user_id], $forum, TRUE, $db))
-	   {
-	 		error_die("$l_privateforum $l_nopost");
-	   }
-	}
+	forum_authorization_denied($forum_type == 1 ? "$l_privateforum $l_nopost" : $l_nopost);
+   }
 
 	$message = censor_string($message, $db);
 	$message = render_user_text($message, $allow_bbcode == 1 && !$bbcode, !$smile);

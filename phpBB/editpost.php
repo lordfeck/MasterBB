@@ -56,52 +56,13 @@ if($submit) {
 
    $posterdata = get_userdata_from_id($poster_id, $db);
    $date = date("Y-m-d H:i");
-   if ($user_logged_in) {
-      // valid session.. just check it's the right user.
-      if($userdata[user_id] != $posterdata[user_id]) {
-	 if ($userdata[user_level] == 1) {
-	    $die = 1;
-	 }
-	 else if($userdata[user_level] == 2 && !is_moderator($forum_id, $userdata[user_id], $db)) {
-	    include('page_header.'.$phpEx);
-	    error_die($l_notedit);
-	 }
-      }
-   }
-   else {
-      $userdata = get_userdata($username, $db);
-      if(is_banned($userdata[user_id], "username", $db)){
-			error_die($l_banned);
-		}
-      if($posterdata[user_id] == $userdata[user_id]) {
-		if(!forum_verify_password($passwd, $posterdata[user_password])) {
-	    		$die = 1;
-	 		}
-      }
-      else if($userdata[user_level] == 2 && is_moderator($forum_id, $userdata[user_id], $db)) {
-		if(!forum_verify_password($passwd, $userdata[user_password])) {
-	 	   	$die = 1;
-	 		}
-      }
-      else if($userdata[user_level] > 2) {
-		if(!forum_verify_password($passwd, $userdata[user_password])) {
-	    		$die = 1;
-	 		}
-      }
-      else {
-	 		$die = 1;
-      }
-      if($die != 1) {
-	 		// You've entered your username and password, and no problems have been found, log you in!
-	 		$sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
-	 		set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
-      }
-   }
-   if($die == 1) {
+   if (!forum_user_can_edit_post($userdata, $myrow, $db, $user_logged_in)) {
       include('page_header.' . $phpEx);
-      error_die($l_permdeny);
+      forum_authorization_denied($l_permdeny);
    }
-   // IF we made it this far we are allowed to edit this message, yay!
+   $forum = $forum_id;
+   $topic = $topic_id;
+   $username = $userdata['username'];
     
 	$message = censor_string($message, $db);
 	$message = render_user_text($message, $allow_bbcode == 1 && !$bbcode, !$smile);
@@ -145,7 +106,7 @@ if($submit) {
       // NOT ((time is good) OR (user is supermod/admin) OR (user is moderator of this forum))
 		if (!( (($now_hour == $hour && $now_min - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0))
 					|| 
-					($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))  )) 
+					forum_user_can_moderate($userdata, $forum_id, $db, $user_logged_in)  ))
 		{
 			include('page_header.' . $phpEx);
 			error_die($l_permdeny);
@@ -283,6 +244,7 @@ else {
 			$sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);	
 		
 			set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+			$user_logged_in = 1;
 			
 		}
 	
@@ -313,16 +275,11 @@ else {
    if(!$result = db_query_params($sql, array($post_id), $db))
 		error_die("Couldn't get user and topic information from the database.<br>$sql");
    $myrow = db_fetch_array($result);
-   // Freekin' ugly but I couldn't get it to work right as 1 big if 
-   //          - James
-   if ($user_logged_in) {
-      if($userdata[user_level] <= 2) {
-	 if($userdata[user_level] == 2 && !is_moderator($forum, $userdata[user_id], $db)) {
-	    if($userdata[user_level] < 2 && ($userdata[user_id] != $myrow[user_id]))
-		 	error_die($l_notedit);
-	 }
-      }
+   if (!$myrow || !forum_user_can_edit_post($userdata, $myrow, $db, $user_logged_in)) {
+	forum_authorization_denied($l_notedit);
    }
+   $forum = (int) $myrow['forum_id'];
+   $topic = (int) $myrow['topic_id'];
 
    $message = $myrow[post_text];
    if(preg_match("/\[addsig\]$/i", $message))
@@ -402,7 +359,7 @@ else {
 			$now_hour = date("H");
 			$now_min = date("i");
 			list($hour, $min) = explode(":", $time);
-			if((($now_hour == $hour && $now_min - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) || ($userdata[user_level] > 2 || is_moderator($forum, $userdata[user_id], $db))) {
+			if((($now_hour == $hour && $now_min - 30 < $min) || ($now_hour == $hour +1 && $now_min - 30 > 0)) || forum_user_can_moderate($userdata, $forum, $db, $user_logged_in)) {
 		?>
 				<INPUT TYPE="CHECKBOX" NAME="delete"><?php echo $l_delete?><BR>
 		<?php

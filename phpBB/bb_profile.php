@@ -150,6 +150,10 @@ if($mode) {
 	      // ok.. either the user's entered their username and password, or they have a valid session.
 	      if ($save) {
 		 // trying to save their profile information..
+		 if (!forum_user_can_edit_profile($userdata, $user_id, $user_logged_in)) {
+		    include('page_header.'.$phpEx);
+		    forum_authorization_denied();
+		 }
 		 $userdata = get_userdata_from_id($user_id, $db);
 		 if(is_banned($userdata[user_id], "username", $db))
 		   error_die($l_banned);

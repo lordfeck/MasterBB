@@ -36,37 +36,22 @@ $pagetitle = "Post PM Reply";
 $pagetype = "pmreply";
 include('page_header.'.$phpEx);
 
+$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE msg_id = ?";
+$result = db_query_params($sql, array($msgid), $db);
+$message_row = $result ? db_fetch_array($result) : false;
+if (!$message_row) {
+	error_die("Message not found");
+}
+if (!forum_user_can_access_message($userdata, $message_row, $user_logged_in)) {
+	forum_authorization_denied("You can't reply to that message. It wasn't sent to you.");
+}
+
 if($submit) {
 	if($message == '') {
 		error_die("$l_emptymsg $l_tryagain");
 	}
 
-	$sql = "SELECT u.* FROM users u, priv_msgs p WHERE u.user_id = p.to_userid AND p.msg_id = ?";
-	$result = db_query_params($sql, array($msgid), $db);
-	if (!$result) {
-		die("Error getting userinfo from database");
-	}
-	$fromuserdata = db_fetch_array($result);
-	
-
-	if (!$user_logged_in) { // don't check this stuff if we have a valid session..
-		if($password == '') {
-			die("$l_userpass $l_tryagain");
-		}
-	
-		if(!forum_verify_password($password, $fromuserdata["user_password"] ?? '')) {
-			die("$l_wrongpass $l_tryagain");
-		}
-	} else {
-		// we have a valid session..
-		if ($fromuserdata[user_id] == $userdata[user_id]) {
-			$fromuserdata = $userdata; // fromuser = current user.
-		} else {
-			error_die("Wrong user logged in.");
-		}
-	}
-	
-	/* correct password or logged-in user, continuing with message send. */
+	$fromuserdata = $userdata;
 
 	if($sig) {
 		$message .= "\n_________________\n" . str_replace("<BR>", "\n", $fromuserdata[user_sig]);
@@ -74,14 +59,7 @@ if($submit) {
 	$message = render_user_text($message, $allow_pmsg_bbcode == 1 && !$bbcode, !$smile);
 	$time = date("Y-m-d H:i");
 	$poster_ip = $REMOTE_ADDR;
-	$sql = "SELECT from_userid FROM priv_msgs WHERE msg_id = ?";
-	$result = db_query_params($sql, array($msgid));
-	if (!$result) {
-		echo $sql . db_error();
-		error_die("Error getting userid from message");
-	}
-	$row = db_fetch_array($result);
-	$touserid = $row[from_userid];
+	$touserid = $message_row[from_userid];
 
 	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text, poster_ip) VALUES (?, ?, ?, ?, ?)";
 	
@@ -95,20 +73,8 @@ if($submit) {
    echo "</TD></TR></TABLE></TD></TR></TABLE><br>";
 		
 } else {
-	$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE msg_id = ?";
-	$result = db_query_params($sql, array($msgid), $db);
-	if (!$result) {
-		error_die("Error doing DB query to get userid's from message.");
-	}
-	$row = db_fetch_array($result);
-	if (!$row) {
-		error_die("Message not found");
-	}
-	$fromuserdata = get_userdata_from_id($row[from_userid], $db);
-	$touserdata = get_userdata_from_id($row[to_userid], $db);
-	if ( $user_logged_in && ($userdata[user_id] != $touserdata[user_id]) ) {
-		error_die("You can't reply to that message. It wasn't sent to you.");
-	}
+	$fromuserdata = get_userdata_from_id($message_row[from_userid], $db);
+	$touserdata = $userdata;
 
 ?>
 	<FORM ACTION="<?php echo $PHP_SELF?>" METHOD="POST">

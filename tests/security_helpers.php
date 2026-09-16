@@ -44,5 +44,19 @@ $url_phpbb = '/phpBB';
 $_SERVER['SERVER_NAME'] = 'forum.example.test';
 test_assert(forum_public_url('sendpassword.php') === 'http://forum.example.test/phpBB/sendpassword.php', 'unsafe public URL scheme rejection');
 
-echo "ok - password and trusted-proxy helpers\n";
+$member = array('user_id' => 7, 'user_level' => 1);
+$administrator = array('user_id' => 1, 'user_level' => 4);
+test_assert(forum_user_is_authenticated($member, true), 'member authentication predicate');
+test_assert(!forum_user_is_authenticated($member, false), 'session required by authentication predicate');
+test_assert(forum_user_is_admin($administrator, true), 'administrator predicate');
+test_assert(!forum_user_is_admin(array('user_id' => 8, 'user_level' => 3), true), 'global moderator is not administrator');
+test_assert(!forum_user_can_moderate(array('user_id' => 9, 'user_level' => 5), 1, null, true), 'undefined role fails closed');
+test_assert(!forum_user_can_post_forum($member, array('forum_id' => 1, 'forum_type' => 0, 'forum_access' => 99), null, true), 'undefined forum access fails closed');
+test_assert(forum_user_can_edit_profile($member, 7, true), 'profile owner predicate');
+test_assert(!forum_user_can_edit_profile($member, 8, true), 'cross-user profile predicate');
+test_assert(forum_user_can_access_message($member, array('to_userid' => 7), true), 'message recipient predicate');
+test_assert(!forum_user_can_access_message($member, array('to_userid' => 8), true), 'cross-user message predicate');
+test_assert(forum_user_can_edit_post($member, array('poster_id' => 7, 'forum_id' => 1), null, true), 'post owner predicate');
+
+echo "ok - password, proxy, and authorization helpers\n";
 ?>

@@ -110,10 +110,6 @@ if($submit) {
 	    error_die($l_wrongpass);
 	 }
       }
-      if($forum_access == 3 && $userdata[user_level] < 2) {
-	 include('page_header.'.$phpEx);
-	 error_die($l_nopost);
-      }
       if(is_banned($userdata[user_id], "username", $db)) {
 	 include('page_header.'.$phpEx);
 	 error_die($l_banned);
@@ -122,24 +118,14 @@ if($submit) {
 	 // You've entered your username and password, so we log you in.
 	 $sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
 	 set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+	 $user_logged_in = 1;
       }
    }
-   else {
-      if($forum_access == 3 && $userdata[user_level] < 2) {
-	 include('page_header.'.$phpEx);
-	 error_die($l_nopost);
-      }
-   }
-   // Either valid user/pass, or valid session. continue with post.. but first:
-   // Check that, if this is a private forum, the current user can post here.
-
-   if ($forum_type == 1)
+   $forum_policy = array('forum_id' => $forum, 'forum_type' => $forum_type, 'forum_access' => $forum_access);
+   if (!forum_user_can_post_forum($userdata, $forum_policy, $db, $user_logged_in))
      {
-	   if (!check_priv_forum_auth($userdata[user_id], $forum, TRUE, $db))
-	   {
-	      include('page_header.'.$phpEx);
-	      error_die("$l_privateforum $l_nopost");
-	   }
+	include('page_header.'.$phpEx);
+	forum_authorization_denied($forum_type == 1 ? "$l_privateforum $l_nopost" : $l_nopost);
 	}
 
    $poster_ip = $REMOTE_ADDR;
@@ -282,20 +268,15 @@ if($submit) {
 	     $userdata = get_userdata($username, $db);
 	     $sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
 	     set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+	     $user_logged_in = 1;
 	  }
 
 	require('page_header.'.$phpEx);
 
-	if ($forum_type == 1)
+	$forum_policy = array('forum_id' => $forum, 'forum_type' => $forum_type, 'forum_access' => $forum_access);
+	if ($user_logged_in && !forum_user_can_post_forum($userdata, $forum_policy, $db, $user_logged_in))
 	  {
-	     // To get here, we have a logged-in user. So, check whether that user is allowed to view
-	     // this private forum.
-	     if (!check_priv_forum_auth($userdata[user_id], $forum, TRUE, $db))
-	       {
-		  error_die("$l_privateforum $l_nopost");
-	       }
-
-	     // Ok, looks like we're good.
+	     forum_authorization_denied($forum_type == 1 ? "$l_privateforum $l_nopost" : $l_nopost);
 	  }
 
      }

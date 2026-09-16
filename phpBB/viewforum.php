@@ -32,7 +32,7 @@ $pagetype = "viewforum";
 if($forum == -1)
   header("Location: $url_phpbb");
 
-$sql = "SELECT f.forum_type, f.forum_name FROM forums f WHERE forum_id = ?";
+$sql = "SELECT f.forum_id, f.forum_type, f.forum_name FROM forums f WHERE forum_id = ?";
 if(!$result = db_query_params($sql, array($forum), $db))
 	error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the forums database.");
 if(!$myrow = db_fetch_array($result))
@@ -109,22 +109,15 @@ else
 		$sessid = new_session($userdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);	
 	
 		set_session_cookie($sessid, $sesscookietime, $sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+		$user_logged_in = 1;
 		
 	}
 
 	require('page_header.'.$phpEx);
 	
-	if ($myrow[forum_type] == 1)
+	if (!forum_user_can_read_forum($userdata, $myrow, $db, $user_logged_in))
 	{
-		// To get here, we have a logged-in user. So, check whether that user is allowed to view
-		// this private forum.
-		
-		if (!check_priv_forum_auth($userdata[user_id], $forum, FALSE, $db))
-		{
-			error_die("$l_privateforum $l_noread");
-		}
-		
-		// Ok, looks like we're good.
+		forum_authorization_denied("$l_privateforum $l_noread");
 	}
 
 ?>

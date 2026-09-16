@@ -35,49 +35,26 @@ $pagetitle = "Private Messages";
 $pagetype = "privmsgs";
 include('page_header.'.$phpEx);
 
+$sql = "SELECT from_userid, to_userid FROM priv_msgs WHERE msg_id = ?";
+$resultID = db_query_params($sql, array($msgid), $db);
+$message_row = $resultID ? db_fetch_array($resultID) : false;
+if (!$message_row) {
+	error_die("Message not found.");
+}
+if (!forum_user_can_access_message($userdata, $message_row, $user_logged_in)) {
+	forum_authorization_denied("That's not your message. You can't delete it.");
+}
+
 if ($REQUEST_METHOD !== 'POST') {
-	if (!$user_logged_in) {
-		login_form();
-	} else {
-		echo '<FORM ACTION="' . html_escape($PHP_SELF) . '" METHOD="POST"><P ALIGN="CENTER">';
-		echo '<INPUT TYPE="HIDDEN" NAME="msgid" VALUE="' . (int) $msgid . '">';
-		echo '<INPUT TYPE="SUBMIT" NAME="submit" VALUE="' . html_escape($l_delete) . '">';
-		echo '</P></FORM>';
-	}
+	echo '<FORM ACTION="' . html_escape($PHP_SELF) . '" METHOD="POST"><P ALIGN="CENTER">';
+	echo '<INPUT TYPE="HIDDEN" NAME="msgid" VALUE="' . (int) $msgid . '">';
+	echo '<INPUT TYPE="SUBMIT" NAME="submit" VALUE="' . html_escape($l_delete) . '">';
+	echo '</P></FORM>';
 	require('page_tail.'.$phpEx);
 	exit();
 }
 
-if (!$submit && !$user_logged_in) {
-	login_form();
-} else {
-	if (!$user_logged_in) {
-		if ($user == '' || $passwd == '') {
-			error_die($l_userpass);
-		}
-		if (!check_username($user, $db)) {
-			error_die("$l_nouser $l_tryagain");
-		}
-		if (!check_user_pw($user, $passwd, $db)) {
-			error_die("$l_wrongpass");
-		}
-	
-		/* throw away user data from the cookie, use username from the form to get new data */
-		$userdata = get_userdata($user, $db);
-	}
-
-	$sql = "SELECT to_userid FROM priv_msgs WHERE msg_id = ?";
-	$resultID = db_query_params($sql, array($msgid));
-	if (!$resultID) {
-		echo db_error() . "<br>\n";
-		error_die("Error during DB query (checking msg ownership)");
-	}
-	$row = db_fetch_array($resultID);
-	if ($userdata[user_id] != $row[to_userid]) {
-		error_die("That's not your message. You can't delete it.");
-	}
-
-	$deleteSQL = "DELETE FROM priv_msgs WHERE msg_id = ?";
+$deleteSQL = "DELETE FROM priv_msgs WHERE msg_id = ?";
 	$success = db_query_params($deleteSQL, array($msgid));
 	if (!$success) {
 		error_die("Error deleting from DB.");
@@ -87,8 +64,6 @@ if (!$submit && !$user_logged_in) {
    echo "<TR BGCOLOR=\"$color1\" ALIGN=\"LEFT\"><TD><font face=\"Verdana\" size=\"2\"><P>";
    echo "<P><BR><center>$l_deletesucces $l_click <a href=\"$url_phpbb/viewpmsg.$phpEx\">$l_here</a> $l_toreturn<p></center></font>";
    echo "</TD></TR></TABLE></TD></TR></TABLE><br>";
-
-} // if/else (if submit)
 
 require('page_tail.'.$phpEx);
 ?>
