@@ -31,6 +31,11 @@ $forum = request_int('forum', -1);
 $submit = request_string('submit', '', 'post');
 $op_userid = request_int('op_userid');
 $userids = request_array('userids');
+if (preg_match('/^(deluser|grantuserpost|revokeuserpost):([0-9]+)$/D', $op, $op_parts))
+{
+	$op = $op_parts[1];
+	$op_userid = (int) $op_parts[2];
+}
 
 if($login) 
 {
@@ -170,6 +175,10 @@ else if($user_logged_in && $userdata[user_level] == 4)
 		// Opcode exists. See what it is, do stuff.
 		
 		
+		if (in_array($op, array('adduser', 'deluser', 'clearusers', 'grantuserpost', 'revokeuserpost'), true))
+		{
+			forum_require_post();
+		}
 		if ($op == "adduser")
 		{
 			// Add user(s) to the list for this forum.
@@ -322,7 +331,7 @@ else if($user_logged_in && $userdata[user_level] == 4)
 							<INPUT TYPE="HIDDEN" NAME="forum" VALUE="<?php echo $forum ?>">
 							<INPUT TYPE="SUBMIT" NAME="submit" VALUE="Add Users -->">
 							<br><br>
-							<b><A HREF="<?php echo $PHP_SELF ?>?forum=<?php echo $forum ?>&op=clearusers">Clear all users</A></b>
+							<b><BUTTON TYPE="SUBMIT" NAME="op" VALUE="clearusers">Clear all users</BUTTON></b>
 		                                        </font>
 						</TD>
 						<TD VALIGN="TOP" bgcolor="<?php echo $color1?>" align="center">
@@ -341,17 +350,17 @@ else if($user_logged_in && $userdata[user_level] == 4)
 				$post_text = ($row[can_post]) ? "can" : "can't";
 				$post_text .= " post";
 				
-				$post_toggle_link = "<A HREF=\"$PHP_SELF?forum=$forum&op_userid=$row[user_id]&op=";
+				$post_toggle_link = "<BUTTON TYPE=\"SUBMIT\" NAME=\"op\" VALUE=\"";
 				if ($row[can_post])
 				{
-					$post_toggle_link .= "revokeuserpost\">revoke posting</A>";
+					$post_toggle_link .= "revokeuserpost:$row[user_id]\">revoke posting</BUTTON>";
 				}
 				else
 				{
-					$post_toggle_link .= "grantuserpost\">grant posting</A>";
+					$post_toggle_link .= "grantuserpost:$row[user_id]\">grant posting</BUTTON>";
 				}
-				
-				$remove_link = "<A HREF=\"$PHP_SELF?forum=$forum&op=deluser&op_userid=$row[user_id]\">remove</A>";
+
+				$remove_link = "<BUTTON TYPE=\"SUBMIT\" NAME=\"op\" VALUE=\"deluser:$row[user_id]\">remove</BUTTON>";
 ?>
 								<TR>
 									<TD>

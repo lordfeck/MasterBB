@@ -69,11 +69,11 @@ and [modern cookie attributes](https://www.php.net/manual/en/function.setcookie.
 | Administration | forum, board, theme, user, private-forum, and smile administration | Site configuration, display-only header/footer text, roles, bans, forums, access lists, themes, ranks, words, smiles | Administrator only |
 | Installation | `install.php` | Database/schema creation, administrator creation, config append, board configuration | Unauthenticated before one-time installation only |
 
-Several historical links perform mutations with GET, including theme
+Several historical links performed mutations with GET, including theme
 default/delete, private-forum access changes, PM deletion, and smile deletion.
-These will become GET confirmation pages followed by CSRF-protected POST
-operations. Topic moderation already displays a confirmation form, but its
-POST has no CSRF protection.
+Slice 5 converted them to either GET confirmation pages followed by protected
+POST operations or POST-only controls. Topic moderation retains its historical
+confirmation flow and now shares the same CSRF boundary.
 
 ## Findings
 
@@ -128,17 +128,30 @@ password.
 
 **Severity:** Critical
 
-**Status:** Open; black-box reproduced
+**Status:** Closed in Slice 5
 
-An authenticated reply is accepted without any anti-CSRF value. The same
-pattern exists across profile, PM, moderation, and administration forms, while
-some mutations are reachable by GET. `SameSite` alone would not cover this
-surface.
+Every POST is now checked at the shared authentication boundary before the
+requested operation runs. The installer initializes and checks the same
+boundary independently because it runs before application configuration is
+available. A 256-bit random token is carried by a scoped, HttpOnly,
+`SameSite=Lax` cookie and by a hidden field automatically added to every POST
+form; comparison uses `hash_equals()`. Tokens rotate when authentication or
+credential re-authentication creates a replacement session, and logout clears
+the browser token.
 
-Use a secret unpredictable synchronizer token bound to each authenticated
-session, compare with `hash_equals()`, reject missing/invalid tokens, and
-require POST for every mutation. Keep GET idempotent except for non-security
-telemetry such as view counters, which should be documented separately.
+Logout, private-message deletion, theme deletion/default selection, smile
+deletion, and private-forum permission changes no longer mutate in response to
+GET. Existing confirmation pages were retained where they fit the original
+workflow; direct controls submit POST. Read requests still update topic view
+counts, message read-state, session activity, online-presence records, and
+expired housekeeping rows. These are intentional display/telemetry side
+effects and do not grant authority or change user-authored content.
+
+The black-box suite confirms that a tokenless authenticated reply receives
+HTTP 403 and is not persisted, installer POSTs reject a missing token, tokens
+rotate at login, and the former GET mutation routes either render confirmation
+or return HTTP 405 without changing data. The complete fresh-install and
+security suites pass.
 
 ### SEC-004 — User content can execute as stored HTML
 

@@ -21,6 +21,11 @@
 include('extention.inc');
 include("functions.$phpEx");
 
+$install_cookie_path = rtrim(str_replace('\\', '/', dirname($PHP_SELF)), '/');
+$install_cookie_path = $install_cookie_path === '' ? '/' : $install_cookie_path;
+forum_csrf_initialize($install_cookie_path, '', forum_request_is_https());
+forum_csrf_require_valid_post();
+
 $next = request_string('next', '', 'post');
 $done = request_present('done', 'post');
 $dbserver = request_string('dbserver', '', 'post');

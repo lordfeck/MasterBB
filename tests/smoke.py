@@ -27,6 +27,7 @@ class Browser:
         self.base_url = base_url.rstrip("/")
         self.cookies = http.cookiejar.CookieJar()
         self.last_headers = None
+        self.last_status = None
         self.opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self.cookies)
         )
@@ -36,16 +37,31 @@ class Browser:
         path: str,
         fields: dict[str, str | list[str]] | None = None,
         headers: dict[str, str] | None = None,
+        csrf: bool = True,
     ) -> str:
         url = f"{self.base_url}/{path.lstrip('/')}"
         data = None
         if fields is not None:
+            fields = dict(fields)
+            if csrf and "_csrf" not in fields:
+                csrf_cookie = self.cookie("phpBBcsrf")
+                if csrf_cookie is None:
+                    self.request(path, headers=headers)
+                    csrf_cookie = self.cookie("phpBBcsrf")
+                if csrf_cookie is None:
+                    raise SmokeFailure(f"No CSRF cookie was issued for {url}")
+                fields["_csrf"] = csrf_cookie.value
             data = urllib.parse.urlencode(fields, doseq=True).encode("ascii")
         request = urllib.request.Request(url, data=data, headers=headers or {})
         try:
             with self.opener.open(request, timeout=45) as response:
                 self.last_headers = response.headers
+                self.last_status = response.status
                 payload = response.read()
+        except urllib.error.HTTPError as error:
+            self.last_headers = error.headers
+            self.last_status = error.code
+            payload = error.read()
         except (OSError, urllib.error.URLError) as error:
             raise SmokeFailure(f"Request failed for {url}: {error}") from error
         return payload.decode("latin-1", errors="replace")
@@ -99,6 +115,7 @@ def wait_for_installer(browser: Browser) -> None:
         try:
             page = browser.request("install.php")
             require(page, "Database Server Address", "installer readiness")
+            require(page, 'NAME="_csrf"', "installer CSRF form injection")
             report("legacy Apache and installer are ready")
             return
         except (SmokeFailure, OSError) as error:
@@ -360,12 +377,12 @@ def exercise(base_url: str) -> None:
     require(page, "BBCode", "FAQ request boundary")
     report("profile, preferences, member-list, and FAQ pages")
 
-    page = user.request("logout.php")
+    page = user.request("logout.php", {"logout": "Logout"})
     require(page, "Not logged in", "user logout")
     reject(page, f"Logged in as {USER_NAME}", "user logout")
     report("user logout")
 
-    admin.request("logout.php")
+    admin.request("logout.php", {"logout": "Logout"})
     page = admin.request("admin/index.php")
     require(page, "Please enter your username and password", "administrator logout")
     page = login(admin, ADMIN_NAME, ADMIN_PASSWORD, admin=True)

@@ -270,6 +270,16 @@ else if($user_logged_in && $userdata[user_level] == 4) {
       }
       break;
     case 'remove':
+      if ($REQUEST_METHOD !== 'POST') {
+?>
+	<FORM ACTION="<?php echo html_escape($PHP_SELF)?>" METHOD="POST">
+	<INPUT TYPE="HIDDEN" NAME="mode" VALUE="remove">
+	<INPUT TYPE="HIDDEN" NAME="theme_id" VALUE="<?php echo (int) $theme_id?>">
+	<P ALIGN="CENTER"><INPUT TYPE="SUBMIT" VALUE="Delete Theme"></P>
+	</FORM>
+<?php
+	break;
+      }
       $sql = "DELETE FROM themes WHERE theme_id = ?";
       if(!$r = db_query_params($sql, array($theme_id), $db))
 	die("Error updateing the databse. Go back and try again");
@@ -448,6 +458,7 @@ else if($user_logged_in && $userdata[user_level] == 4) {
 
       break;
     case 'setdefault':
+      forum_require_post();
       $sql = "UPDATE themes SET theme_default = 0";
       if(!$r = db_query($sql, $db))
 	die("Error updateing the databse. Go back and try again");
@@ -498,7 +509,7 @@ else {
 	 if($row[theme_default] == 1)
 	   echo "<TD>Yes</TD>";
 	 else
-	   echo "<TD>No (<a href=\"$PHP_SELF?mode=setdefault&theme_id=$row[theme_id]\">Make Default</a>)</TD>";
+	   echo "<TD>No (<FORM METHOD=\"POST\" ACTION=\"$PHP_SELF\" STYLE=\"display:inline\"><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"setdefault\"><INPUT TYPE=\"HIDDEN\" NAME=\"theme_id\" VALUE=\"$row[theme_id]\"><INPUT TYPE=\"SUBMIT\" VALUE=\"Make Default\"></FORM>)</TD>";
 	 echo "<TD><a href=\"$PHP_SELF?mode=edit&theme_id=$row[theme_id]\">Edit</a>&nbsp;&nbsp;<a href=\"$PHP_SELF?mode=remove&theme_id=$row[theme_id]\">Delete</a></TD>";
 	 echo "</TR>";
       } while($row = db_fetch_array($r));

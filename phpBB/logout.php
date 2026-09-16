@@ -32,10 +32,20 @@ $pagetype = "logout";
 
 /* Note: page_header.php is included later on, because this page needs to be able to send a cookie. */
 
+if ($REQUEST_METHOD !== 'POST') {
+	include('page_header.'.$phpEx);
+	echo '<FORM ACTION="' . html_escape($PHP_SELF) . '" METHOD="POST"><P ALIGN="CENTER">';
+	echo '<INPUT TYPE="SUBMIT" NAME="logout" VALUE="' . html_escape($l_logout) . '">';
+	echo '</P></FORM>';
+	require('page_tail.'.$phpEx);
+	exit();
+}
+
 if ($user_logged_in) {
 	end_user_session($sessid, $db);
 }
 clear_forum_cookie($sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);
+clear_forum_cookie('phpBBcsrf', $cookiepath, $cookiedomain, $cookiesecure);
 
 	header("Location: $url_phpbb/index.$phpEx");
 require('page_tail.'.$phpEx);

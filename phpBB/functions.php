@@ -190,6 +190,66 @@ function clear_forum_cookie($name, $path, $domain, $secure) {
 	return set_forum_cookie($name, '', time() - 3600, $path, $domain, $secure);
 }
 
+function forum_csrf_initialize($cookiepath, $cookiedomain, $cookiesecure) {
+	global $HTTP_COOKIE_VARS, $forum_csrf_token;
+	$cookie_name = 'phpBBcsrf';
+	$token = isset($HTTP_COOKIE_VARS[$cookie_name]) ? (string) $HTTP_COOKIE_VARS[$cookie_name] : '';
+	if (preg_match('/^[a-f0-9]{64}$/D', $token) !== 1) {
+		$token = bin2hex(random_bytes(32));
+		set_forum_cookie($cookie_name, $token, 0, $cookiepath, $cookiedomain, $cookiesecure);
+		$HTTP_COOKIE_VARS[$cookie_name] = $token;
+	}
+	$forum_csrf_token = $token;
+	if (!defined('FORUM_CSRF_BUFFER_STARTED')) {
+		define('FORUM_CSRF_BUFFER_STARTED', true);
+		ob_start('forum_csrf_inject_forms');
+	}
+}
+
+function forum_csrf_inject_forms($html) {
+	global $forum_csrf_token;
+	if (!$forum_csrf_token || stripos($html, '<form') === false) {
+		return $html;
+	}
+	$input = '<INPUT TYPE="HIDDEN" NAME="_csrf" VALUE="' . html_escape($forum_csrf_token) . '">';
+	return preg_replace_callback('/<form\b[^>]*>/i', function ($match) use ($input) {
+		if (!preg_match('/\bmethod\s*=\s*["\']?post["\']?/i', $match[0])) {
+			return $match[0];
+		}
+		return $match[0] . $input;
+	}, $html);
+}
+
+function forum_csrf_require_valid_post() {
+	global $forum_csrf_token;
+	if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+		return;
+	}
+	$submitted = request_string('_csrf', '', 'post');
+	if (!$forum_csrf_token || !$submitted || !hash_equals($forum_csrf_token, $submitted)) {
+		http_response_code(403);
+		die('Invalid or missing form token. Please go back, reload the form, and try again.');
+	}
+}
+
+function forum_csrf_rotate() {
+	global $HTTP_COOKIE_VARS, $forum_csrf_token, $cookiepath, $cookiedomain, $cookiesecure;
+	if (!isset($cookiepath)) {
+		return;
+	}
+	$forum_csrf_token = bin2hex(random_bytes(32));
+	$HTTP_COOKIE_VARS['phpBBcsrf'] = $forum_csrf_token;
+	set_forum_cookie('phpBBcsrf', $forum_csrf_token, 0, $cookiepath, $cookiedomain, $cookiesecure);
+}
+
+function forum_require_post($message = 'This action must be submitted from its confirmation form.') {
+	if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+		http_response_code(405);
+		header('Allow: POST');
+		die($message);
+	}
+}
+
 function forum_session_digest($sessid) {
 	if (!is_string($sessid) || preg_match('/^[a-f0-9]{64}$/D', $sessid) !== 1) {
 		return false;
@@ -222,6 +282,7 @@ function new_session($userid, $remote_ip, $lifespan, $db) {
 	$result = db_query_params($sql, array(hash('sha256', $sessid), (int) $userid, $currtime, $currtime), $db);
 	
 	if ($result) {
+		forum_csrf_rotate();
 		return $sessid;
 	} else {
 		echo db_errno().": ".db_error()."<BR>";

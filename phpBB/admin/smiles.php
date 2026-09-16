@@ -248,10 +248,9 @@ echo "</TR></table></TD></TR></TABLE>";
  case 'delete':
    
    if ($id_present) {
-      
-      $submit = "Delete Smile";
       $smile_id = $id;
-      
+      echo "<form method=\"post\" action=\"$PHP_SELF\"><input type=\"hidden\" name=\"mode\" value=\"delete\"><input type=\"hidden\" name=\"smile_id\" value=\"$smile_id\"><input type=\"submit\" name=\"submit\" value=\"Delete Smile\"></form>";
+      break;
    }
    
    if (!$submit) {

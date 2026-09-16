@@ -87,6 +87,9 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
         },
     )
     require(page, "You have been added to the database", "attacker fixture")
+    pre_login_csrf = attacker.cookie("phpBBcsrf")
+    if pre_login_csrf is None or re.fullmatch(r"[a-f0-9]{64}", pre_login_csrf.value) is None:
+        raise SmokeFailure("CSRF security: expected a 256-bit hexadecimal token")
     page = login(attacker, ATTACKER_NAME, ATTACKER_PASSWORD)
     require(page, "Logged in as Smoke O&#039;Brien", "attacker login")
     secure("an apostrophe-containing username registers and authenticates intact")
@@ -106,8 +109,14 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
         )
     if session_cookie.secure:
         raise SmokeFailure("session security: HTTP baseline unexpectedly set Secure")
+    csrf_cookie = attacker.cookie("phpBBcsrf")
+    if csrf_cookie is None or csrf_cookie.value == pre_login_csrf.value:
+        raise SmokeFailure("CSRF security: authentication did not rotate the token")
+    csrf_attributes = {key.lower() for key in csrf_cookie._rest}
+    if "httponly" not in csrf_attributes or "samesite" not in csrf_attributes:
+        raise SmokeFailure("CSRF security: expected HttpOnly and SameSite attributes")
     initial_session_token = session_cookie.value
-    secure("sessions use opaque random tokens with HttpOnly and SameSite=Lax")
+    secure("sessions and CSRF tokens are random, scoped cookies rotated at authentication")
 
     fixed = Browser(base_url)
     fixed.set_cookie("phpBBsession", "a" * 64)
@@ -340,7 +349,15 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     reject(page, "unable to query", "search sort allowlist")
     secure("search rejects arbitrary SQL sort expressions")
 
-    csrf_marker = "CSRF characterization reply"
+    form_probe = Browser(base_url)
+    page = form_probe.request("bb_register.php")
+    csrf_cookie = form_probe.cookie("phpBBcsrf")
+    require(page, 'NAME="_csrf"', "CSRF form injection")
+    if csrf_cookie is None or csrf_cookie.value not in page:
+        raise SmokeFailure("CSRF form injection: hidden token does not match cookie")
+    secure("legacy POST forms receive hidden CSRF fields")
+
+    csrf_marker = "CSRF rejection reply"
     page = attacker.request(
         "reply.php",
         {
@@ -349,12 +366,22 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
             "topic": "1",
             "message": csrf_marker,
         },
+        csrf=False,
     )
-    require(page, "Your Message has been stored", "CSRF characterization")
+    require(page, "Invalid or missing form token", "CSRF rejection")
+    if attacker.last_status != 403:
+        raise SmokeFailure("CSRF rejection: expected HTTP 403")
     page = attacker.request("viewtopic.php?topic=1&forum=1")
-    require(page, csrf_marker, "CSRF characterization persistence")
-    known_vulnerability("state-changing POSTs still have no CSRF token")
-    known_findings += 1
+    reject(page, csrf_marker, "CSRF rejection persistence")
+    secure("state-changing POSTs reject missing CSRF tokens")
+
+    installer_probe = Browser(base_url)
+    installer_probe.request("install.php")
+    page = installer_probe.request("install.php", {"next": "Install"}, csrf=False)
+    require(page, "Invalid or missing form token", "installer CSRF rejection")
+    if installer_probe.last_status != 403:
+        raise SmokeFailure("installer CSRF rejection: expected HTTP 403")
+    secure("installer POSTs share the CSRF boundary")
 
     page = anonymous.request("install.php")
     require(page, "not writeable by the web server", "installer availability characterization")
@@ -381,6 +408,26 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     known_vulnerability("baseline browser security headers are absent")
     known_findings += 1
 
+    safe_get_logout = Browser(base_url)
+    require(login(safe_get_logout, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "safe-method login")
+    require(safe_get_logout.request("logout.php"), 'NAME="logout"', "logout confirmation GET")
+    require(safe_get_logout.request("index.php"), "Logged in as Smoke O&#039;Brien", "logout GET session preservation")
+
+    require(login(admin, ADMIN_NAME, ADMIN_PASSWORD, admin=True), "Administration", "safe-method administrator login")
+    page = admin.request("admin/admin_themes.php?mode=remove&theme_id=4")
+    require(page, 'NAME="mode" VALUE="remove"', "theme deletion confirmation GET")
+    page = admin.request("admin/admin_themes.php")
+    require(page, "Midnight Terminal", "theme deletion GET preservation")
+    page = admin.request("admin/smiles.php?mode=delete&id=1")
+    require(page, 'value="Delete Smile"', "smilie deletion confirmation GET")
+    page = admin.request("admin/admin_themes.php?mode=setdefault&theme_id=4")
+    if admin.last_status != 405:
+        raise SmokeFailure("theme default GET: expected HTTP 405")
+    page = admin.request("admin/admin_priv_forums.php?forum=1&op=clearusers")
+    if admin.last_status != 405:
+        raise SmokeFailure("private-forum clear GET: expected HTTP 405")
+    secure("mutation-shaped GET requests render confirmation or remain read-only")
+
     reset_unknown = anonymous.request(
         "sendpassword.php",
         {"submit": "Send Password", "user": "Definitely Missing", "email": "missing@example.test"},
@@ -400,7 +447,7 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     second = Browser(base_url)
     require(login(first, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "first parallel login")
     require(login(second, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "second parallel login")
-    first.request("logout.php")
+    first.request("logout.php", {"logout": "Logout"})
     reject(first.request("index.php"), "Logged in as Smoke O&#039;Brien", "logged-out session")
     require(second.request("index.php"), "Logged in as Smoke O&#039;Brien", "parallel session preservation")
     secure("logout terminates only the current browser session")

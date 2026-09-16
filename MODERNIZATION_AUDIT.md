@@ -63,9 +63,10 @@ arbitrary globals.
 
 The negative characterization suite also passes for SQL-injection-shaped login
 input, arbitrary search sort expressions, cross-user post edit/delete attempts,
-unauthorized private-message access, and forged private-message HTML options.
-It explicitly reports the still-open CSRF finding rather than treating the
-application as hardened.
+unauthorized private-message access, forged private-message HTML options,
+tokenless state changes, and mutation-shaped GET requests. It currently
+reports two known-open deployment findings: the reusable installer and missing
+baseline browser security headers.
 
 ## Security findings
 
@@ -153,7 +154,12 @@ Progress is tracked as focused, independently verified commits:
   idle/absolute expiry and per-browser logout; modern cookie attributes; and
   explicit HTTPS/trusted-proxy handling. Fresh-install smoke and expanded
   negative authentication tests pass.
-- [ ] Slice 5 — CSRF tokens and POST-only state changes.
+- [x] Slice 5 — a shared 256-bit CSRF token boundary for application and
+  installer POSTs; automatic protection of legacy forms; token rotation with
+  authenticated sessions; and confirmation or POST-only handling for former
+  GET mutations. Fresh-install smoke and expanded negative suites pass, with
+  intentional read-side counters, message read-state, session activity, and
+  online-presence housekeeping documented separately.
 - [ ] Slice 6 — centralized authorization and full role/ownership coverage.
 - [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,
   deployment guidance, and final residual-risk review.

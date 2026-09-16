@@ -30,6 +30,9 @@ else
 	include("fix.$phpEx");
 }
 
+forum_csrf_initialize($cookiepath, $cookiedomain, $cookiesecure);
+forum_csrf_require_valid_post();
+
 // Check if the config file is writable (shouldn't be!!)
 $config_file_name = "config.$phpEx";
 if(strstr($PHP_SELF, "admin"))

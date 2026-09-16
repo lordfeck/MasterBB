@@ -35,6 +35,18 @@ $pagetitle = "Private Messages";
 $pagetype = "privmsgs";
 include('page_header.'.$phpEx);
 
+if ($REQUEST_METHOD !== 'POST') {
+	if (!$user_logged_in) {
+		login_form();
+	} else {
+		echo '<FORM ACTION="' . html_escape($PHP_SELF) . '" METHOD="POST"><P ALIGN="CENTER">';
+		echo '<INPUT TYPE="HIDDEN" NAME="msgid" VALUE="' . (int) $msgid . '">';
+		echo '<INPUT TYPE="SUBMIT" NAME="submit" VALUE="' . html_escape($l_delete) . '">';
+		echo '</P></FORM>';
+	}
+	require('page_tail.'.$phpEx);
+	exit();
+}
 
 if (!$submit && !$user_logged_in) {
 	login_form();
