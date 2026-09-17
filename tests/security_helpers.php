@@ -57,6 +57,13 @@ test_assert(!forum_user_can_edit_profile($member, 8, true), 'cross-user profile 
 test_assert(forum_user_can_access_message($member, array('to_userid' => 7), true), 'message recipient predicate');
 test_assert(!forum_user_can_access_message($member, array('to_userid' => 8), true), 'cross-user message predicate');
 test_assert(forum_user_can_edit_post($member, array('poster_id' => 7, 'forum_id' => 1), null, true), 'post owner predicate');
+test_assert(forum_valid_email('person@example.test'), 'email validation');
+test_assert(!forum_valid_email("person@example.test\r\nBcc: victim@example.test"), 'email header injection rejection');
+test_assert(forum_valid_web_url('https://example.test/path'), 'web URL validation');
+test_assert(!forum_valid_web_url('javascript:alert(1)'), 'active URL scheme rejection');
+test_assert(forum_valid_color('#11C6BD') && !forum_valid_color('red'), 'theme colour validation');
+test_assert(forum_valid_local_asset('images/theme/header.png'), 'local theme asset validation');
+test_assert(!forum_valid_local_asset('images/../config.php'), 'theme path traversal rejection');
 
-echo "ok - password, proxy, and authorization helpers\n";
+echo "ok - password, proxy, authorization, and validation helpers\n";
 ?>

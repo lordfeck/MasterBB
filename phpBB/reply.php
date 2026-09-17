@@ -105,7 +105,7 @@ if($submit) {
       }
       if($userdata[user_id] != -1) {
 	 $userdata = get_userdata($username, $db);
-	 if(!forum_verify_password($password, $userdata["user_password"] ?? '')) {
+	 if(!check_user_pw($userdata['username'], $password, $db)) {
 	    include('page_header.'.$phpEx);
 	    error_die($l_wrongpass);
 	 }
@@ -361,7 +361,7 @@ if($submit) {
 				eval("\$reply = \"$syslang_quotemsg\";");
 			}
 			else {
-				error_die("Error Contacting database. Please try again.\n<br>$sql");
+				error_die("Error contacting the database. Please try again.");
 			}
 		}
 		?>

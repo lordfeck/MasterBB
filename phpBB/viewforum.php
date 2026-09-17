@@ -142,7 +142,7 @@ $sql = "SELECT t.*, u.username, u2.username as last_poster, p.post_time FROM top
         ORDER BY topic_time DESC LIMIT ?, ?";
         
 if(!$result = db_query_params($sql, array($forum, $start, (int) $topics_per_page), $db))
-	error_die("</table></table><font size=+1>An Error Occured</font><hr>phpBB could not query the topics database.<br>$sql");
+	error_die("</table></table><font size=+1>An Error Occured</font><hr>phpBB could not query the topics database.");
 $topics_start = $start;
    
 if($myrow = db_fetch_array($result)) {

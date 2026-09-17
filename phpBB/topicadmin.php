@@ -68,7 +68,7 @@ if ($submit && $mode == 'move' && (!does_exists($newforum, $db, 'forum') || !for
 }
 
 if($submit || ($user_logged_in==1 && $mode=='viewip')) {
-   if( $user_logged_in != 1 && !forum_verify_password($passwd, $mod_data[user_password]) )
+   if( $user_logged_in != 1 && !check_user_pw($mod_data['username'], $passwd, $db) )
      error_die("Error - You did not enter the correct password, please go back and try again.");
 
    switch($mode) {

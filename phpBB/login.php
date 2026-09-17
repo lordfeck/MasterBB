@@ -43,11 +43,8 @@ if (!$submit) {
 	if ($user == '' || $passwd == '') {
 		error_die("$l_userpass $l_tryagain");
 	}
-	if (!check_username($user, $db)) {
-		error_die("$l_nouser $l_tryagain");
-	}
 	if (!check_user_pw($user, $passwd, $db)) {
-		error_die("$l_wrongpass $l_tryagain");
+		error_die("Invalid username or password. $l_tryagain");
 	}
 
 	/* if we get here, user has entered a valid username and password combination. */

@@ -29,10 +29,6 @@ def secure(step: str) -> None:
     print(f"ok - blocked: {step}", flush=True)
 
 
-def known_vulnerability(step: str) -> None:
-    print(f"known vulnerable - {step}", flush=True)
-
-
 def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     known_findings = 0
     anonymous = Browser(base_url)
@@ -54,12 +50,8 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
         },
     )
     reject(page, reflected_marker, "administration login HTML escaping")
-    require(
-        page,
-        "&lt;script id=&quot;masterbb-reflected-xss&quot;&gt;",
-        "administration login HTML escaping",
-    )
-    secure("administration login errors encode reflected input")
+    reject(page, "masterbb-reflected-xss", "administration login disclosure")
+    secure("administration login failures do not reflect account input")
 
     page = Browser(base_url).request(
         "bb_register.php",
@@ -257,6 +249,23 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     attacker_user_id = user_id_match.group(1)
 
     require(login(user, USER_NAME, USER_PASSWORD), f"Logged in as {USER_NAME}", "authorization member login")
+    page = user.request(
+        "prefs.php",
+        {
+            "submit": "Save Preferences",
+            "save": "1",
+            "themes": "1",
+            "viewemail": "0",
+            "savecookie": "0",
+            "sig": "0",
+            "smile": "0",
+            "dishtml": "0",
+            "disbbcode": "0",
+            "lang": "../../config",
+        },
+    )
+    require(page, "preference values are invalid", "language allowlist")
+    secure("language and preference choices use explicit allowlists")
     member_profile = user.request("bb_profile.php?mode=edit")
     member_id_match = re.search(r'NAME="user_id" VALUE="([0-9]+)"', member_profile)
     if member_id_match is None:
@@ -532,22 +541,23 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     secure("member and moderator roles cannot enter any administration surface")
 
     profile_marker = '<script id="masterbb-profile-xss">alert(1)</script>'
-    page = attacker.request(
-        "bb_profile.php",
-        {
-            "submit": "Submit",
-            "mode": "edit",
-            "save": "1",
-            "user_id": attacker_user_id,
-            "password": ATTACKER_PASSWORD,
-            "email": "attacker@example.test",
-            "website": "javascript:alert(1)",
-            "from": profile_marker,
-            "occ": '\" onmouseover=\"alert(1)',
-            "intrest": "Arcane boards & secure code",
-            "sig": "[b]Safe signature[/b] " + profile_marker,
-        },
-    )
+    profile_fields = {
+        "submit": "Submit",
+        "mode": "edit",
+        "save": "1",
+        "user_id": attacker_user_id,
+        "password": ATTACKER_PASSWORD,
+        "email": "attacker@example.test",
+        "website": "javascript:alert(1)",
+        "from": profile_marker,
+        "occ": '\" onmouseover=\"alert(1)',
+        "intrest": "Arcane boards & secure code",
+        "sig": "[b]Safe signature[/b] " + profile_marker,
+    }
+    page = attacker.request("bb_profile.php", profile_fields)
+    require(page, "profile fields are invalid", "profile URL validation")
+    profile_fields["website"] = "https://example.test/profile"
+    page = attacker.request("bb_profile.php", profile_fields)
     require(page, "Your Information has been updated", "profile XSS fixture")
     rotated_cookie = attacker.cookie("phpBBsession")
     if rotated_cookie is None or rotated_cookie.value == initial_session_token:
@@ -565,8 +575,9 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
         "profile HTML escaping",
     )
     require(page, '&quot; onmouseover=&quot;alert(1)', "profile attribute escaping")
-    require(page, '<a href="#" target="_blank"', "unsafe profile URL handling")
-    secure("profile text and attributes are encoded and unsafe website schemes are inert")
+    require(page, '<a href="https://example.test/profile" target="_blank"', "safe profile URL handling")
+    reject(page, "javascript:alert(1)", "rejected profile URL persistence")
+    secure("profile text and attributes are encoded and unsafe website schemes are rejected")
 
     page = attacker.request(
         "reply.php",
@@ -652,21 +663,18 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     secure("state-changing POSTs reject missing CSRF tokens")
 
     installer_probe = Browser(base_url)
-    installer_probe.request("install.php")
-    page = installer_probe.request("install.php", {"next": "Install"}, csrf=False)
-    require(page, "Invalid or missing form token", "installer CSRF rejection")
+    page = installer_probe.request("install.php")
+    require(page, "permanently locked", "installer lock")
     if installer_probe.last_status != 403:
-        raise SmokeFailure("installer CSRF rejection: expected HTTP 403")
-    secure("installer POSTs share the CSRF boundary")
+        raise SmokeFailure("installer lock: expected HTTP 403")
+    reject(page, "Database Server Address", "installer lock form disclosure")
+    page = installer_probe.request("install.php", {"next": "database"}, csrf=False)
+    require(page, "permanently locked", "installer POST lock")
+    secure("successful installation permanently locks installer GET and POST")
 
-    page = anonymous.request("install.php")
-    require(page, "not writeable by the web server", "installer availability characterization")
-    known_vulnerability(
-        "the installer endpoint remains reachable and relies on config.php permissions"
-    )
-    known_findings += 1
-
-    if anonymous.last_headers is None:
+    header_probe = Browser(base_url)
+    header_probe.request("index.php")
+    if header_probe.last_headers is None:
         raise SmokeFailure("security-header characterization: no response headers")
     expected_headers = (
         "Content-Security-Policy",
@@ -674,15 +682,34 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
         "Referrer-Policy",
         "X-Frame-Options",
     )
-    present_headers = {
-        name.lower() for name in anonymous.last_headers.keys()
-    }
-    if any(name.lower() in present_headers for name in expected_headers):
-        raise SmokeFailure(
-            "security-header characterization: baseline unexpectedly changed"
-        )
-    known_vulnerability("baseline browser security headers are absent")
-    known_findings += 1
+    present_headers = {name.lower() for name in header_probe.last_headers.keys()}
+    missing_headers = [name for name in expected_headers if name.lower() not in present_headers]
+    if missing_headers:
+        raise SmokeFailure(f"security headers missing: {', '.join(missing_headers)}")
+    if header_probe.last_headers.get("X-Content-Type-Options") != "nosniff":
+        raise SmokeFailure("security headers: expected nosniff")
+    csp = header_probe.last_headers.get("Content-Security-Policy", "")
+    if "frame-ancestors 'none'" not in csp or "object-src 'none'" not in csp:
+        raise SmokeFailure("security headers: CSP lacks framing/object restrictions")
+    server_header = header_probe.last_headers.get("Server", "")
+    if "/" in server_header or header_probe.last_headers.get("X-Powered-By"):
+        raise SmokeFailure("response headers disclose server or PHP versions")
+    secure("baseline browser security headers are enforced centrally")
+
+    internal_probe = Browser(base_url)
+    internal_probe.request("config.php")
+    if internal_probe.last_status != 403:
+        raise SmokeFailure("internal-file boundary: config.php was directly reachable")
+    secure("internal bootstrap and configuration files are denied by Apache")
+
+    oversized = Browser(base_url)
+    page = oversized.request(
+        "bb_register.php",
+        {"submit": "Submit", "username": "x" * 270000},
+    )
+    if oversized.last_status != 413:
+        raise SmokeFailure("request-size boundary: expected HTTP 413")
+    secure("oversized requests are rejected before application processing")
 
     safe_get_logout = Browser(base_url)
     require(login(safe_get_logout, ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as", "safe-method login")
@@ -690,6 +717,36 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     require(safe_get_logout.request("index.php"), "Logged in as Smoke O&#039;Brien", "logout GET session preservation")
 
     require(login(admin, ADMIN_NAME, ADMIN_PASSWORD, admin=True), "Administration", "safe-method administrator login")
+    invalid_theme_name = "Invalid Traversal Theme"
+    page = admin.request(
+        "admin/admin_themes.php",
+        {
+            "mode": "add",
+            "submit": "Save Theme",
+            "theme_name": invalid_theme_name,
+            "theme_bgcolor": "#000000",
+            "theme_textcolor": "#FFFFFF",
+            "theme_color1": "#111111",
+            "theme_color2": "#222222",
+            "theme_tablebg": "#333333",
+            "theme_linkcolor": "#00FFFF",
+            "theme_vlinkcolor": "#00AAAA",
+            "theme_fontface": "sans-serif",
+            "theme_fontsize1": "1",
+            "theme_fontsize2": "2",
+            "theme_fontsize3": "-2",
+            "theme_fontsize4": "+1",
+            "theme_tablewidth": "95%",
+            "image_header": "../config.php",
+            "image_newtopic": "new_topic.jpg",
+            "image_reply": "reply.jpg",
+            "image_replylocked": "reply_locked.jpg",
+        },
+    )
+    require(page, "local files below the images directory", "theme path validation")
+    page = admin.request("admin/admin_themes.php")
+    reject(page, invalid_theme_name, "invalid theme persistence")
+    secure("theme and rank assets are restricted to local image paths")
     page = admin.request("admin/admin_themes.php?mode=remove&theme_id=4")
     require(page, 'NAME="mode" VALUE="remove"', "theme deletion confirmation GET")
     page = admin.request("admin/admin_themes.php")
@@ -758,6 +815,35 @@ def characterize(base_url: str, idle_timeout_test_seconds: int) -> None:
     reject(change_peer.request("index.php"), "Logged in as Smoke O&#039;Brien", "password-change peer revocation")
     reject(login(Browser(base_url), ATTACKER_NAME, ATTACKER_PASSWORD), "Logged in as Smoke O&#039;Brien", "old changed password")
     secure("profile password changes revoke other sessions and rotate the current one")
+
+    login_throttle = Browser(base_url)
+    for attempt in range(5):
+        page = login(login_throttle, "ThrottleTarget", f"incorrect-password-{attempt}")
+        if login_throttle.last_status == 429:
+            raise SmokeFailure("login throttling activated before the configured account limit")
+    page = login(login_throttle, "ThrottleTarget", "incorrect-password-final")
+    if login_throttle.last_status != 429:
+        raise SmokeFailure("login throttling: expected HTTP 429 after repeated failures")
+    require(page, "Invalid username or password", "login throttling uniform response")
+    if login_throttle.last_headers is None or not login_throttle.last_headers.get("Retry-After"):
+        raise SmokeFailure("login throttling: missing Retry-After header")
+
+    reset_throttle = Browser(base_url)
+    for attempt in range(5):
+        page = reset_throttle.request(
+            "sendpassword.php",
+            {"submit": "Submit", "user": "ResetThrottle", "email": "nobody@example.test"},
+        )
+        if reset_throttle.last_status == 429:
+            raise SmokeFailure("password-reset throttling activated before the configured account limit")
+    page = reset_throttle.request(
+        "sendpassword.php",
+        {"submit": "Submit", "user": "ResetThrottle", "email": "nobody@example.test"},
+    )
+    if reset_throttle.last_status != 429:
+        raise SmokeFailure("password-reset throttling: expected HTTP 429 after repeated requests")
+    require(page, "Too many password-reset requests", "password-reset throttling response")
+    secure("login and password-reset abuse is throttled per account and network")
 
     print(
         f"Security characterization completed with {known_findings} known open findings.",

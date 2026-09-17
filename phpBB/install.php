@@ -21,6 +21,24 @@
 include('extention.inc');
 include("functions.$phpEx");
 
+$config_path = __DIR__ . "/config.$phpEx";
+$config_source = @file_get_contents($config_path);
+if (is_string($config_source) && str_contains($config_source, "define('PHPBB_INSTALLED', true);")) {
+	http_response_code(403);
+	die('This board is already installed. The web installer is permanently locked.');
+}
+
+session_name('phpBBinstall');
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
+session_set_cookie_params(array(
+	'path' => rtrim(str_replace('\\', '/', dirname($PHP_SELF)), '/') ?: '/',
+	'secure' => forum_request_is_https(),
+	'httponly' => true,
+	'samesite' => 'Strict',
+));
+session_start();
+
 $install_cookie_path = rtrim(str_replace('\\', '/', dirname($PHP_SELF)), '/');
 $install_cookie_path = $install_cookie_path === '' ? '/' : $install_cookie_path;
 forum_csrf_initialize($install_cookie_path, '', forum_request_is_https());
@@ -56,6 +74,26 @@ $hot = request_int('hot', 0, 'post');
 $ppp = request_int('ppp', 0, 'post');
 $tpp = request_int('tpp', 0, 'post');
 $language = request_string('language', 'english', 'post');
+
+if ($next === 'database' && !$done && $dbserver !== '' && $dbname !== '' && $dbuser !== '') {
+	if (strlen($dbserver) > 255 || strlen($dbname) > 64 || strlen($dbuser) > 128 || strlen($dbpass) > 255) {
+		die('The supplied database settings are invalid.');
+	}
+	session_regenerate_id(true);
+	$_SESSION['install_database'] = array(
+		'dbserver' => $dbserver,
+		'dbname' => $dbname,
+		'dbuser' => $dbuser,
+		'dbpass' => $dbpass,
+	);
+}
+if ($next !== 'database' || $done) {
+	$install_database = $_SESSION['install_database'] ?? array();
+	$dbserver = (string) ($install_database['dbserver'] ?? '');
+	$dbname = (string) ($install_database['dbname'] ?? '');
+	$dbuser = (string) ($install_database['dbuser'] ?? '');
+	$dbpass = (string) ($install_database['dbpass'] ?? '');
+}
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Strict//EN">
           <HTML>
@@ -73,7 +111,7 @@ if($next) {
 	 echo "Testing DB Connection...";
 	 flush();
 	 if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
-	   die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
+	   die("<font color=\"#FF0000\">The database connection failed. Please verify the supplied settings and try again.");
 	 echo "<font color=\"#00FF00\">DB Connection Good!</FONT><BR>";
 	 flush();
 	 echo "Selected database $dbname...";
@@ -196,6 +234,17 @@ if($next) {
 								KEY user_id (user_id),
 								KEY last_seen_at (last_seen_at),
 								KEY created_at (created_at)
+								)",
+			  "auth_attempts" => "CREATE TABLE auth_attempts (
+								attempt_id bigint unsigned NOT NULL auto_increment,
+								action_name varchar(32) NOT NULL,
+								account_key char(64) NOT NULL,
+								network_key char(64) NOT NULL,
+								attempted_at bigint unsigned NOT NULL,
+								succeeded tinyint(1) NOT NULL DEFAULT '0',
+								PRIMARY KEY (attempt_id),
+								KEY account_window (action_name, account_key, attempted_at),
+								KEY network_window (action_name, network_key, attempted_at)
 								)",
 			  "themes" => "CREATE TABLE themes (
 							    theme_id int(10) NOT NULL auto_increment,
@@ -388,10 +437,6 @@ if($next) {
 ?>
 	   <CENTER>
 	   <FORM METHOD="POST" ACTION="<?php echo $PHP_SELF ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbname" VALUE="<?php echo $dbname ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbserver" VALUE="<?php echo $dbserver ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbuser" VALUE="<?php echo $dbuser ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbpass" VALUE="<?php echo $dbpass ?>">
 	   <INPUT TYPE="HIDDEN" NAME="done" VALUE="1">
 	   <INPUT TYPE="HIDDEN" NAME="next" VALUE="database">
 	   <INPUT TYPE="SUBMIT" VALUE="Next >">
@@ -479,10 +524,6 @@ if($next) {
 	   </TR>
 	   <TR>
 	   <TD  BGCOLOR="<?php echo $color1?>" colspan=2 ALIGN="CENTER">
-	   <INPUT TYPE="HIDDEN" NAME="dbname" VALUE="<?php echo $dbname ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbserver" VALUE="<?php echo $dbserver ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbuser" VALUE="<?php echo $dbuser ?>">
-	   <INPUT TYPE="HIDDEN" NAME="dbpass" VALUE="<?php echo $dbpass ?>">
 	   <INPUT TYPE="HIDDEN" NAME="next" VALUE="user">
 	   <INPUT TYPE="SUBMIT" VALUE="Next >">&nbsp;<INPUT TYPE="RESET" VALUE="Clear">
 	   </TR>
@@ -494,11 +535,18 @@ if($next) {
       break;
     case 'user':
       if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
-	die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
+	die("<font color=\"#FF0000\">The database connection failed. Please restart installation and verify the supplied settings.");
       db_select_db("$dbname", $db);
 	 
       if($password == '' || $username == '' || $email == '')
 	die("Error - you did not fill in all the required fields, please go back and fill them in.");
+	  if (strlen($username) > 40 || strlen($email) > 50 || !forum_valid_email($email)
+		  || (trim($website) !== 'http://' && !forum_valid_web_url($website))
+		  || strlen($sig) > 255 || strlen($occ) > 100 || strlen($intrest) > 150
+		  || strlen($from) > 100 || strlen($icq) > 15 || strlen($aim) > 18
+		  || strlen($yim) > 25 || strlen($msnm) > 25) {
+		die('One or more administrator profile fields are invalid. Please go back and correct them.');
+	  }
       
       if($password != $password_rep)
 	die("The passwords you entered do not match. Please go back and try again");
@@ -521,7 +569,7 @@ if($next) {
 			         user_aim, user_viewemail, user_yim, user_msnm, user_level)
 	                         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 4)";
       if(!$result = db_query_params($sql, array($username, $regdate, $email, $icq, $passwd, $occ, $intrest, $from, $website, $sig, $aim, (int) $sqlviewemail, $yim, $msnm), $db))
-	die("An Error Occurred while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
+	die("An error occurred while creating the administrator. Please go back and try again.");
       $color1 = "#6C706D";
       $color2 = "#2E4460";
 
@@ -582,10 +630,6 @@ The Site Admin</TEXTAREA></TD>
 	<TD><?php echo $lang_select?></TD>
 	</TR>
 	<TD BGCOLOR="<?php echo $color1?>" colspan=2 ALIGN="CENTER">
-	<INPUT TYPE="HIDDEN" NAME="dbname" VALUE="<?php echo $dbname ?>">
-	<INPUT TYPE="HIDDEN" NAME="dbserver" VALUE="<?php echo $dbserver ?>">
-	<INPUT TYPE="HIDDEN" NAME="dbuser" VALUE="<?php echo $dbuser ?>">
-	<INPUT TYPE="HIDDEN" NAME="dbpass" VALUE="<?php echo $dbpass ?>">
 	<INPUT TYPE="HIDDEN" NAME="next" VALUE="options">
 	<INPUT TYPE="SUBMIT" VALUE="Next >">&nbsp;<INPUT TYPE="RESET" VALUE="Clear">
 	</TR>
@@ -596,27 +640,47 @@ The Site Admin</TEXTAREA></TD>
       break;
     case 'options':
       if(!$db = db_connect("$dbserver", "$dbuser", "$dbpass"))
-	die("<font color=\"#FF0000\">Error, I could not connect to the database at $dbserver. Using username $dbuser and password $dbpass.<BR>Please go back and try again.");
+	die("<font color=\"#FF0000\">The database connection failed. Please restart installation and verify the supplied settings.");
       db_select_db("$dbname", $db);
+	  if (trim($name) === '' || strlen($name) > 100 || !forum_valid_email($email_from)
+		  || !forum_valid_language($language) || !in_array($bb, array(0, 1), true)
+		  || !in_array((int) $sig, array(0, 1), true) || $hot < 0 || $hot > 999
+		  || $ppp < 1 || $ppp > 100 || $tpp < 1 || $tpp > 100) {
+		die('One or more board settings are invalid. Please go back and correct them.');
+	  }
       
       $sql = "INSERT INTO config (sitename, allow_html, allow_bbcode, allow_sig, hot_threshold, posts_per_page, topics_per_page, email_from, email_sig, selected, default_lang) ";
       $sql .= "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
-      $result = db_query_params($sql, array($name, 0, $bb, $sig, $hot, $ppp, $tpp, $email_from, $email_sig, $language), $db);
+      $result = db_query_params($sql, array($name, 0, $bb, (int) $sig, $hot, $ppp, $tpp, $email_from, $email_sig, $language), $db);
       if (!$result) {
-	 echo db_error() . "<br>";
 	 die("Error - Cannot update the database.</FONT>");
       }
       $config_file = file("./config.$phpEx");
       if(!strstr($config_file[count($config_file)-1], '?>') ) {  // Last line of config file shouldn't contain php closing tag.
 	 if(!$fp = fopen("./config.$phpEx", "a"))
 	   die("Error opening config.$phpEx, please check and make sure it exists in the same directory as this installation script and then try again.");
-	 $config_data = '$dbhost = "'.$dbserver.'";'."\n".
-	   '$dbname = "'.$dbname.'";'."\n".
-	   '$dbuser = "'.$dbuser.'";'."\n".
-	   '$dbpasswd = "'.$dbpass.'";'."\n".
-	   '?>'."\n";
+	 $config_data = '$dbhost = ' . var_export($dbserver, true) . ';' . "\n".
+	   '$dbname = ' . var_export($dbname, true) . ';' . "\n".
+	   '$dbuser = ' . var_export($dbuser, true) . ';' . "\n".
+	   '$dbpasswd = ' . var_export($dbpass, true) . ';' . "\n".
+	   "define('PHPBB_INSTALLED', true);" . "\n".
+	   '?>' . "\n";
 	 fputs($fp, $config_data);
+	 fflush($fp);
 	 fclose($fp);
+	 @chmod($config_path, 0400);
+	 $_SESSION = array();
+	 if (ini_get('session.use_cookies')) {
+		$params = session_get_cookie_params();
+		setcookie(session_name(), '', array(
+			'expires' => time() - 3600,
+			'path' => $params['path'],
+			'secure' => $params['secure'],
+			'httponly' => true,
+			'samesite' => 'Strict',
+		));
+	 }
+	 session_destroy();
       } else print "DB config was probably already added. Did not modify DB config.<br>\n";
 ?>
 <FORM METHOD="POST" ACTION="<?php echo $PHP_SELF ?>">

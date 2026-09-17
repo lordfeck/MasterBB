@@ -256,7 +256,7 @@ else
 
 	if(!$result = db_query_params($query, $query_params, $db))
 	{
-		die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database<BR>".db_error($db)."<BR>$query");
+		die("<font size=+1>An Error Occured</font><hr>phpBB was unable to query the forums database.");
 	}
 
 	if(!$row = @db_fetch_array($result))

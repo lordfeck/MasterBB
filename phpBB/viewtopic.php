@@ -183,7 +183,7 @@ $sql = "SELECT p.*, pt.post_text FROM posts p, posts_text pt
    AND p.post_id = pt.post_id
    ORDER BY post_id LIMIT ?, ?";
 if(!$result = db_query_params($sql, array($topic, $start, (int) $posts_per_page), $db))
-  error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the Posts database. $sql");
+  error_die("<font size=+1>An Error Occured</font><hr>Could not connect to the posts database.");
 $myrow = db_fetch_array($result);
 $row_color = $color2;
 $count = 0;

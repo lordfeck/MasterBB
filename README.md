@@ -35,20 +35,25 @@ Use:
 The hostname is `db`, not `localhost`, because MariaDB runs in the other
 Compose service.
 
+These are development defaults. Override `MASTERBB_DB_ROOT_PASSWORD`,
+`MASTERBB_DB_NAME`, `MASTERBB_DB_USER`, and `MASTERBB_DB_PASSWORD` before any
+non-local deployment, then enter the matching non-root application credentials
+in the installer. Do not use the example passwords outside an isolated local
+environment.
+
 ## After installation
 
-The historical installer needs `config.php` to be writable while it records
-the selected database settings. The image initially sets mode 666 for that
-reason. Once installation is complete, lock it down and remove the installer:
+The installer keeps database credentials in a short-lived server-side session;
+they are not returned through hidden browser fields. Successful installation
+adds a permanent marker to `config.php`, changes that file to mode `0400`,
+destroys the installation session, and makes every later installer GET or POST
+return HTTP 403. Removing `install.php` from a production image remains useful
+defense in depth, but is no longer the lock mechanism.
 
-```sh
-docker compose exec phpbb chmod 444 /var/www/html/phpBB/config.php
-docker compose exec phpbb rm -f /var/www/html/phpBB/install.php
-```
-
-The generated configuration lives in the application container. Rebuilding or
-recreating that container requires a fresh installation, which matches the
-current fresh-install-only scope.
+Generated configuration is stored in the `phpbb-config` volume and therefore
+survives web-container replacement. Back up that volume alongside `phpbb-db`.
+Deleting either volume is destructive; this port supports fresh installations
+only and does not provide schema or data migrations.
 
 ## Smoke tests
 
@@ -68,8 +73,9 @@ Docker and Python 3.10 or newer are required. Run:
 ./tests/run-smoke.sh
 ```
 
-The script creates a uniquely named Compose project and database volume, uses
-port `18080` by default, and removes only those isolated resources afterward.
+The script creates a uniquely named Compose project plus database and
+configuration volumes, uses port `18080` by default, and removes only those
+isolated resources afterward.
 It does not use or reset the ordinary development database. To choose another
 port or retain the stack for inspection:
 
@@ -91,16 +97,17 @@ checks the current boundaries around:
 - session entropy, rotation, expiry, logout isolation, cookie attributes, and
   trusted-proxy boundaries.
 
-It also deliberately verifies and reports the known open CSRF finding, so a
-passing run does not imply that the application is ready for an untrusted
-network. Run it with:
+It also checks SQL injection, contextual encoding, CSRF, object authorization,
+password/session behavior, installer locking, response headers, input and
+asset validation, request limits, and login/password-reset throttling. Run it
+with:
 
 ```sh
 ./tests/run-security.sh
 ```
 
 The script uses port `18081` by default and removes its isolated Compose
-project and database volume afterward. `MASTERBB_SECURITY_PORT` and
+project and volumes afterward. `MASTERBB_SECURITY_PORT` and
 `KEEP_SECURITY_STACK=1` provide the same overrides as the smoke runner.
 
 ## HTTPS, proxies, sessions, and mail
@@ -120,11 +127,47 @@ convenience. `MASTERBB_HTTPS_MODE=on` can force Secure cookies when every
 external request is guaranteed to use HTTPS, and `off` is intended only for a
 deliberate HTTP development environment.
 
+Set `MASTERBB_HSTS_SECONDS=31536000` only after HTTPS is working for the public
+hostname and all traffic is redirected to it. HSTS is emitted only for requests
+the application recognizes as HTTPS; it defaults to disabled to avoid trapping
+local HTTP installations. Central responses enforce CSP, framing denial,
+MIME-sniffing protection, a referrer policy, and a minimal permissions policy.
+
+Requests are capped at 256 KiB by both Apache and PHP. The application limit
+can be lowered with `MASTERBB_MAX_REQUEST_BYTES`; raising it also requires a
+deliberate image/server configuration change. Authentication failures use a
+15-minute window with limits of five failures per account key and thirty per
+client-network key. Tune these with `MASTERBB_AUTH_WINDOW_SECONDS`,
+`MASTERBB_AUTH_ACCOUNT_FAILURES`, and `MASTERBB_AUTH_NETWORK_FAILURES` after
+monitoring real traffic. Authentication audit events contain only truncated
+hashes of account/network keys and never passwords or tokens.
+
 The defaults are a one-hour idle session lifetime, a 24-hour absolute session
 lifetime, and a one-hour password-reset lifetime. They can be changed with
 `MASTERBB_SESSION_IDLE_SECONDS`, `MASTERBB_SESSION_ABSOLUTE_SECONDS`, and
 `MASTERBB_PASSWORD_RESET_SECONDS`; the absolute lifetime is never allowed to
 be shorter than the idle lifetime.
+
+## Deployment checklist
+
+The supplied Compose file is a localhost development/reference deployment, not
+a complete Internet edge. Before public deployment:
+
+1. Use strong unique MariaDB root and application credentials and restrict the
+   application account to its database.
+2. Put the service behind a maintained TLS reverse proxy; expose only that
+   proxy, configure `MASTERBB_PUBLIC_URL`, and narrowly set
+   `MASTERBB_TRUSTED_PROXIES` or force HTTPS mode when appropriate.
+3. Enable HSTS only after validating HTTPS and redirects, and retain the
+   central security headers at the proxy rather than weakening them.
+4. Configure a real mail transport, centralized application/Apache logs, log
+   rotation, monitoring, and alerting for repeated throttling/database events.
+5. Back up and restore-test both the MariaDB data and `phpbb-config` volumes.
+   Keep the generated configuration readable only by the web-service account.
+6. Set CPU, memory, process, and upstream request/time limits in the chosen
+   orchestrator, and keep PHP, Apache, the base image, and MariaDB patched.
+7. Run `./tests/run-smoke.sh` and `./tests/run-security.sh` against the exact
+   release image before promotion.
 
 ## Reset everything
 
@@ -137,13 +180,15 @@ docker compose up --build
 
 ## Security status
 
-Security hardening is in progress. SQL values are parameterized, rendered
-content is constrained and encoded, passwords and resets use modern
-primitives, and session/cookie handling has been replaced. CSRF protection,
-complete centralized authorization, installer locking, safe error handling,
-security headers, validation, and abuse controls remain open.
+The planned application hardening slices are complete: SQL values are
+parameterized; rendered content is constrained and encoded; passwords,
+resets, sessions, cookies, CSRF, and authorization use centralized modern
+boundaries; and the installer, response headers, validation, error handling,
+request limits, and authentication abuse controls are covered by regression
+tests. This is not a security certification, and the deliberately arcane code
+and markup still merit conservative deployment and ongoing patch review.
 
-Do not expose this stack directly to the public Internet. See
+Do not expose the PHP container directly to the public Internet. See
 [MODERNIZATION_AUDIT.md](MODERNIZATION_AUDIT.md) for the current status and the
 recommended hardening sequence, and [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for
 the detailed findings and remediation status.

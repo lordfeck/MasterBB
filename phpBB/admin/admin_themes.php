@@ -63,11 +63,8 @@ if($login) {
    if ($password == '') {
       die("You have to enter your password. Go back and do so.");
    }
-   if (!check_username($username, $db)) {
-      die('Invalid username "' . html_escape($username) . '". Go back and try again.');
-   }
    if (!check_user_pw($username, $password, $db)) {
-      die("Invalid password. Go back and try again.");
+      die("Invalid username or password. Go back and try again.");
    }
 
    $userdata = get_userdata($username, $db);
@@ -133,6 +130,21 @@ else if(forum_user_is_admin($userdata, $user_logged_in)) {
 	 $image_reply = "images/".$image_reply;
 	 $image_newtopic = "images/".$image_newtopic;
 	 $image_replylocked = "images/".$image_replylocked;
+	 $theme_values = array(
+		'theme_name' => $theme_name, 'bgcolor' => $theme_bgcolor,
+		'textcolor' => $theme_textcolor, 'color1' => $theme_color1,
+		'color2' => $theme_color2, 'table_bgcolor' => $theme_tablebg,
+		'linkcolor' => $theme_linkcolor, 'vlinkcolor' => $theme_vlinkcolor,
+		'fontface' => $theme_fontface, 'fontsize1' => $theme_fontsize1,
+		'fontsize2' => $theme_fontsize2, 'fontsize3' => $theme_fontsize3,
+		'fontsize4' => $theme_fontsize4, 'tablewidth' => $theme_tablewidth,
+		'header_image' => $image_header, 'newtopic_image' => $image_newtopic,
+		'reply_image' => $image_reply, 'replylocked_image' => $image_replylocked,
+	 );
+	 $theme_error = forum_theme_validation_error($theme_values);
+	 if ($theme_error !== '' || strlen($image_header) > 50 || strlen($image_newtopic) > 50 || strlen($image_reply) > 50) {
+		die($theme_error !== '' ? $theme_error : 'Theme image paths are too long.');
+	 }
 
 	 $sql = "INSERT INTO themes (theme_name, bgcolor, textcolor, color1, color2, table_bgcolor, header_image, newtopic_image, reply_image, linkcolor, vlinkcolor, theme_default, fontface, fontsize1, fontsize2, fontsize3, fontsize4, tablewidth, replylocked_image)
 	         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)";
@@ -312,6 +324,21 @@ else if(forum_user_is_admin($userdata, $user_logged_in)) {
 	 $image_reply = "images/".$image_reply;
 	 $image_newtopic = "images/".$image_newtopic;
 	 $image_replylocked = "images/".$image_replylocked;
+	 $theme_values = array(
+		'theme_name' => $theme_name, 'bgcolor' => $theme_bgcolor,
+		'textcolor' => $theme_textcolor, 'color1' => $theme_color1,
+		'color2' => $theme_color2, 'table_bgcolor' => $theme_tablebg,
+		'linkcolor' => $theme_linkcolor, 'vlinkcolor' => $theme_vlinkcolor,
+		'fontface' => $theme_fontface, 'fontsize1' => $theme_fontsize1,
+		'fontsize2' => $theme_fontsize2, 'fontsize3' => $theme_fontsize3,
+		'fontsize4' => $theme_fontsize4, 'tablewidth' => $theme_tablewidth,
+		'header_image' => $image_header, 'newtopic_image' => $image_newtopic,
+		'reply_image' => $image_reply, 'replylocked_image' => $image_replylocked,
+	 );
+	 $theme_error = forum_theme_validation_error($theme_values);
+	 if ($theme_error !== '' || strlen($image_header) > 50 || strlen($image_newtopic) > 50 || strlen($image_reply) > 50) {
+		die($theme_error !== '' ? $theme_error : 'Theme image paths are too long.');
+	 }
 
 	 $sql = "UPDATE themes SET
 		  theme_name = ?, bgcolor = ?, textcolor = ?, color1 = ?, color2 = ?,

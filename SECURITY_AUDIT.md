@@ -178,10 +178,10 @@ HTML is unavailable.
 Black-box tests confirm that stored script markup in posts, PMs, profiles,
 signatures, and site-wide header/footer text is inert; reflected administrator
 login input is encoded; unsafe profile and BBCode URL schemes are not active;
-and ordinary BBCode, safe links, and smilies still render. Validation of theme
-field formats and restriction of theme/rank assets to approved local paths
-remain part of SEC-010 and Slice 7; their current output is nevertheless
-attribute-encoded and rejects active non-web schemes.
+and ordinary BBCode, safe links, and smilies still render. Slice 7 completed
+validation of theme field formats and restriction of theme/rank assets to
+approved local paths; output remains attribute-encoded and rejects active
+non-web schemes.
 
 ### SEC-005 — Session identifiers and cookies are not modern
 
@@ -259,52 +259,55 @@ Fresh-install smoke and full security suites pass.
 
 **Severity:** High
 
-**Status:** Open; black-box reproduced
+**Status:** Closed in Slice 7
 
-After a successful installation, `install.php` still executes installer logic;
-the smoke deployment is protected only because its runner manually makes
-`config.php` read-only, producing a permissions notice instead of a definitive
-installed response. During setup, database credentials travel through repeated
-hidden fields and connection failures can echo the database password. The
-image makes `config.php` world-writable until an operator manually changes it,
-and Compose ships public example credentials as active defaults.
+The historical web flow remains, but database credentials now stay in a
+short-lived server-side installation session after the first form. They are
+not emitted in later hidden fields or database error responses. Configuration
+values are serialized safely rather than interpolated into PHP source.
 
-Keep the historical web flow, but create a one-time installation lock after
-success and reject all later installer requests. Avoid echoing or repeatedly
-round-tripping secrets, use environment/secret inputs for deployment, make
-configuration non-writable during normal operation, and document initial
-bootstrap ownership.
+Successful setup writes a permanent installation marker, flushes the file,
+changes it to mode `0400`, destroys the installation session, and causes every
+later installer GET or POST to return HTTP 403 before processing input. The
+container initially exposes only that configuration file to its web-service
+owner at mode `0600`; a dedicated `phpbb-config` volume preserves the locked
+result across container replacement. Compose credentials remain explicit
+local-development defaults, with production overrides and bootstrap/backup
+requirements documented in `README.md`.
 
 ### SEC-008 — Error handling can disclose internals
 
 **Severity:** Medium
 
-**Status:** Open; confirmed source finding
+**Status:** Closed in Slice 7
 
-Many failure paths emit SQL strings, PDO/MariaDB errors, filesystem paths, and
-installer credentials. Replace browser-facing database detail with stable
-generic messages and log structured diagnostics server-side without passwords,
-session tokens, reset tokens, or CSRF values.
+The database adapter now retains only a stable public failure message and logs
+a structured event containing the operation stage, numeric driver code, and
+sanitized SQL state. It never logs SQL values, credentials, passwords, session
+identifiers, reset tokens, or CSRF tokens. Browser paths that formerly appended
+SQL text or installer credentials now use generic operation-specific messages.
+PHP display errors remain disabled while server-side error logging remains on.
 
 ### SEC-009 — Baseline browser security headers are absent
 
 **Severity:** Medium
 
-**Status:** Partially remediated in Slice 4; response headers remain open
+**Status:** Closed in Slice 7
 
-Responses still lack a CSP, MIME-sniffing protection, and framing protection;
-the password-reset response alone now carries a no-referrer and no-store
-policy. Slice 4 added explicit direct-TLS detection and an allowlisted
-reverse-proxy trust model used for client address and HTTPS detection. Slice 7
-must introduce the remaining headers centrally, begin CSP in report-only mode
-if the legacy markup requires adjustment, and emit HSTS only when the
-application is deliberately configured for HTTPS.
+All PHP entry points now emit an enforced CSP, `nosniff`, framing denial, a
+strict-origin referrer policy, and a minimal permissions policy. The CSP denies
+scripts, objects, framing, foreign form targets, and foreign base URLs. It
+retains inline style attributes and HTTP(S)/data images because the historical
+markup and BBCode image feature require them. HSTS is deliberately opt-in and
+is emitted only when a trusted request is HTTPS. Apache hides version details,
+disables indexes, caps request bodies, and denies direct HTTP access to
+configuration/bootstrap includes.
 
 ### SEC-010 — Validation and URL handling are inconsistent
 
 **Severity:** Medium
 
-**Status:** Open; URL output mitigated in Slice 3
+**Status:** Closed in Slice 7
 
 Email addresses, websites, languages, theme paths/colors, IP addresses,
 pagination, and several administrative numeric ranges still lack consistent
@@ -312,27 +315,54 @@ allowlists and length/range checks. Slice 3 restricts active web URLs to HTTP
 and HTTPS, validates active email links, safely encodes URL attributes, and
 removes obsolete ICQ/AIM/Yahoo active resources.
 
-Slice 7 must add field-specific validation at request boundaries and restrict
-theme and rank asset paths to approved local directories. The output boundary
-must remain in place as defense in depth.
+Slice 7 added field-specific length, range, enum, email, HTTP(S) URL, language,
+IP-address, pagination, forum-access, role, theme-colour/font/dimension, and
+local-asset checks at their mutation boundaries. Theme and rank images must be
+ordinary image files below `images/`, with traversal and active schemes
+rejected. Stored themes are validated again when loaded and fail to a safe
+palette. Contextual output encoding remains in place as defense in depth.
 
 ### SEC-011 — Authentication abuse controls are absent
 
 **Severity:** Medium
 
-**Status:** Partially remediated in Slice 4; throttling and audit events remain open
+**Status:** Closed in Slice 7
 
-Password reset responses are now uniform and password creation enforces a
-12-to-255-byte boundary. Login and password-reset attempts still have no
-throttling. Slice 7 must add per-account and per-network throttling with
-bounded storage and audit events that do not log secrets.
+Password reset responses remain uniform and password creation enforces a
+12-to-255-byte boundary. Login and password-reset requests now share a
+configurable sliding-window control keyed by SHA-256 digests of normalized
+account and trusted client-network values. Defaults allow five failures per
+account and thirty per network in fifteen minutes, return HTTP 429 with
+`Retry-After`, delete expired rows, and cap the table at 10,000 entries.
+Structured audit events contain only truncated key digests and outcomes.
+
+## Residual risk review
+
+No known-open condition remains in the repository's executable security
+characterization, but that is not a certification. Important residual risks
+are operational or inherent in retaining this codebase:
+
+- the application is a compact legacy architecture without framework-level
+  routing, dependency isolation, second-factor authentication, or account
+  email verification;
+- the CSP must permit inline styles and remote HTTP(S) BBCode images, so remote
+  image hosts can observe reader network metadata and mixed-content policy is
+  left to an HTTPS edge/browser;
+- database-backed throttling is per installation and is not a substitute for
+  edge rate limits, bot controls, or distributed abuse detection;
+- the built-in mail path depends on external transport configuration and its
+  delivery, reputation, and monitoring controls;
+- container, proxy, database, host, backup, and dependency patching remain
+  operator responsibilities; and
+- only clean installations are supported. There is no migration or legacy-data
+  compatibility promise.
 
 ## Existing automated evidence
 
 The security characterization suite currently verifies these blocked cases:
 
 - SQL-injection-shaped login input does not authenticate;
-- reflected input in administration login errors is encoded;
+- administration login failures do not reflect supplied account input;
 - cross-user post edit and delete attempts fail;
 - a member cannot quote another recipient's private message;
 - a forged PM HTML option cannot store executable markup;
@@ -352,18 +382,21 @@ The security characterization suite currently verifies these blocked cases:
 - missing CSRF tokens are rejected and former GET mutations are read-only;
 - passwords use the shared modern hashing and verification path;
 - password-reset tokens are expiring, one-time, non-destructive on GET, and
-  revoke existing sessions when consumed; and
+  revoke existing sessions when consumed;
 - sessions resist fixation, rotate on credential authentication, expire when
-  idle, isolate per-browser logout, and carry modern cookie attributes.
+  idle, isolate per-browser logout, and carry modern cookie attributes;
+- successful installation permanently locks GET and POST, makes configuration
+  read-only, and survives web-container replacement;
+- central security headers, server-version suppression, direct internal-file
+  denial, and request-size limits are active;
+- invalid language choices, unsafe profile URLs, and traversing theme assets
+  are rejected; and
+- repeated login and password-reset requests receive HTTP 429 with bounded
+  per-account and per-network state.
 
-It reproduces and labels these remaining open findings:
-
-- the installer endpoint remaining reachable and dependent on file mode after
-  setup; and
-- missing baseline browser security headers.
-
-These tests are characterization, not a certification. Each open assertion
-will be inverted into a rejection test when its remediation slice lands.
+The suite now reports zero known-open findings. It remains regression evidence,
+not a security certification; the residual risks above and deployment controls
+remain relevant.
 
 ## Remediation order
 

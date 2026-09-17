@@ -29,8 +29,12 @@ compose up -d --build
 
 base_url="http://127.0.0.1:$smoke_port/phpBB"
 python3 "$repo_dir/tests/smoke.py" --base-url "$base_url" install
-
-# phpBB's legacy bootstrap refuses to run while config.php is writable.
-compose exec -T phpbb chmod 444 /var/www/html/phpBB/config.php
-
+config_mode=$(compose exec -T phpbb stat -Lc '%a' /var/www/html/phpBB/config.php)
+if [ "$config_mode" != "400" ]; then
+    echo "not ok - installer did not make config.php read-only (mode $config_mode)" >&2
+    exit 1
+fi
+echo "ok - installed configuration is read-only"
+compose up -d --force-recreate --no-deps phpbb >/dev/null
+echo "ok - installed configuration survives container replacement"
 python3 "$repo_dir/tests/smoke.py" --base-url "$base_url" exercise

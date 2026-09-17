@@ -59,7 +59,7 @@ if($submit) {
 		}
 		
 		$fromuserdata = get_userdata($fromusername, $db);
-		if(!forum_verify_password($password, $fromuserdata["user_password"] ?? '')) {
+		if(!check_user_pw($fromuserdata['username'], $password, $db)) {
 			error_die("$l_wrongpass $l_tryagain");
 		}
 		$sessid = new_session($fromuserdata[user_id], $REMOTE_ADDR, $sesscookietime, $db);
@@ -84,7 +84,6 @@ if($submit) {
 	$sql = "INSERT INTO priv_msgs (from_userid, to_userid, msg_time, msg_text) VALUES (?, ?, ?, ?)";
 	
 	if(!db_query_params($sql, array((int) $fromuserdata[user_id], (int) $touserdata[user_id], $time, $message), $db)) {
-		echo $sql . " : " . db_error() . "<br>";
 		error_die("Could not enter data into the database.");
 	}
 

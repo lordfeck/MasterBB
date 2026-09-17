@@ -47,7 +47,7 @@ if($submit || $user_logged_in) {
 	    error_die("$l_userpass $l_tryagain");
 	 }
 	 $userdata = get_userdata($user, $db);
-	 if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
+	 if(!check_user_pw($userdata['username'], $passwd, $db)) {
 	    error_die("$l_wrongpass $l_tryagain");
 	 }
 	 if(is_banned($userdata[user_id], "username", $db))
@@ -64,6 +64,19 @@ if($submit || $user_logged_in) {
 	     clear_forum_cookie($cookiename, $cookiepath, $cookiedomain, $cookiesecure);
       }
       include('page_header.'.$phpEx);
+	  if (!forum_valid_language($lang)
+		  || !in_array($viewemail, array(0, 1), true)
+		  || !in_array($savecookie, array(0, 1), true)
+		  || !in_array($sig, array(0, 1), true)
+		  || !in_array($smile, array(0, 1), true)
+		  || !in_array($dishtml, array(0, 1), true)
+		  || !in_array($disbbcode, array(0, 1), true)) {
+		error_die('One or more preference values are invalid.');
+	  }
+	  $theme_result = db_query_params('SELECT theme_id FROM themes WHERE theme_id = ?', array($themes), $db);
+	  if (!$theme_result || !db_fetch_array($theme_result)) {
+		error_die('The selected theme does not exist.');
+	  }
       //
       // The following code was submitted by Tetraboy <tetraboy@game-mods.com> to fix a security
       // hole found to exist in some systems.
@@ -99,7 +112,7 @@ if($submit || $user_logged_in) {
 	    error_die("$l_userpass $l_tryagain");
 	 }
 	 $userdata = get_userdata($user, $db);
-	 if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
+	 if(!check_user_pw($userdata['username'], $passwd, $db)) {
 	    include('page_header.'.$phpEx);
 	    error_die("$l_wrongpass $l_tryagain");
 	 }

@@ -61,11 +61,8 @@ if($login) {
       if ($password == '') {
 	       die("You have to enter your password. Go back and do so.");
       }
-      if (!check_username($username, $db)) {
-	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
-      }
       if (!check_user_pw($username, $password, $db)) {
-	       die("Invalid password. Go back and try again.");
+	       die("Invalid username or password. Go back and try again.");
       }
 
       $userdata = get_userdata($username, $db);
@@ -114,6 +111,14 @@ include('../page_header.'.$phpEx);
 switch($mode) {
 	case 'setoptions':
 		if($submit) {
+		   if (trim($name) === '' || strlen($name) > 100 || !forum_valid_email($from)
+			   || strlen($esig) > 255 || !forum_valid_language($selected_lang)
+			   || $hot < 0 || $hot > 999 || $ppp < 1 || $ppp > 100 || $tpp < 1 || $tpp > 100
+			   || !in_array($bb, array(0, 1), true) || !in_array($sig, array(0, 1), true)
+			   || !in_array($override_themes, array(0, 1), true)
+			   || !in_array($allow_name_change, array(0, 1), true)) {
+			  die('One or more forum settings are invalid.');
+		   }
 		   $sql = "SELECT count(*) AS total FROM config WHERE (selected = 1)";
 		   $result = db_query($sql, $db);
 		   if (!$result) {
@@ -310,6 +315,13 @@ switch($mode) {
 	break;
 	case 'rankadmin':
 		if($edit || $delete || $add) {
+			if (($edit || $add) && (trim($title) === '' || strlen($title) > 50
+				|| ($image !== '' && !forum_valid_local_asset($image, 'images'))
+				|| $min_posts < 0 || $min_posts > 1000000000
+				|| $max_posts < 0 || $max_posts > 1000000000
+				|| (!$special && !$selected && $min_posts > $max_posts))) {
+				die('The rank title, post range, or local image path is invalid.');
+			}
 
 			if($add) {
 				if($special) {

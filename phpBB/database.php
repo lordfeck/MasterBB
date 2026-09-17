@@ -31,8 +31,9 @@ function db_connect($host, $username, $password)
     }
     catch (PDOException $exception)
     {
-        $db_last_error = $exception->getMessage();
+        $db_last_error = 'Database operation failed.';
         $db_last_errno = (int) $exception->getCode();
+        db_log_error('connect', $db_last_errno, (string) $exception->getCode());
         return false;
     }
 
@@ -170,7 +171,7 @@ function db_insert_id($connection = null)
 function db_error($connection = null)
 {
     global $db_last_error;
-    return $db_last_error;
+    return $db_last_error ?: 'Database operation failed.';
 }
 
 function db_errno($connection = null)
@@ -184,5 +185,16 @@ function db_capture_error($connection)
     global $db_last_error, $db_last_errno;
     $details = $connection->errorInfo();
     $db_last_errno = isset($details[1]) ? (int) $details[1] : 0;
-    $db_last_error = isset($details[2]) ? $details[2] : 'Unknown database error.';
+    $db_last_error = 'Database operation failed.';
+    db_log_error('query', $db_last_errno, isset($details[0]) ? (string) $details[0] : '');
+}
+
+function db_log_error($stage, $driver_code, $sql_state)
+{
+    error_log(json_encode(array(
+        'event' => 'database_error',
+        'stage' => (string) $stage,
+        'driver_code' => (int) $driver_code,
+        'sql_state' => preg_replace('/[^A-Za-z0-9]/', '', (string) $sql_state),
+    ), JSON_UNESCAPED_SLASHES));
 }

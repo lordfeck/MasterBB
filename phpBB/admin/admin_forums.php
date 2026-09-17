@@ -60,11 +60,8 @@ if($login) {
       if ($password == '') {
 	       die("You have to enter your password. Go back and do so.");
       }
-      if (!check_username($username, $db)) {
-	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
-      }
       if (!check_user_pw($username, $password, $db)) {
-	       die("Invalid password. Go back and try again.");
+	       die("Invalid username or password. Go back and try again.");
       }
 
       $userdata = get_userdata($username, $db);
@@ -114,6 +111,11 @@ switch($mode) {
  case 'editforum':
    if($save) {
       if(!$delete) {
+		 if (trim($name) === '' || strlen($name) > 150 || strlen($desc) > 5000
+			 || !in_array($type, array(0, 1), true)
+			 || !in_array($forum_access, array(1, 2, 3), true) || $cat < 1) {
+			die('One or more forum settings are invalid.');
+		 }
 		 $sql = "UPDATE forums SET forum_name = ?, forum_desc = ?, forum_type = ?, cat_id = ?, forum_access = ? WHERE forum_id = ?";
 
 		 if(!$r = db_query_params($sql, array($name, $desc, $type, $cat, $forum_access, $forum), $db))
@@ -128,7 +130,7 @@ switch($mode) {
 	       }
 		       $mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES (?, ?)";
 		       if(!db_query_params($mod_query, array($forum, (int) $mod), $db))
-		 die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
+		 die("The moderator assignment could not be updated.");
 	    }
 	 }
 
@@ -144,7 +146,7 @@ switch($mode) {
 		    foreach($rem_mods as $mod) {
 		       $rem_query = "DELETE FROM forum_mods WHERE forum_id = ? AND user_id = ?";
 		       if(!db_query_params($rem_query, array($forum, (int) $mod)))
-		 die("Error removing moderators for forum!<BR>".db_error($db)."<BR>$rem_query");
+		 die("The forum moderators could not be removed.");
 	    }
 	 }
 	 else {
@@ -154,7 +156,7 @@ switch($mode) {
 		 if(!empty($users_to_promote)) {
 		    $user_query = "UPDATE users SET user_level = 2 WHERE user_id IN (" . implode(', ', array_fill(0, count($users_to_promote), '?')) . ")";
 		    if(!db_query_params($user_query, $users_to_promote, $db))
-	      die("User Error!<BR>".db_error($db)."<BR>$user_query");
+	      die("The moderator user records could not be updated.");
 	 }
 
 	 echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
@@ -399,7 +401,7 @@ if($myrow[forum_access] == 3)
 			$sql = "UPDATE catagories SET cat_title = ? WHERE cat_id = ?";
 			if(!$result = db_query_params($sql, array($new_title, $cat_id), $db))
    		{
-   			die("Could not get catagory data!<br>$sql");
+			die("Could not get category data.");
    		}
    		else
    		{
@@ -416,7 +418,7 @@ if($myrow[forum_access] == 3)
 		$sql = "SELECT cat_title FROM catagories WHERE cat_id = ?";
 		if(!$result = db_query_params($sql, array($cat), $db))
    		{
-   			die("Could not get catagory data!<br>$sql");
+			die("Could not get category data.");
    		}
    		$cat_data = db_fetch_array($result);
    		$cat_title = stripslashes($cat_data["cat_title"]);
@@ -523,6 +525,9 @@ if($myrow[forum_access] == 3)
    break;
  case 'addcat':
    if($submit) {
+	  if (trim($title) === '' || strlen($title) > 100) {
+		die('Category titles must contain between 1 and 100 characters.');
+	  }
       $sql = "SELECT max(cat_order) AS highest FROM catagories";
       if(!$r = db_query($sql, $db))
 			die("Error - Could not query the DB");
@@ -565,11 +570,16 @@ if($myrow[forum_access] == 3)
    if($submit) {
       if($name == '' || $desc == '' || count($mods) === 0)
 			die("You did not fill out all the parts of the form.<br>Did you assign at least one moderator? Please go back and correct the form.");
+	  if (strlen($name) > 150 || strlen($desc) > 5000
+		  || !in_array($type, array(0, 1), true)
+		  || !in_array($forum_access, array(1, 2, 3), true) || $cat < 1) {
+		die('One or more forum settings are invalid.');
+	  }
       $desc = str_replace("\n", "<BR>", $desc);
 			$sql = "INSERT INTO forums (forum_name, forum_desc, forum_access, cat_id, forum_type) VALUES (?, ?, ?, ?, ?)";
 
 	      if(!$result = db_query_params($sql, array($name, $desc, $forum_access, $cat, $type), $db))
-			die("An Error Occurred<HR>Could not contact the database. Please check your config file.<BR>".db_error()."<BR>$sql");
+			die("An error occurred while creating the forum.");
       $forum = db_insert_id($db);
       $count = 0;
 
@@ -582,13 +592,13 @@ if($myrow[forum_access] == 3)
 	 		}
 			$mod_query = "INSERT INTO forum_mods (forum_id, user_id) VALUES (?, ?)";
 			if(!db_query_params($mod_query, array((int) $forum, (int) $mod), $db))
-	   		die("Mod Query Error!<BR>".db_error($db)."<BR>$mod_query");
+			die("The moderator assignment could not be created.");
     	}
 
 	    if(!empty($users_to_promote)) {
 	       $user_query = "UPDATE users SET user_level = 2 WHERE user_id IN (" . implode(', ', array_fill(0, count($users_to_promote), '?')) . ")";
 		if(!db_query_params($user_query, $users_to_promote, $db))
-	   	die("User Error!<BR>".db_error($db)."<BR>$user_query");
+		die("The moderator user records could not be updated.");
     }
       echo "<TABLE width=\"95%\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" bordercolor=\"$table_bgcolor\">";
       echo "<tr><td align=\"center\" width=\"100%\" bgcolor=\"$color1\"><font face=\"$FontFace\" size=\"$FontSize2\" color=\"$textcolor\"><B>Forum Created.</B></font></td>";

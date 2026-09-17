@@ -79,7 +79,7 @@ if($submit) {
 	     {
 		error_die($l_userremoved);
 	     }
-	   if(!forum_verify_password($password, $userdata["user_password"] ?? ''))
+	   if(!check_user_pw($userdata['username'], $password, $db))
 	     {
 		error_die("$l_wrongpass $l_tryagain");
 	     }

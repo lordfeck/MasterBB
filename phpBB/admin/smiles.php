@@ -46,11 +46,8 @@ if($login) {
       if ($password == '') {
 	       die("You have to enter your password. Go back and do so.");
       }
-      if (!check_username($username, $db)) {
-	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
-      }
       if (!check_user_pw($username, $password, $db)) {
-	       die("Invalid password. Go back and try again.");
+	       die("Invalid username or password. Go back and try again.");
       }
            
       $userdata = get_userdata($username, $db);

@@ -63,11 +63,8 @@ if($login) {
       if ($password == '') {
 	       die("You have to enter your password. Go back and do so.");
       }
-      if (!check_username($username, $db)) {
-	       die('Invalid username "' . html_escape($username) . '". Go back and try again.');
-      }
       if (!check_user_pw($username, $password, $db)) {
-	       die("Invalid password. Go back and try again.");
+	       die("Invalid username or password. Go back and try again.");
       }
 
       $userdata = get_userdata($username, $db);
@@ -116,6 +113,11 @@ include('../page_header.'.$phpEx);
 switch($mode) {
 	case 'moduser':
 		if($submit && $edit_user_id) {
+			if (trim($edit_username) === '' || strlen($edit_username) > 40
+				|| strlen($email) > 50 || !forum_valid_email($email)
+				|| !in_array($level, array(1, 2, 3, 4), true) || $rank < 0) {
+				die('One or more user account values are invalid.');
+			}
 			$sql = "UPDATE users SET username = ?, user_email = ?, user_rank = ?, user_level = ? WHERE user_id = ?";
 			if(!$r = db_query_params($sql, array($edit_username, $email, $rank, $level, $edit_user_id), $db))
 				die("Error could not update the database.");
@@ -491,6 +493,11 @@ switch($mode) {
    break;
  case 'banuser':
    if($add) {
+	  if (!in_array($durtype, array(1, 2, 3, 4, 5), true) || $duration < 0 || $duration > 1000000
+		  || !in_array($banby, array(1, 2), true)
+		  || ($banby === 1 && filter_var($ipuser, FILTER_VALIDATE_IP) === false)) {
+		die('The ban target or duration is invalid.');
+	  }
       $starttime = mktime (date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"));
       switch($durtype) {
        case 1:
@@ -541,6 +548,10 @@ switch($mode) {
 
    }
    else if($edit) {
+	  if (!in_array($unit, array(1, 2, 3, 4, 5), true) || $dur < 0 || $dur > 1000000
+		  || ($ipaddy_present && filter_var($ipaddy, FILTER_VALIDATE_IP) === false)) {
+		die('The ban target or duration is invalid.');
+	  }
       $starttime = mktime (date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"));
       switch($unit) {
        case 1:

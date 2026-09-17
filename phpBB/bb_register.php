@@ -87,6 +87,13 @@ if($submit) {
    // If no website entered, make it blank.
    if($website == "http://")
      $website = "";
+	if (strlen($username) > 40 || strlen($email) > 50 || !forum_valid_email($email)
+		|| !forum_valid_web_url($website) || strlen($sig) > 255
+		|| strlen($occ) > 100 || strlen($intrest) > 150 || strlen($from) > 100
+		|| strlen($icq) > 15 || strlen($aim) > 18 || strlen($yim) > 25 || strlen($msnm) > 25) {
+		include('page_header.'.$phpEx);
+		error_die('One or more profile fields are invalid. ' . $l_tryagain);
+	}
 
    
    // Check if the ICQ number only contains digits
@@ -109,7 +116,7 @@ if($submit) {
 
    if(!$result = db_query_params($sql, array((int) $total, $username, $regdate, $email, $icq, $passwd, $occ, $intrest, $from, $website, $sig, $aim, (int) $sqlviewemail, $yim, $msnm), $db)) {
       include('page_header.'.$phpEx);
-      die("An Error Occured while trying to add the information into the database. Please go back and try again. <BR>$sql<BR>" . db_error());
+      die("An error occurred while creating the account. Please go back and try again.");
    }
 
    if($cookie_username) {

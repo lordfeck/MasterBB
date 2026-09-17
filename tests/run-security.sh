@@ -32,9 +32,35 @@ compose up -d --build
 
 base_url="http://127.0.0.1:$security_port/phpBB"
 python3 "$repo_dir/tests/smoke.py" --base-url "$base_url" install
-compose exec -T phpbb chmod 444 /var/www/html/phpBB/config.php
+config_mode=$(compose exec -T phpbb stat -Lc '%a' /var/www/html/phpBB/config.php)
+if [ "$config_mode" != "400" ]; then
+    echo "not ok - installer did not make config.php read-only (mode $config_mode)" >&2
+    exit 1
+fi
+echo "ok - installed configuration is read-only"
+if compose logs --no-color phpbb 2>&1 | grep -F 'installer-secret-must-not-echo' >/dev/null; then
+    echo "not ok - installer credentials appeared in server logs" >&2
+    exit 1
+fi
+if ! compose logs --no-color phpbb 2>&1 | grep -F '"event":"database_error"' >/dev/null; then
+    echo "not ok - structured database diagnostic event was not logged" >&2
+    exit 1
+fi
+echo "ok - database failures log structured diagnostics without installer secrets"
+compose up -d --force-recreate --no-deps phpbb >/dev/null
+echo "ok - installed configuration survives container replacement"
 python3 "$repo_dir/tests/smoke.py" --base-url "$base_url" exercise
 python3 "$repo_dir/tests/security.py" --base-url "$base_url" --idle-timeout-test-seconds 6
+
+auth_attempt_rows=$(compose exec -T db mariadb -N -uphpbb -pphpbb phpbb -e \
+    'SELECT COUNT(*) FROM auth_attempts')
+invalid_auth_keys=$(compose exec -T db mariadb -N -uphpbb -pphpbb phpbb -e \
+    "SELECT COUNT(*) FROM auth_attempts WHERE CHAR_LENGTH(account_key) != 64 OR CHAR_LENGTH(network_key) != 64 OR account_key LIKE '%ThrottleTarget%' OR network_key LIKE '%127.0.0.1%'")
+if [ "$auth_attempt_rows" -le 0 ] || [ "$auth_attempt_rows" -gt 10000 ] || [ "$invalid_auth_keys" -ne 0 ]; then
+    echo "not ok - authentication throttle storage is missing, unbounded, or contains raw keys" >&2
+    exit 1
+fi
+echo "ok - authentication throttle storage is bounded and keyed by digests"
 
 expired_token=$(compose exec -T phpbb sed -n 's/.*token=\([a-f0-9]\{64\}\).*/\1/p' /tmp/masterbb-security-mail.log | tail -n 1)
 if [ "${#expired_token}" -ne 64 ]; then

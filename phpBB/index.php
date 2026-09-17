@@ -32,7 +32,7 @@ $sql = "SELECT c.* FROM catagories c, forums f
 	 GROUP BY c.cat_id, c.cat_title, c.cat_order
 	 ORDER BY c.cat_order";
 if(!$result = db_query($sql, $db))
-	error_die("Unable to get categories from database<br>$sql");
+	error_die("Unable to get categories from the database.");
 $total_categories = db_num_rows($result);
 
 ?>
@@ -75,7 +75,7 @@ if($total_categories)
 	    ORDER BY f.cat_id, f.forum_id";
    if(!$f_res = $forum_params ? db_query_params($sql, $forum_params, $db) : db_query($sql, $db))
      {
-	die("Error getting forum data<br>$sql");
+	die("Error getting forum data.");
      }
 
    while($forum_data = db_fetch_array($f_res))

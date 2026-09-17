@@ -64,9 +64,10 @@ arbitrary globals.
 The negative characterization suite also passes for SQL-injection-shaped login
 input, arbitrary search sort expressions, cross-user post edit/delete attempts,
 unauthorized private-message access, forged private-message HTML options,
-tokenless state changes, and mutation-shaped GET requests. It currently
-reports two known-open deployment findings: the reusable installer and missing
-baseline browser security headers.
+tokenless state changes, and mutation-shaped GET requests. At the Slice 6
+milestone it reported two known-open deployment findings: the reusable
+installer and missing baseline browser security headers. Slice 7 closes both,
+and the current expanded suite reports zero known-open findings.
 
 ## Security findings
 
@@ -166,8 +167,13 @@ Progress is tracked as focused, independently verified commits:
   and administration checks; HTTP 403 denials; and horizontal/vertical tests
   including forged forum identifiers and cross-forum moves. Fresh-install
   smoke and the expanded security suite pass.
-- [ ] Slice 7 — installer lock, safe errors, headers, validation, throttling,
-  deployment guidance, and final residual-risk review.
+- [x] Slice 7 — server-side installer state, a permanent post-install lock and
+  read-only persistent configuration; generic browser errors with structured
+  diagnostics; enforced security headers and request limits; field-specific
+  and local-asset validation; bounded per-account/per-network authentication
+  throttling; deployment guidance; and a final residual-risk review. Fresh
+  container replacement, smoke, and security suites pass with zero known-open
+  characterization findings.
 
 ## Deferred presentation work: themes
 
@@ -207,7 +213,10 @@ Two period-appropriate themes are now included in each fresh installation:
 
 ## Conclusion
 
-The runtime upgrade is reasonably straightforward and is now working for the
-agreed fresh-install workflows. Hardening is practical without sacrificing the
-arcane look and feel, but it should be treated as a systematic second phase,
-not as a handful of search-and-replace patches.
+The PHP 8.4/MariaDB 11.4 runtime upgrade and the agreed seven-slice hardening
+programme are complete for clean installations. The original arcane interface
+and workflows remain, while their database, rendering, authentication,
+session, CSRF, authorization, installation, validation, response, and abuse
+boundaries now have executable regression coverage. Deployment still requires
+the operational controls and accepts the residual risks documented in
+`README.md` and `SECURITY_AUDIT.md`.

@@ -164,7 +164,7 @@ if($mode) {
 		    include('page_header.'.$phpEx);
 		    error_die("$l_enterpassword $l_tryagain");
 		 }
-		 if (!forum_verify_password($password, $userdata[user_password])) {
+		 if (!check_user_pw($userdata['username'], $password, $db)) {
 		    include('page_header.'.$phpEx);
 		    error_die("$l_wrongpass $l_tryagain");
 		 }
@@ -212,6 +212,13 @@ if($mode) {
 		 {
 		 	$website = "";
 		 }
+		 if (strlen($email) > 50 || !forum_valid_email($email)
+			 || !forum_valid_web_url($website) || strlen($sig) > 255
+			 || strlen($occ) > 100 || strlen($intrest) > 150 || strlen($from) > 100
+			 || strlen($icq) > 15 || strlen($aim) > 18 || strlen($yim) > 25 || strlen($msnm) > 25) {
+			include('page_header.'.$phpEx);
+			error_die('One or more profile fields are invalid. ' . $l_tryagain);
+		 }
 
 		 // Check if the ICQ number only contains digits
 		 $icq = (preg_match("/^[0-9]+$/", $icq)) ? $icq : '';
@@ -225,7 +232,7 @@ if($mode) {
 		    $profile_params = array($md_pass, $icq, $occ, $intrest, $from, $website, $sig, $email, (int) $viewemail, $aim, $yim, $msnm, (int) $user_id);
 		 }
 		 if(!$result = db_query_params($sql, $profile_params, $db)) {
-		    error_die("Could not update userinfo in database.<br>$sql");
+		    error_die("Could not update user information in the database.");
 		 }
 		 if($password_changed) {
 		    end_all_user_sessions($userdata[user_id], $db);
@@ -245,7 +252,7 @@ if($mode) {
 		    $userdata = get_userdata($user, $db);
 		    if(is_banned($userdata[user_id], "username", $db))
 		      error_die("$l_banned");
-		    if(!forum_verify_password($passwd, $userdata["user_password"] ?? '')) {
+		    if(!check_user_pw($userdata['username'], $passwd, $db)) {
 		       error_die("$l_wrongpass $l_tryagain");
 		    }
 		    // They have authed succecfully, log them in.

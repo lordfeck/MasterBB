@@ -109,6 +109,10 @@ if($result = db_query($sql, $db)) {
       $sys_lang = $default_lang;
    }
 }
+if (!forum_valid_language($default_lang)) {
+	$default_lang = 'english';
+	$sys_lang = 'english';
+}
 
 // We MUST do this up here, so it's set even if the cookie's not present.
 $user_logged_in = 0;
@@ -160,7 +164,7 @@ if(isset($HTTP_COOKIE_VARS[$sesscookiename])) {
 
 	   }
 	   // Use the language the user has choosen
-	   if($userdata["user_lang"] != '')
+	   if($userdata["user_lang"] != '' && forum_valid_language($userdata["user_lang"]))
 	     $default_lang = $userdata["user_lang"];
 	} else {
 		clear_forum_cookie($sesscookiename, $cookiepath, $cookiedomain, $cookiesecure);

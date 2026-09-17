@@ -127,6 +127,34 @@ def wait_for_installer(browser: Browser) -> None:
 def install(base_url: str) -> None:
     browser = Browser(base_url)
     wait_for_installer(browser)
+    initial_install_cookie = browser.cookie("phpBBinstall")
+    if initial_install_cookie is None:
+        raise SmokeFailure("installer session: no server-side state cookie was issued")
+    install_cookie_attributes = {key.lower() for key in initial_install_cookie._rest}
+    if "httponly" not in install_cookie_attributes or "samesite" not in install_cookie_attributes:
+        raise SmokeFailure("installer session: expected HttpOnly and SameSite attributes")
+
+    page = browser.request("install.php", {"next": "database"}, csrf=False)
+    require(page, "Invalid or missing form token", "installer CSRF rejection")
+    if browser.last_status != 403:
+        raise SmokeFailure("installer CSRF rejection: expected HTTP 403")
+
+    installer_secret = "installer-secret-must-not-echo"
+    page = browser.request(
+        "install.php",
+        {
+            "next": "database",
+            "dbserver": "db",
+            "dbname": "phpbb",
+            "dbuser": "invalid-installer-user",
+            "dbpass": installer_secret,
+        },
+    )
+    require(page, "database connection failed", "installer database error")
+    reject(page, installer_secret, "installer credential disclosure")
+    failed_install_cookie = browser.cookie("phpBBinstall")
+    if failed_install_cookie is None or failed_install_cookie.value == initial_install_cookie.value:
+        raise SmokeFailure("installer session: identifier did not rotate before storing credentials")
 
     page = browser.request(
         "install.php",
@@ -139,6 +167,10 @@ def install(base_url: str) -> None:
         },
     )
     require(page, "Database Created Successfully", "database installation")
+    reject(page, 'NAME="dbpass"', "installer server-side credential state")
+    database_install_cookie = browser.cookie("phpBBinstall")
+    if database_install_cookie is None or database_install_cookie.value == failed_install_cookie.value:
+        raise SmokeFailure("installer session: replacement database credentials did not rotate state")
     report("fresh database schema and seed data installed")
 
     page = browser.request(
@@ -146,10 +178,6 @@ def install(base_url: str) -> None:
         {
             "next": "database",
             "done": "1",
-            "dbserver": "db",
-            "dbname": "phpbb",
-            "dbuser": "phpbb",
-            "dbpass": "phpbb",
         },
     )
     require(page, 'NAME="username"', "administrator form")
@@ -158,10 +186,6 @@ def install(base_url: str) -> None:
         "install.php",
         {
             "next": "user",
-            "dbserver": "db",
-            "dbname": "phpbb",
-            "dbuser": "phpbb",
-            "dbpass": "phpbb",
             "username": ADMIN_NAME,
             "password": ADMIN_PASSWORD,
             "password_rep": ADMIN_PASSWORD,
@@ -176,10 +200,6 @@ def install(base_url: str) -> None:
         "install.php",
         {
             "next": "options",
-            "dbserver": "db",
-            "dbname": "phpbb",
-            "dbuser": "phpbb",
-            "dbpass": "phpbb",
             "name": "Smoke Board",
             "email_from": "admin@example.test",
             "email_sig": "Smoke Board",
@@ -193,7 +213,16 @@ def install(base_url: str) -> None:
         },
     )
     require(page, "successfully installed phpBB", "board configuration")
+    if browser.cookie("phpBBinstall") is not None:
+        raise SmokeFailure("installer session: successful setup did not clear server-side state")
     report("board configured")
+
+    lock_browser = Browser(base_url)
+    page = lock_browser.request("install.php")
+    require(page, "permanently locked", "installer lock")
+    if lock_browser.last_status == 200:
+        raise SmokeFailure("installer lock: expected a non-success response")
+    report("installer permanently locked")
 
 
 def login(browser: Browser, name: str, password: str, admin: bool = False) -> str:

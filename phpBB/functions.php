@@ -60,6 +60,112 @@ function forum_env_int($name, $default, $minimum) {
 	return max($minimum, (int) $value);
 }
 
+function forum_security_headers() {
+	if (headers_sent()) {
+		return;
+	}
+	header('X-Content-Type-Options: nosniff');
+	header('X-Frame-Options: DENY');
+	header('Referrer-Policy: strict-origin-when-cross-origin');
+	header('Permissions-Policy: camera=(), geolocation=(), microphone=()');
+	header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' http: https:");
+	$hsts_seconds = forum_env_int('MASTERBB_HSTS_SECONDS', 0, 0);
+	if ($hsts_seconds > 0 && forum_request_is_https()) {
+		header('Strict-Transport-Security: max-age=' . $hsts_seconds);
+	}
+}
+
+function forum_enforce_request_size() {
+	$maximum = forum_env_int('MASTERBB_MAX_REQUEST_BYTES', 262144, 1024);
+	$length = $_SERVER['CONTENT_LENGTH'] ?? '';
+	if ($length !== '' && preg_match('/^[0-9]+$/D', (string) $length) && (int) $length > $maximum) {
+		http_response_code(413);
+		die('The submitted request is too large.');
+	}
+}
+
+function forum_valid_email($email) {
+	return strlen((string) $email) <= 100 && filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+function forum_valid_web_url($url, $allow_empty = true) {
+	$url = trim((string) $url);
+	if ($url === '') {
+		return $allow_empty;
+	}
+	if (strlen($url) > 100 || !filter_var($url, FILTER_VALIDATE_URL)) {
+		return false;
+	}
+	$scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+	return $scheme === 'http' || $scheme === 'https';
+}
+
+function forum_valid_language($language) {
+	global $phpEx;
+	$language = (string) $language;
+	return preg_match('/^[a-z0-9_]+$/D', $language) === 1
+		&& is_file(__DIR__ . '/language/lang_' . $language . '.' . ($phpEx ?? 'php'));
+}
+
+function forum_valid_color($color) {
+	return preg_match('/^#[0-9a-f]{6}$/Di', (string) $color) === 1;
+}
+
+function forum_valid_font_size($size) {
+	return preg_match('/^[+-]?[1-7]$/D', (string) $size) === 1;
+}
+
+function forum_valid_table_width($width) {
+	if (preg_match('/^([1-9][0-9]?|100)%$/D', (string) $width, $matches)) {
+		return true;
+	}
+	return preg_match('/^[1-9][0-9]{1,3}$/D', (string) $width) === 1;
+}
+
+function forum_valid_font_face($font) {
+	return strlen((string) $font) <= 100
+		&& preg_match('/^[A-Za-z0-9 ,_-]+$/D', (string) $font) === 1;
+}
+
+function forum_valid_local_asset($path, $directory = 'images') {
+	$path = str_replace('\\', '/', trim((string) $path));
+	if ($path === '' || strlen($path) > 255 || str_contains($path, '..') || str_starts_with($path, '/')) {
+		return false;
+	}
+	if (preg_match('#^[A-Za-z0-9_./-]+\.(?:gif|jpe?g|png|webp)$#Di', $path) !== 1) {
+		return false;
+	}
+	return $directory === '' || str_starts_with($path, rtrim($directory, '/') . '/');
+}
+
+function forum_theme_validation_error($theme) {
+	if (trim((string) ($theme['theme_name'] ?? '')) === '' || strlen((string) $theme['theme_name']) > 35) {
+		return 'Theme names must contain between 1 and 35 characters.';
+	}
+	foreach (array('bgcolor', 'textcolor', 'color1', 'color2', 'table_bgcolor', 'linkcolor', 'vlinkcolor') as $field) {
+		if (!forum_valid_color($theme[$field] ?? '')) {
+			return 'Theme colours must use six-digit hexadecimal values such as #001122.';
+		}
+	}
+	if (!forum_valid_font_face($theme['fontface'] ?? '')) {
+		return 'The theme font list contains unsupported characters.';
+	}
+	foreach (array('fontsize1', 'fontsize2', 'fontsize3', 'fontsize4') as $field) {
+		if (!forum_valid_font_size($theme[$field] ?? '')) {
+			return 'Theme font sizes must be values from 1 to 7 with an optional sign.';
+		}
+	}
+	if (!forum_valid_table_width($theme['tablewidth'] ?? '')) {
+		return 'Theme table width must be a safe pixel value or percentage.';
+	}
+	foreach (array('header_image', 'newtopic_image', 'reply_image', 'replylocked_image') as $field) {
+		if (!forum_valid_local_asset($theme[$field] ?? '', 'images')) {
+			return 'Theme images must be local files below the images directory.';
+		}
+	}
+	return '';
+}
+
 function forum_ip_in_range($ip, $range) {
 	$parts = explode('/', trim($range), 2);
 	$network = inet_pton($parts[0]);
@@ -136,6 +242,9 @@ function forum_client_ip($fallback = '') {
 	}
 	return $remote;
 }
+
+forum_security_headers();
+forum_enforce_request_size();
 
 function forum_public_url($path = '') {
 	global $url_phpbb;
@@ -750,19 +859,93 @@ function forum_authorization_denied($message = 'You are not authorized to perfor
 	error_die($message);
 }
 
+function forum_auth_attempt_keys($account, $network) {
+	return array(
+		hash('sha256', strtolower(trim((string) $account))),
+		hash('sha256', trim((string) $network))
+	);
+}
+
+function forum_audit_auth_event($action, $outcome, $account_key, $network_key) {
+	$event = array(
+		'event' => 'authentication',
+		'action' => (string) $action,
+		'outcome' => (string) $outcome,
+		'account_key' => substr($account_key, 0, 12),
+		'network_key' => substr($network_key, 0, 12),
+	);
+	error_log(json_encode($event, JSON_UNESCAPED_SLASHES));
+}
+
+function forum_auth_attempt_allowed($action, $account, $network, $db) {
+	if (!in_array($action, array('login', 'password_reset'), true)) {
+		return false;
+	}
+	list($account_key, $network_key) = forum_auth_attempt_keys($account, $network);
+	$window = forum_env_int('MASTERBB_AUTH_WINDOW_SECONDS', 900, 60);
+	$cutoff = time() - $window;
+	db_query_params('DELETE FROM auth_attempts WHERE attempted_at < ?', array(time() - 86400), $db);
+	$sql = 'SELECT '
+		. 'SUM(CASE WHEN account_key = ? AND succeeded = 0 THEN 1 ELSE 0 END) AS account_failures, '
+		. 'SUM(CASE WHEN network_key = ? AND succeeded = 0 THEN 1 ELSE 0 END) AS network_failures '
+		. 'FROM auth_attempts WHERE action_name = ? AND attempted_at >= ?';
+	$result = db_query_params($sql, array($account_key, $network_key, $action, $cutoff), $db);
+	$row = $result ? db_fetch_array($result) : false;
+	if (!$row) {
+		return true;
+	}
+	$account_limit = forum_env_int('MASTERBB_AUTH_ACCOUNT_FAILURES', 5, 1);
+	$network_limit = forum_env_int('MASTERBB_AUTH_NETWORK_FAILURES', 30, $account_limit);
+	if ((int) $row['account_failures'] >= $account_limit || (int) $row['network_failures'] >= $network_limit) {
+		http_response_code(429);
+		header('Retry-After: ' . $window);
+		forum_audit_auth_event($action, 'throttled', $account_key, $network_key);
+		return false;
+	}
+	return true;
+}
+
+function forum_record_auth_attempt($action, $account, $network, $succeeded, $db) {
+	list($account_key, $network_key) = forum_auth_attempt_keys($account, $network);
+	if ($succeeded) {
+		db_query_params('DELETE FROM auth_attempts WHERE action_name = ? AND account_key = ? AND succeeded = 0', array($action, $account_key), $db);
+	}
+	db_query_params(
+		'INSERT INTO auth_attempts (action_name, account_key, network_key, attempted_at, succeeded) VALUES (?, ?, ?, ?, ?)',
+		array($action, $account_key, $network_key, time(), $succeeded ? 1 : 0),
+		$db
+	);
+	$count_result = db_query('SELECT COUNT(*) AS total FROM auth_attempts', $db);
+	$count_row = $count_result ? db_fetch_array($count_result) : false;
+	$excess = $count_row ? (int) $count_row['total'] - 10000 : 0;
+	if ($excess > 0) {
+		db_query_params('DELETE FROM auth_attempts ORDER BY attempt_id ASC LIMIT ?', array($excess), $db);
+	}
+	forum_audit_auth_event($action, $succeeded ? 'success' : 'failure', $account_key, $network_key);
+}
+
 /**
  * Nathan Codding - July 19, 2000
  * Checks the given password against the DB for the given username. Returns true if good, false if not.
  */
 function check_user_pw($username, $password, $db) {
-	$sql = "SELECT user_id, user_password FROM users WHERE username = ?";
+	$network = forum_client_ip($_SERVER['REMOTE_ADDR'] ?? '');
+	if (!forum_auth_attempt_allowed('login', $username, $network, $db)) {
+		return false;
+	}
+	$sql = "SELECT user_id, user_password FROM users WHERE username = ? AND user_level != -1";
 	$resultID = db_query_params($sql, array($username), $db);
 	if (!$resultID) {
-		echo db_error() . "<br>";
-		die("Error doing DB query in check_user_pw()");
+		die('The login service is temporarily unavailable.');
 	}
 	$row = db_fetch_array($resultID);
-	if (!$row || !forum_verify_password($password, $row['user_password'])) {
+	static $dummy_hash = null;
+	if ($dummy_hash === null) {
+		$dummy_hash = forum_hash_password(bin2hex(random_bytes(16)));
+	}
+	$verified = forum_verify_password($password, $row ? $row['user_password'] : $dummy_hash);
+	forum_record_auth_attempt('login', $username, $network, (bool) ($row && $verified), $db);
+	if (!$row || !$verified) {
 		return false;
 	}
 	if (password_needs_rehash($row['user_password'], forum_password_algorithm())) {
@@ -848,6 +1031,18 @@ function setuptheme($theme, $db) {
 }
 
 function sanitize_theme_for_html($theme) {
+	$defaults = array(
+		'theme_name' => 'Safe Default', 'bgcolor' => '#000000', 'textcolor' => '#FFFFFF',
+		'color1' => '#6C706D', 'color2' => '#2E4460', 'table_bgcolor' => '#001100',
+		'linkcolor' => '#11C6BD', 'vlinkcolor' => '#11C6BD', 'fontface' => 'sans-serif',
+		'fontsize1' => '1', 'fontsize2' => '2', 'fontsize3' => '-2', 'fontsize4' => '+1',
+		'tablewidth' => '95%', 'header_image' => 'images/header-dark.jpg',
+		'newtopic_image' => 'images/new_topic-dark.jpg', 'reply_image' => 'images/reply-dark.jpg',
+		'replylocked_image' => 'images/reply_locked-dark.jpg'
+	);
+	if (!is_array($theme) || forum_theme_validation_error($theme) !== '') {
+		$theme = array_merge(is_array($theme) ? $theme : array(), $defaults);
+	}
 	$text_fields = array(
 		'theme_name', 'bgcolor', 'textcolor', 'color1', 'color2', 'table_bgcolor',
 		'linkcolor', 'vlinkcolor', 'fontface', 'fontsize1', 'fontsize2',
@@ -1759,6 +1954,9 @@ global $phpEx;
 		if (str_starts_with($file, "lang_")) {
 			$file = str_replace("lang_", "", $file);
 			$file = str_replace(".$phpEx", "", $file);
+			if (!forum_valid_language($file)) {
+				continue;
+			}
 			$file == $default ? $selected = " SELECTED" : $selected = "";
 			$lang_select .= "  <OPTION$selected>$file\n";
 		}
@@ -1789,6 +1987,9 @@ function get_syslang_string($sys_lang, $string) {
 	$sitename = $sitename ?? '';
 	$email_sig = $email_sig ?? '';
 	$hot_threshold = $hot_threshold ?? 0;
+	if (!forum_valid_language($sys_lang)) {
+		$sys_lang = 'english';
+	}
 	include('language/lang_'.$sys_lang.'.'.$phpEx);
 	$ret_string = isset($$string) ? $$string : '';
 	return($ret_string);

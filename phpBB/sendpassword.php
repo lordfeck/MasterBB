@@ -79,6 +79,12 @@ else if ($token !== '') {
 	password_reset_panel($l_password, $body);
 }
 else if ($submit !== '') {
+	$reset_account = strtolower(trim($user)) . '|' . strtolower(trim($email));
+	$reset_network = forum_client_ip($_SERVER['REMOTE_ADDR'] ?? '');
+	if (!forum_auth_attempt_allowed('password_reset', $reset_account, $reset_network, $db)) {
+		error_die('Too many password-reset requests. Please wait before trying again.');
+	}
+	forum_record_auth_attempt('password_reset', $reset_account, $reset_network, false, $db);
 	$sql = 'SELECT user_id, username, user_email FROM users WHERE username = ? AND user_email = ? AND user_level != -1';
 	$result = db_query_params($sql, array($user, $email), $db);
 	$checkinfo = $result ? db_fetch_array($result) : false;

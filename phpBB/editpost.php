@@ -273,7 +273,7 @@ else {
    			AND (p.poster_id = u.user_id)";
    			
    if(!$result = db_query_params($sql, array($post_id), $db))
-		error_die("Couldn't get user and topic information from the database.<br>$sql");
+		error_die("Couldn't get user and topic information from the database.");
    $myrow = db_fetch_array($result);
    if (!$myrow || !forum_user_can_edit_post($userdata, $myrow, $db, $user_logged_in)) {
 	forum_authorization_denied($l_notedit);
